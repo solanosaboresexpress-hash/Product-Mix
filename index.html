@@ -1,0 +1,2951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Sabores Express - Product Mix V2 Web v4.8</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js?v=4.8"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4.8"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.8"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.8"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.8"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.8"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6dF6jCibROTO-oXBfKUdAjk9q6g6-Mu0",
+            authDomain: "inventario-app-multi-local.firebaseapp.com",
+            projectId: "inventario-app-multi-local",
+            storageBucket: "inventario-app-multi-local.firebasestorage.app",
+            messagingSenderId: "623222993471",
+            appId: "1:623222993471:web:48bffda68352403f27be8a"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+    </script>
+</head>
+<body>
+    <div id="root">
+        <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+            <h1>Cargando Inventario App...</h1>
+            <p>Conectando con Firebase...</p>
+            <!-- v2.2 - Carga TODOS los locales de Firebase, sin caché -->
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Login Component
+        function Login({ onLoginSuccess }) {
+            const [locales, setLocales] = useState([]);
+            const [localSeleccionado, setLocalSeleccionado] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [cargandoLocales, setCargandoLocales] = useState(true);
+            const [recordarDatos, setRecordarDatos] = useState(false);
+
+            useEffect(() => {
+                cargarLocales();
+                cargarDatosGuardados();
+            }, []);
+
+            const cargarDatosGuardados = () => {
+                try {
+                    const datosGuardados = localStorage.getItem('loginData');
+                    if (datosGuardados) {
+                        const { localId, password: savedPassword, recordar } = JSON.parse(datosGuardados);
+                        if (recordar) {
+                            setLocalSeleccionado(localId);
+                            setPassword(savedPassword);
+                            setRecordarDatos(true);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando datos guardados:', error);
+                }
+            };
+
+            const cargarLocales = async () => {
+                try {
+                    setCargandoLocales(true);
+                    const snapshot = await db.collection('locales').get();
+                    const localesData = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        localesData.push({ 
+                            id: doc.id, 
+                            nombre: data.nombre,
+                            activo: data.activo 
+                        });
+                    });
+                    setLocales(localesData);
+                } catch (error) {
+                    console.error('Error cargando locales:', error);
+                    setError('Error cargando locales: ' + error.message);
+                } finally {
+                    setCargandoLocales(false);
+                }
+            };
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                if (!localSeleccionado || !password) {
+                    setError('Por favor completa todos los campos');
+                    return;
+                }
+
+                try {
+                    setLoading(true);
+                    setError('');
+                    
+                    const localDoc = await db.collection('locales').doc(localSeleccionado).get();
+                    const local = localDoc.data();
+                    
+                    if (!local || !local.usuarios) {
+                        throw new Error('Local no encontrado');
+                    }
+
+                    const usuario = Object.values(local.usuarios).find(
+                        user => user.contraseña === password && user.activo
+                    );
+
+                    if (!usuario) {
+                        throw new Error('Credenciales incorrectas');
+                    }
+
+                    const usuarioData = {
+                        localId: localSeleccionado,
+                        localNombre: local.nombre,
+                        usuarioId: usuario.id,
+                        usuario: usuario.usuario,
+                        rol: usuario.rol
+                    };
+
+                    localStorage.setItem('usuario', JSON.stringify(usuarioData));
+                    
+                    // Guardar datos de login si está marcado recordar
+                    if (recordarDatos) {
+                        localStorage.setItem('loginData', JSON.stringify({
+                            localId: localSeleccionado,
+                            password: password,
+                            recordar: true
+                        }));
+                    } else {
+                        // Limpiar datos guardados si no se quiere recordar
+                        localStorage.removeItem('loginData');
+                    }
+                    
+                    onLoginSuccess(usuarioData);
+                    
+                } catch (error) {
+                    console.error('Error en login:', error);
+                    setError(error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const mostrarDialogoContraseñaGestion = () => {
+                // Crear modal EXACTO como LoginActivity.kt líneas 343-408
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                `;
+                
+                const dialogContent = document.createElement('div');
+                dialogContent.style.cssText = `
+                    background: white;
+                    padding: 24px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                `;
+                
+                dialogContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #333;">
+                            🔑 Acceso a Gestión de Locales
+                        </h3>
+                        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+                            Ingresa la contraseña de administración para acceder a la gestión de locales:
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
+                            Contraseña:
+                        </label>
+                        <input 
+                            type="password" 
+                            id="passwordInput"
+                            placeholder="Ingrese la contraseña"
+                            style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 1px solid #ddd;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                box-sizing: border-box;
+                            "
+                        />
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; font-size: 14px; color: #666;">
+                            <input 
+                                type="checkbox" 
+                                id="rememberPassword"
+                                style="margin-right: 8px;"
+                            />
+                            Recordar contraseña
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button 
+                            id="cancelBtn"
+                            style="
+                                padding: 10px 20px;
+                                border: 1px solid #ddd;
+                                background: white;
+                                color: #666;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                            "
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            id="accessBtn"
+                            style="
+                                padding: 10px 20px;
+                                border: none;
+                                background: #2196F3;
+                                color: white;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 500;
+                            "
+                        >
+                            Acceder
+                        </button>
+                    </div>
+                `;
+                
+                modal.appendChild(dialogContent);
+                document.body.appendChild(modal);
+                
+                // Cargar contraseña guardada si existe
+                const savedPassword = localStorage.getItem('contraseña_gestion');
+                const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
+                const passwordInput = dialogContent.querySelector('#passwordInput');
+                
+                if (savedPassword) {
+                    passwordInput.value = savedPassword;
+                    rememberCheckbox.checked = true;
+                }
+                
+                // Enfocar el campo de contraseña
+                passwordInput.focus();
+                
+                // Event listeners
+                dialogContent.querySelector('#cancelBtn').onclick = () => {
+                    document.body.removeChild(modal);
+                };
+                
+                dialogContent.querySelector('#accessBtn').onclick = () => {
+                    const password = passwordInput.value.trim();
+                    const remember = rememberCheckbox.checked;
+                    
+                    if (!password) {
+                        passwordInput.style.borderColor = '#F44336';
+                        passwordInput.placeholder = 'Ingrese la contraseña';
+                        return;
+                    }
+                    
+                    if (password === 'admin123') {
+                        // Guardar contraseña si está marcado el checkbox
+                        if (remember) {
+                            localStorage.setItem('contraseña_gestion', password);
+                        } else {
+                            localStorage.removeItem('contraseña_gestion');
+                        }
+                        
+                        document.body.removeChild(modal);
+                        
+                        // Navegar a gestión de locales
+                        window.location.href = '#gestion-locales';
+                        
+                    } else {
+                        passwordInput.style.borderColor = '#F44336';
+                        passwordInput.value = '';
+                        passwordInput.placeholder = 'Contraseña incorrecta';
+                    }
+                };
+                
+                // Enter key
+                passwordInput.onkeypress = (e) => {
+                    if (e.key === 'Enter') {
+                        dialogContent.querySelector('#accessBtn').click();
+                    }
+                };
+            };
+
+            if (cargandoLocales) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#E0E0E0'}}>
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Cargando locales...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: '#E0E0E0'}}>
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
+                        <div className="text-center mb-8">
+                            <div className="text-center mb-6">
+                                <img 
+                                    src="logo_sabores_real.png" 
+                                    alt="Sabores Express" 
+                                    className="mx-auto"
+                                    style={{
+                                        maxWidth: '200px',
+                                        maxHeight: '120px',
+                                        objectFit: 'contain'
+                                    }}
+                                />
+                                <div 
+                                    className="text-lg font-bold mt-3"
+                                    style={{
+                                        color: '#FFD700',
+                                        textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                                    }}
+                                >
+                                    Sabores Express - Product Mix V2 Web
+                            </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Seleccionar Local
+                                </label>
+                                <select 
+                                    value={localSeleccionado}
+                                    onChange={(e) => setLocalSeleccionado(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    required
+                                >
+                                    <option value="">Selecciona un local</option>
+                                    {locales.map(local => (
+                                        <option key={local.id} value={local.id}>
+                                            {local.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    placeholder="Ingresa tu contraseña"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="recordarDatos"
+                                    checked={recordarDatos}
+                                    onChange={(e) => setRecordarDatos(e.target.checked)}
+                                    className="mr-2 h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                                />
+                                <label htmlFor="recordarDatos" className="text-sm text-gray-700">
+                                    Recordar local y contraseña
+                                </label>
+                            </div>
+
+                            {error && (
+                                <div className="text-red-600 text-sm text-center">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button 
+                                type="submit"
+                                disabled={loading}
+                                className="w-full text-black font-bold text-base py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                style={{
+                                    backgroundColor: '#FFD700',
+                                    height: '56px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #B8860B'
+                                }}
+                            >
+                                {loading ? 'Verificando...' : 'Iniciar Sesión'}
+                            </button>
+                        </form>
+
+                        {locales.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => mostrarDialogoContraseñaGestion()}
+                                className="w-full text-black font-bold text-sm py-3 rounded-lg transition-colors mt-3"
+                                style={{
+                                    backgroundColor: '#FFD700',
+                                    height: '48px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #B8860B',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                GESTIONAR LOCALES
+                            </button>
+                        )}
+
+                        {/* Enlace de descarga de la app Android */}
+                        <div className="mt-6 text-center">
+                            <a
+                                href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                                style={{
+                                    backgroundColor: '#4CAF50',
+                                    border: '1px solid #388E3C',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    textDecoration: 'none'
+                                }}
+                            >
+                                📱 Descargar App Android
+                            </a>
+                        </div>
+                        </div>
+                </div>
+            );
+        }
+
+        // GestionLocales Component - EXACTO como GestionLocalesActivity.kt
+        function GestionLocales({ onVolver, onLoginSuccess }) {
+            console.log('🏢 GestionLocales renderizado con props:', { onVolver: !!onVolver, onLoginSuccess: !!onLoginSuccess });
+            
+            const [locales, setLocales] = useState([]);
+            const [localesFiltrados, setLocalesFiltrados] = useState([]);
+            const [cargando, setCargando] = useState(true);
+            const [error, setError] = useState('');
+            const [mostrarFormulario, setMostrarFormulario] = useState(false);
+            const [nuevoLocal, setNuevoLocal] = useState({
+                nombre: '',
+                contraseña: ''
+            });
+
+            useEffect(() => {
+                cargarLocales();
+            }, []);
+
+            const cargarLocales = async () => {
+                try {
+                    setCargando(true);
+                    setError('');
+                    
+                    // Cargar TODOS los locales sin filtro
+                    const snapshot = await db.collection('locales').get();
+                    const localesData = [];
+                    
+                    console.log('Locales encontrados:', snapshot.size);
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        console.log('Local:', doc.id, data);
+                        localesData.push({ 
+                            id: doc.id, 
+                            ...data
+                        });
+                    });
+                    
+                    console.log('Locales cargados:', localesData);
+                    setLocales(localesData);
+                    setLocalesFiltrados(localesData);
+                    
+                } catch (error) {
+                    console.error('Error cargando locales:', error);
+                    setError('Error cargando locales: ' + error.message);
+                } finally {
+                    setCargando(false);
+                }
+            };
+
+            const crearLocal = async (e) => {
+                e.preventDefault();
+                try {
+                    setError('');
+                    
+                    // Verificar si el local ya existe
+                    const snapshot = await db.collection('locales')
+                        .where('nombre', '==', nuevoLocal.nombre)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        setError('El local ' + nuevoLocal.nombre + ' ya existe');
+                        return;
+                    }
+                    
+                    // Usar contraseña personalizada o generar una automáticamente
+                    const contraseñaFinal = nuevoLocal.contraseña || generarContraseña();
+                    
+                    // Crear usuario admin para el nuevo local
+                    const usuarioAdmin = {
+                        id: 'admin_' + nuevoLocal.nombre.toLowerCase(),
+                        usuario: 'admin_' + nuevoLocal.nombre.toLowerCase(),
+                        contraseña: contraseñaFinal,
+                        rol: 'admin_local',
+                        activo: true
+                    };
+                    
+                    // Crear el local
+                    const localData = {
+                        nombre: nuevoLocal.nombre,
+                        fechaCreacion: new Date().toISOString().split('T')[0],
+                        activo: true,
+                        usuarios: {
+                            [usuarioAdmin.id]: usuarioAdmin
+                        }
+                    };
+
+                    await db.collection('locales').doc(nuevoLocal.nombre).set(localData);
+                    
+                    // Limpiar formulario
+                    setNuevoLocal({
+                        nombre: '',
+                        contraseña: ''
+                    });
+                    setMostrarFormulario(false);
+                    
+                    // Recargar locales
+                    cargarLocales();
+                    
+                    // Mostrar credenciales
+                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n👤 Usuario: ${usuarioAdmin.usuario}\n🔑 Contraseña: ${usuarioAdmin.contraseña}\n\n⚠️ Guarda estas credenciales para acceder al local`);
+                    
+                } catch (error) {
+                    console.error('Error creando local:', error);
+                    setError('Error creando local: ' + error.message);
+                }
+            };
+
+            const generarContraseña = () => {
+                const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                return Array.from({length: 8}, () => caracteres[Math.floor(Math.random() * caracteres.length)]).join('');
+            };
+
+            const eliminarLocal = async (local) => {
+                const contraseña = prompt('Para eliminar el local, ingresa la contraseña del administrador:');
+                if (!contraseña) return;
+                
+                try {
+                    // Buscar el usuario administrador del local
+                    const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
+                    if (!usuarioAdmin) {
+                        alert('No se encontró el usuario administrador del local');
+                        return;
+                    }
+                    
+                    // Verificar contraseña
+                    if (usuarioAdmin.contraseña !== contraseña) {
+                        alert('❌ Contraseña incorrecta. No se puede eliminar el local.');
+                        return;
+                    }
+                    
+                    // Confirmación final
+                    if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
+                        return;
+                    }
+                    
+                    // Eliminar el local
+                    await db.collection('locales').doc(local.nombre).delete();
+                    
+                    // Recargar locales
+                    cargarLocales();
+                    
+                    alert('✅ Local eliminado exitosamente');
+                    
+                } catch (error) {
+                    console.error('Error eliminando local:', error);
+                    alert('Error eliminando local: ' + error.message);
+                }
+            };
+
+            const cambiarContraseña = async (local) => {
+                const contraseñaActual = prompt('Contraseña actual:');
+                if (!contraseñaActual) return;
+                
+                const contraseñaNueva = prompt('Nueva contraseña:');
+                if (!contraseñaNueva) return;
+                
+                const confirmarContraseña = prompt('Confirmar nueva contraseña:');
+                if (!confirmarContraseña) return;
+                
+                if (contraseñaNueva !== confirmarContraseña) {
+                    alert('Las contraseñas nuevas no coinciden');
+                    return;
+                }
+                
+                try {
+                    // Buscar el usuario administrador del local
+                    const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
+                    if (!usuarioAdmin) {
+                        alert('No se encontró el usuario administrador del local');
+                        return;
+                    }
+                    
+                    // Verificar contraseña actual
+                    if (usuarioAdmin.contraseña !== contraseñaActual) {
+                        alert('❌ Contraseña actual incorrecta');
+                        return;
+                    }
+                    
+                    // Actualizar contraseña
+                    const usuarioActualizado = { ...usuarioAdmin, contraseña: contraseñaNueva };
+                    const usuariosActualizados = { ...local.usuarios };
+                    usuariosActualizados[usuarioAdmin.id] = usuarioActualizado;
+                    
+                    await db.collection('locales').doc(local.nombre).update({
+                        usuarios: usuariosActualizados
+                    });
+                    
+                    // Recargar locales
+                    cargarLocales();
+                    
+                    alert('✅ Contraseña actualizada exitosamente');
+                    
+                } catch (error) {
+                    console.error('Error cambiando contraseña:', error);
+                    alert('Error cambiando contraseña: ' + error.message);
+                }
+            };
+
+            const mostrarUsuarios = (local) => {
+                const usuarios = Object.values(local.usuarios);
+                const mensaje = usuarios.map(usuario => 
+                    `👤 Usuario: ${usuario.usuario}\n🔑 Contraseña: ${usuario.contraseña}\n📋 Rol: ${usuario.rol}`
+                ).join('\n\n');
+                
+                alert(`Usuarios de ${local.nombre}\n\n${mensaje}`);
+            };
+
+            const filtrarLocales = (busqueda) => {
+                if (!busqueda.trim()) {
+                    setLocalesFiltrados(locales);
+                    return;
+                }
+                
+                const filtrados = locales.filter(local => 
+                    local.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                    local.fechaCreacion.includes(busqueda) ||
+                    Object.values(local.usuarios || {}).some(usuario => 
+                        usuario.usuario.toLowerCase().includes(busqueda.toLowerCase()) ||
+                        usuario.rol.toLowerCase().includes(busqueda.toLowerCase())
+                    )
+                );
+                setLocalesFiltrados(filtrados);
+            };
+
+            if (cargando) {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Cargando locales...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
+                    {/* Header con botón volver */}
+                    <div className="flex justify-between items-center mb-4">
+                        <button 
+                            onClick={onVolver}
+                            className="px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                            style={{
+                                backgroundColor: '#2196F3',
+                                border: '1px solid #1976D2',
+                                borderRadius: '8px',
+                                fontSize: '16px'
+                            }}
+                        >
+                            ← Volver
+                        </button>
+                        <h1 className="text-xl font-bold text-black">Gestión de Locales</h1>
+                        <div></div>
+                    </div>
+
+                    {/* Botón Agregar Local - EXACTO como líneas 51-53 */}
+                    <button
+                        onClick={() => setMostrarFormulario(true)}
+                        className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                        style={{
+                            backgroundColor: '#4CAF50',
+                            fontSize: '16px'
+                        }}
+                    >
+                        ➕ AGREGAR NUEVO LOCAL
+                    </button>
+
+                    {/* Buscador - EXACTO como líneas 55-63 */}
+                    <input
+                        type="text"
+                        placeholder="🔍 Buscar locales por nombre, fecha o usuario..."
+                        className="w-full p-3 mb-4 rounded-lg"
+                        style={{
+                            backgroundColor: 'white',
+                            border: '1px solid #E0E0E0',
+                            fontSize: '14px'
+                        }}
+                        onChange={(e) => filtrarLocales(e.target.value)}
+                    />
+
+                    {/* Lista de Locales - EXACTO como líneas 100-121 */}
+                    <div className="space-y-2" style={{minHeight: 'calc(100vh - 200px)'}}>
+                        {(localesFiltrados.length > 0 ? localesFiltrados : locales).map((local, index) => {
+                            console.log('Renderizando local', index, local);
+                            return (
+                            <div 
+                                key={local.nombre || `local-${index}`} 
+                                className="p-3 rounded-lg"
+                                style={{
+                                    backgroundColor: '#2196F3',
+                                    color: 'white'
+                                }}
+                            >
+                                {/* Nombre del local - EXACTO como líneas 137-143 */}
+                                <div className="text-lg font-bold mb-2">
+                                    🏪 {local.nombre}
+                                </div>
+                                
+                                {/* Fecha de creación - EXACTO como líneas 145-151 */}
+                                <div className="text-sm mb-1">
+                                    Creado: {local.fechaCreacion}
+                                </div>
+                                
+                                {/* Usuarios - EXACTO como líneas 153-159 */}
+                                <div className="text-sm mb-3">
+                                    Usuarios: {Object.keys(local.usuarios || {}).length}
+                                </div>
+                                
+                                {/* Botón de acceso directo - EXACTO como líneas 161-177 */}
+                                <button
+                                    onClick={() => {
+                                        // Crear usuario temporal para el local seleccionado
+                                        // Usar el ID del documento de Firebase como localId
+                                        const localId = local.id || local.nombre; // Fallback al nombre si no hay id
+                                        const usuarioTemporal = {
+                                            id: 'temp_' + localId,
+                                            usuario: 'admin_' + local.nombre.toLowerCase(),
+                                            localId: localId, // Usar el ID del documento de Firebase
+                                            localNombre: local.nombre,
+                                            rol: 'admin_local',
+                                            activo: true
+                                        };
+                                        
+                                        // Guardar en localStorage
+                                        localStorage.setItem('usuario', JSON.stringify(usuarioTemporal));
+                                        
+                                        // Navegar al main usando el sistema de React
+                                        console.log('🚀 Ingresando al local:', local.nombre);
+                                        console.log('🔑 LocalId asignado:', localId);
+                                        console.log('👤 Usuario temporal creado:', usuarioTemporal);
+                                        
+                                        // Usar la función onLoginSuccess pasada como prop
+                                        console.log('🔍 onLoginSuccess disponible:', !!onLoginSuccess);
+                                        console.log('🔍 Tipo de onLoginSuccess:', typeof onLoginSuccess);
+                                        
+                                        if (onLoginSuccess) {
+                                            console.log('✅ Llamando onLoginSuccess con:', usuarioTemporal);
+                                            onLoginSuccess(usuarioTemporal);
+                                        } else {
+                                            console.log('❌ onLoginSuccess no disponible, usando fallback');
+                                            // Fallback: recargar la página
+                                            window.location.href = window.location.origin + window.location.pathname;
+                                        }
+                                    }}
+                                    className="w-full text-white font-bold text-sm py-2 rounded mb-2"
+                                    style={{
+                                        backgroundColor: '#9C27B0'
+                                    }}
+                                >
+                                    🚀 Ingresar al Local
+                                </button>
+                                
+                                {/* Botones de administración - EXACTO como líneas 179-233 */}
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => mostrarUsuarios(local)}
+                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                        style={{
+                                            backgroundColor: '#FF9800'
+                                        }}
+                                    >
+                                        👥 Usuarios
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => cambiarContraseña(local)}
+                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                        style={{
+                                            backgroundColor: '#4CAF50'
+                                        }}
+                                    >
+                                        🔑 Cambiar Contraseña
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => eliminarLocal(local)}
+                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                        style={{
+                                            backgroundColor: '#F44336'
+                                        }}
+                                    >
+                                        🗑️ Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                            );
+                        })}
+                        
+                        {locales.length === 0 && (
+                            <div className="text-center p-8">
+                                <div className="text-lg text-gray-600 mb-4">📝 No hay locales registrados</div>
+                                <button
+                                    onClick={() => setMostrarFormulario(true)}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Crear Local
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Texto de estado - EXACTO como líneas 94-97 */}
+                    <div 
+                        className="text-center mt-4 text-sm"
+                        style={{color: '#F44336'}}
+                    >
+                        {error || `${locales.length} locales encontrados (${localesFiltrados.length} filtrados)`}
+                    </div>
+                    
+                    {/* Debug info */}
+                    <div className="text-center mt-2 text-xs text-gray-500">
+                        Debug: locales={locales.length}, filtrados={localesFiltrados.length}
+                    </div>
+                                
+                    {/* Modal de nuevo local - EXACTO como líneas 251-295 */}
+                    {mostrarFormulario && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Agregar Nuevo Local</h3>
+                                    <button
+                                        onClick={() => setMostrarFormulario(false)}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={crearLocal} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Nombre del local (ej: WILDE)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={nuevoLocal.nombre}
+                                            onChange={(e) => setNuevoLocal({...nuevoLocal, nombre: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Nombre del local (ej: WILDE)"
+                                            required
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Contraseña del admin (opcional)
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={nuevoLocal.contraseña}
+                                            onChange={(e) => setNuevoLocal({...nuevoLocal, contraseña: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Contraseña del admin (opcional)"
+                                        />
+                                    </div>
+                                    
+                                    <div className="text-sm text-gray-600">
+                                        Si no ingresas contraseña, se generará una automáticamente
+                                    </div>
+                                    
+                                    <div className="flex justify-end space-x-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarFormulario(false)}
+                                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            Crear
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // CalendarioPersonalizado Component - EXACTO como MainActivity.kt líneas 279-490
+        function CalendarioPersonalizado({ fechaSeleccionada, setFechaSeleccionada, onCerrar, fechasCompletas, fechasParciales, cargando }) {
+            const [mesActual, setMesActual] = useState(new Date());
+
+            // Función para formatear fecha como yyyy-MM-dd
+            const formatearFechaCorta = (fecha) => {
+                const año = fecha.getFullYear();
+                const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                const dia = String(fecha.getDate()).padStart(2, '0');
+                const fechaFormateada = `${año}-${mes}-${dia}`;
+                console.log(`📅 formatearFechaCorta: ${fecha.toString()} -> ${fechaFormateada}`);
+                return fechaFormateada;
+            };
+
+            // Función para obtener el primer día del mes
+            const obtenerPrimerDia = (fecha) => {
+                const primerDia = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+                return primerDia;
+            };
+
+            // Función para obtener el último día del mes
+            const obtenerUltimoDia = (fecha) => {
+                return new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+            };
+
+            // Función para obtener días de la semana
+            const obtenerDiasSemana = () => {
+                return ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            };
+
+            // Función para crear el grid del mes - EXACTO como MainActivity.kt líneas 495-730
+            const crearGridMes = () => {
+                const año = mesActual.getFullYear();
+                const mes = mesActual.getMonth();
+                const primerDia = obtenerPrimerDia(mesActual);
+                const ultimoDia = obtenerUltimoDia(mesActual);
+                const diasEnMes = ultimoDia.getDate();
+                const primerDiaSemana = primerDia.getDay(); // 0=Domingo, 1=Lunes, etc.
+
+                const dias = [];
+                const diasSemana = obtenerDiasSemana();
+
+                // Crear encabezados de días
+                const encabezados = diasSemana.map((dia, index) => (
+                    <div key={index} className="text-center text-xs font-bold text-gray-600 p-1">
+                        {dia}
+                    </div>
+                ));
+
+                // Agregar espacios vacíos para los días anteriores al primer día del mes
+                for (let i = 0; i < primerDiaSemana; i++) {
+                    dias.push(
+                        <div key={`empty-${i}`} className="h-12 flex items-center justify-center">
+                        </div>
+                    );
+                }
+
+                // Agregar los días del mes
+                for (let dia = 1; dia <= diasEnMes; dia++) {
+                    const fechaString = `${año}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const esHoy = fechaString === formatearFechaCorta(new Date());
+                    const esFechaSeleccionada = fechaString === formatearFechaCorta(fechaSeleccionada);
+                    
+                    // Determinar color según datos - EXACTO como líneas 576-589
+                    let colorFondo, colorTexto, borde;
+                    if (fechasCompletas.has(fechaString)) {
+                        colorFondo = '#4CAF50'; // Verde
+                        colorTexto = '#FFFFFF';
+                    } else if (fechasParciales.has(fechaString)) {
+                        colorFondo = '#FF9800'; // Naranja
+                        colorTexto = '#FFFFFF';
+                    } else {
+                        colorFondo = '#757575'; // Gris
+                        colorTexto = '#FFFFFF';
+                    }
+
+                    // Agregar borde rojo para fecha seleccionada o día actual - EXACTO como líneas 591-620
+                    if (esFechaSeleccionada || (esHoy && !fechasCompletas.has(fechaString) && !fechasParciales.has(fechaString))) {
+                        borde = '3px solid #F44336';
+                    }
+
+                    dias.push(
+                        <button
+                            key={dia}
+                            onClick={() => {
+                                const nuevaFecha = new Date(año, mes, dia);
+                                setFechaSeleccionada(nuevaFecha);
+                                onCerrar();
+                            }}
+                            className="h-12 w-full flex items-center justify-center text-lg font-bold rounded-lg transition-all hover:opacity-80"
+                            style={{
+                                backgroundColor: colorFondo,
+                                color: colorTexto,
+                                border: borde,
+                                minHeight: '48px'
+                            }}
+                        >
+                            {dia}
+                        </button>
+                    );
+                }
+
+                return { encabezados, dias };
+            };
+
+            // Función para cambiar mes - EXACTO como MainActivity.kt líneas 449-463
+            const cambiarMes = (offset) => {
+                const nuevoMes = new Date(mesActual);
+                nuevoMes.setMonth(nuevoMes.getMonth() + offset);
+                setMesActual(nuevoMes);
+            };
+
+            const { encabezados, dias } = crearGridMes();
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        {/* Header - EXACTO como líneas 310-318 */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-black">📅 Seleccionar Fecha</h3>
+                            <button
+                                onClick={onCerrar}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Leyenda de colores - EXACTO como líneas 320-344 */}
+                        <div className="flex justify-center space-x-4 mb-4 text-xs">
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-1" style={{backgroundColor: '#4CAF50'}}></div>
+                                <span>Completo</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-1" style={{backgroundColor: '#FF9800'}}></div>
+                                <span>Parcial</span>
+                            </div>
+                        </div>
+
+                        {/* Navegación de mes - EXACTO como líneas 346-405 */}
+                        <div className="flex items-center justify-between mb-4">
+                            <button
+                                onClick={() => cambiarMes(-1)}
+                                className="w-14 h-12 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                ◀
+                            </button>
+                            
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-black">
+                                    {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={() => cambiarMes(1)}
+                                className="w-14 h-12 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                ▶
+                            </button>
+                        </div>
+
+                        {/* Grid del calendario - EXACTO como líneas 424-441 */}
+                        <div className="grid grid-cols-7 gap-1 mb-4">
+                            {encabezados}
+                        </div>
+                        
+                        <div className="grid grid-cols-7 gap-1">
+                            {dias}
+                        </div>
+
+                        {/* Indicador de carga */}
+                        {cargando && (
+                            <div className="text-center mt-4">
+                                <div className="text-sm text-gray-600">Cargando calendario...</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Main Component
+        function Main({ usuario, onLogout, onVolverGestion }) {
+            const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
+            const [mostrarCalendario, setMostrarCalendario] = useState(false);
+            const [cargandoCalendario, setCargandoCalendario] = useState(false);
+            const [fechasCompletas, setFechasCompletas] = useState(new Set());
+            const [fechasParciales, setFechasParciales] = useState(new Set());
+            
+            // Estados para controlar colores de botones - EXACTO como MainActivity.kt líneas 66-70
+            const [tieneIngreso, setTieneIngreso] = useState(false);
+            const [tieneStock, setTieneStock] = useState(false);
+            const [ultimoEstadoIngreso, setUltimoEstadoIngreso] = useState(null);
+            const [ultimoEstadoStock, setUltimoEstadoStock] = useState(null);
+
+            const formatearFecha = (fecha) => {
+                return fecha.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+
+            const formatearFechaCorta = (fecha) => {
+                const año = fecha.getFullYear();
+                const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                const dia = String(fecha.getDate()).padStart(2, '0');
+                const fechaFormateada = `${año}-${mes}-${dia}`;
+                console.log(`📅 formatearFechaCorta: ${fecha.toString()} -> ${fechaFormateada}`);
+                return fechaFormateada;
+            };
+
+            // Función para cargar datos del calendario - EXACTO como MainActivity.kt líneas 232-273
+            const cargarDatosCalendario = async () => {
+                if (cargandoCalendario) return;
+                
+                setCargandoCalendario(true);
+                
+                try {
+                    // Obtener todos los registros del local
+                    const snapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .get();
+                    
+                    const registros = [];
+                    snapshot.forEach(doc => {
+                        registros.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Agrupar registros por fecha
+                    const registrosPorFecha = {};
+                    registros.forEach(registro => {
+                        if (!registrosPorFecha[registro.fecha]) {
+                            registrosPorFecha[registro.fecha] = [];
+                        }
+                        registrosPorFecha[registro.fecha].push(registro);
+                    });
+                    
+                    // Analizar fechas - EXACTO como líneas 244-253
+                    const fechasCompletasSet = new Set();
+                    const fechasParcialesSet = new Set();
+                    
+                    Object.entries(registrosPorFecha).forEach(([fecha, registrosFecha]) => {
+                        const tieneIngreso = registrosFecha.some(registro => registro.tipo === 'Ingreso de Mercadería');
+                        const tieneStock = registrosFecha.some(registro => registro.tipo === 'Stock Final');
+                        
+                        if (tieneIngreso && tieneStock) {
+                            fechasCompletasSet.add(fecha);
+                        } else if (tieneIngreso || tieneStock) {
+                            fechasParcialesSet.add(fecha);
+                        }
+                    });
+                    
+                    setFechasCompletas(fechasCompletasSet);
+                    setFechasParciales(fechasParcialesSet);
+                    
+                } catch (error) {
+                    console.error('Error cargando datos del calendario:', error);
+                } finally {
+                    setCargandoCalendario(false);
+                }
+            };
+
+            // Función para mostrar calendario personalizado - EXACTO como MainActivity.kt líneas 223-274
+            const mostrarCalendarioPersonalizado = () => {
+                if (cargandoCalendario) return;
+                
+                setMostrarCalendario(true);
+                cargarDatosCalendario();
+            };
+
+            // Función para verificar registros existentes - EXACTO como MainActivity.kt líneas 992-1003
+            const verificarRegistrosExistentes = async () => {
+                try {
+                    console.log('🔍 verificarRegistrosExistentes iniciado');
+                    console.log('👤 Usuario actual:', usuario);
+                    console.log('📅 Fecha seleccionada:', fechaSeleccionada);
+                    
+                    if (!usuario || !usuario.localId) {
+                        console.log('⚠️ No hay usuario o localId, abortando verificación');
+                        return;
+                    }
+                    
+                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    console.log('📅 Fecha string:', fechaString);
+                    
+                    const snapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fechaString)
+                        .get();
+                    
+                    console.log('📊 Snapshot size:', snapshot.size);
+                    
+                    const registros = [];
+                    snapshot.forEach(doc => {
+                        registros.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    console.log('📋 Registros encontrados:', registros);
+                    
+                    // Verificar si hay registros de Ingreso de Mercadería - EXACTO como líneas 1254-1256
+                    const tieneIngresoData = registros.some(registro => registro.tipo === 'Ingreso de Mercadería');
+                    setTieneIngreso(tieneIngresoData);
+                    
+                    // Verificar si hay registros de Stock Final - EXACTO como líneas 1258-1260
+                    const tieneStockData = registros.some(registro => registro.tipo === 'Stock Final');
+                    setTieneStock(tieneStockData);
+                    
+                    console.log(`📊 Fecha ${fechaString}: Ingreso=${tieneIngresoData}, Stock=${tieneStockData}`);
+                    
+                } catch (error) {
+                    console.error('❌ Error verificando registros existentes:', error);
+                }
+            };
+
+            const [pantallaActual, setPantallaActual] = useState('main');
+
+            // Verificar registros cuando cambie la fecha - EXACTO como MainActivity.kt líneas 153-159
+            useEffect(() => {
+                console.log('🔄 useEffect ejecutado - usuario:', usuario, 'fechaSeleccionada:', fechaSeleccionada);
+                if (usuario && usuario.localId) {
+                    console.log('📊 Ejecutando verificarRegistrosExistentes para usuario:', usuario.localId);
+                    verificarRegistrosExistentes();
+                } else {
+                    console.log('⚠️ No se puede verificar registros - usuario o localId faltante');
+                }
+            }, [fechaSeleccionada, usuario]);
+
+
+            // Función para verificar si es el día actual - EXACTO como MainActivity.kt líneas 1219-1227
+            const esFechaActual = (fecha) => {
+                const fechaString = formatearFechaCorta(fecha);
+                const fechaActual = formatearFechaCorta(new Date());
+                return fechaString === fechaActual;
+            };
+
+            // Estados para datos existentes
+            const [datosIngreso, setDatosIngreso] = useState({});
+            const [datosStock, setDatosStock] = useState({});
+            const [cargandoDatos, setCargandoDatos] = useState(false);
+
+
+            // Función para cargar datos existentes - EXACTO como CargaActivity.kt
+            const cargarDatosExistentes = async (tipo) => {
+                setCargandoDatos(true);
+                try {
+                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    const snapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fechaString)
+                        .where('tipo', '==', tipo)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        console.log(`📊 Total registros encontrados: ${snapshot.docs.length}`);
+                        
+                        // Ordenar por timestamp descendente para obtener el más reciente
+                        const docs = snapshot.docs.sort((a, b) => {
+                            const timestampA = a.data().timestamp || '';
+                            const timestampB = b.data().timestamp || '';
+                            return timestampB.localeCompare(timestampA);
+                        });
+                        
+                        const doc = docs[0]; // El más reciente
+                        const data = doc.data();
+                        console.log(`📊 Datos ${tipo} encontrados (más reciente):`, data);
+                        console.log(`📅 Timestamp del registro seleccionado:`, data.timestamp);
+                        
+                        // Convertir productos a objeto para fácil acceso
+                        const datosProductos = {};
+                        if (data.productos && Array.isArray(data.productos)) {
+                            data.productos.forEach(producto => {
+                                // Extraer nombre del producto (sin código)
+                                const nombreCompleto = producto.nombre;
+                                const partes = nombreCompleto.split(' - ');
+                                const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                                datosProductos[nombre] = producto.cantidad || 0;
+                            });
+                        }
+                        
+                        if (tipo === 'Ingreso de Mercadería') {
+                            setDatosIngreso(datosProductos);
+                            console.log('Datos de ingreso cargados:', datosProductos);
+                        } else if (tipo === 'Stock Final') {
+                            setDatosStock(datosProductos);
+                            console.log('Datos de stock cargados:', datosProductos);
+                        }
+                        return true; // Hay datos existentes
+                    } else {
+                        console.log(`📊 No hay datos ${tipo} para la fecha ${fechaString}`);
+                        if (tipo === 'Ingreso de Mercadería') {
+                            setDatosIngreso({});
+                        } else if (tipo === 'Stock Final') {
+                            setDatosStock({});
+                        }
+                        return false; // No hay datos
+                    }
+                } catch (error) {
+                    console.error(`Error cargando datos ${tipo}:`, error);
+                    return false;
+                } finally {
+                    setCargandoDatos(false);
+                }
+            };
+
+
+            const navegarA = async (ruta) => {
+                console.log(`Navegando a ${ruta}`);
+                if (ruta === 'Ingreso de Mercadería') {
+                    setPantallaActual('ingreso');
+                    await cargarDatosExistentes('Ingreso de Mercadería');
+                } else if (ruta === 'Stock Final') {
+                    setPantallaActual('stock');
+                    await cargarDatosExistentes('Stock Final');
+                } else if (ruta === 'Promedio de Ventas') {
+                    setPantallaActual('ventas');
+                } else {
+                    alert(`Funcionalidad de ${ruta} próximamente disponible`);
+                }
+            };
+
+            const volverAlMenu = () => {
+                setPantallaActual('main');
+            };
+
+            // Función para mostrar previsualización - EXACTO como CargaActivity.kt líneas 375-486
+            const mostrarPrevisualizacion = () => {
+                console.log('🔍 Mostrando previsualización...');
+                
+                // Lista completa de productos como en CargaActivity.kt
+                const todosProductos = [
+                    'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                    'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                    'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
+                    'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
+                    'BATATA - Batata', 'MEMBRIL - Membrillo',
+                    'DULCES - Dulces', 'CHIPA - Chipa'
+                ];
+                
+                // Crear mensaje de previsualización - EXACTO como APK
+                let mensaje = `📋 PREVISUALIZACIÓN DE ${pantallaActual === 'stock' ? 'STOCK FINAL' : 'INGRESO DE MERCADERÍA'}\n\n`;
+                mensaje += `📅 Fecha: ${formatearFecha(fechaSeleccionada)}\n`;
+                mensaje += `🏪 Local: ${usuario.localNombre}\n\n`;
+                
+                // Mostrar TODOS los productos con sus cantidades (incluso 0)
+                mensaje += `📦 PRODUCTOS:\n`;
+                let totalUnidades = 0;
+                let productosConCantidad = 0;
+                
+                todosProductos.forEach(producto => {
+                    const [codigo, nombre] = producto.split(' - ');
+                    
+                    // Leer valor actual del input
+                    const input = document.querySelector(`input[data-nombre="${nombre}"]`);
+                    const cantidad = input ? parseInt(input.value) || 0 : 0;
+                    
+                    mensaje += `• ${codigo} - ${nombre}: ${cantidad}\n`;
+                    
+                    if (cantidad > 0) {
+                        productosConCantidad++;
+                        totalUnidades += cantidad;
+                    }
+                });
+                
+                // Resumen completo
+                mensaje += `\n📊 RESUMEN:\n`;
+                mensaje += `• Total productos: ${todosProductos.length}\n`;
+                mensaje += `• Productos con cantidad: ${productosConCantidad}\n`;
+                mensaje += `• Productos sin cantidad: ${todosProductos.length - productosConCantidad}\n`;
+                mensaje += `• Total unidades: ${totalUnidades}\n\n`;
+                
+                mensaje += `¿Deseas guardar estos datos?`;
+                
+                if (confirm(mensaje)) {
+                    guardarDatos();
+                }
+            };
+
+            // Función para guardar datos - EXACTO como CargaActivity.kt líneas 487-520
+            const guardarDatos = async () => {
+                try {
+                    console.log('💾 Guardando datos...');
+                    
+                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    const tipo = pantallaActual === 'stock' ? 'Stock Final' : 'Ingreso de Mercadería';
+                    
+                    // Leer valores actuales de los inputs
+                    const productos = [];
+                    const todosProductos = [
+                        'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                        'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                        'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
+                        'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
+                        'BATATA - Batata', 'MEMBRIL - Membrillo',
+                        'DULCES - Dulces', 'CHIPA - Chipa'
+                    ];
+                    
+                    // Leer valores directamente de los inputs del DOM
+                    todosProductos.forEach(producto => {
+                        const [codigo, nombre] = producto.split(' - ');
+                        
+                        // Buscar el input correspondiente en el DOM
+                        const input = document.querySelector(`input[data-nombre="${nombre}"]`);
+                        const cantidad = input ? parseInt(input.value) || 0 : 0;
+                        
+                        console.log(`📝 ${codigo} - ${nombre}: ${cantidad} (desde input)`);
+                        
+                        productos.push({
+                            codigo,
+                            nombre: producto, // Nombre completo con código
+                            cantidad: cantidad
+                        });
+                    });
+                    
+                    // Crear documento para Firebase - MISMO FORMATO QUE APK
+                    const documento = {
+                        fecha: fechaString,
+                        tipo: tipo,
+                        productos: productos,
+                        timestamp: new Date().toISOString(),
+                        usuario: usuario.usuario || 'admin',
+                        localId: usuario.localId
+                    };
+                    
+                    console.log('📄 Documento a guardar:', documento);
+                    
+                    // ID descriptivo como la APK: fecha_tipo
+                    const idDocumento = `${fechaString}_${tipo.replace(/\s+/g, '_')}`;
+                    console.log('🆔 ID del documento:', idDocumento);
+                    
+                    // Guardar en Firebase con ID descriptivo
+                    await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .doc(idDocumento)
+                        .set(documento);
+                    
+                    console.log('✅ Datos guardados exitosamente');
+                    alert(`✅ ${tipo} guardado exitosamente para ${fechaString}`);
+                    
+                    // Actualizar estados de botones
+                    if (tipo === 'Ingreso de Mercadería') {
+                        setTieneIngreso(true);
+                    } else if (tipo === 'Stock Final') {
+                        setTieneStock(true);
+                    }
+                    
+                    // Volver al menú principal
+                    volverAlMenu();
+                    
+                } catch (error) {
+                    console.error('❌ Error guardando datos:', error);
+                    alert(`❌ Error guardando datos: ${error.message}`);
+                }
+            };
+
+            // Mostrar pantalla de gestión de locales si está seleccionada
+            if (pantallaActual === 'gestion-locales') {
+                return <GestionLocales onVolver={volverAlMenu} onLoginSuccess={onLoginSuccess} />;
+            }
+
+            // Mostrar pantalla de promedios si está seleccionada
+            if (pantallaActual === 'ventas') {
+                return <PromedioVentas onVolver={volverAlMenu} usuario={usuario} />;
+            }
+
+            // Mostrar pantalla de stock si está seleccionada
+            if (pantallaActual === 'stock') {
+            return (
+                    <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '16px'}}>
+                        {/* Header con botón volver */}
+                        <div className="flex justify-between items-center mb-4">
+                                    <button
+                                onClick={volverAlMenu}
+                                className="text-2xl font-bold text-black"
+                                    >
+                                ← Volver
+                                    </button>
+                            <h1 className="text-xl font-bold text-black">Stock Final</h1>
+                            <div></div>
+                                    </div>
+
+                        {/* Información de fecha */}
+                        <div 
+                            className="w-full mb-4 p-3 rounded-lg"
+                            style={{
+                                backgroundColor: '#F5F5F5',
+                                padding: '12px',
+                                borderRadius: '8px'
+                            }}
+                        >
+                            <div 
+                                className="text-lg font-bold text-black mb-1"
+                                style={{color: '#3700B3'}}
+                            >
+                                Stock Final
+                            </div>
+                            <div 
+                                className="text-sm"
+                                style={{color: '#6200EE'}}
+                            >
+                                {formatearFecha(fechaSeleccionada)}
+                                    </div>
+                                </div>
+                                
+                        {/* Lista de productos */}
+                        <div className="bg-white rounded-lg mb-4 p-4">
+                            <h2 className="text-lg font-semibold mb-4 text-black">
+                                Productos en Stock
+                                {cargandoDatos && <span className="text-sm text-gray-500 ml-2">(Cargando datos...)</span>}
+                                        </h2>
+                            
+                            {/* EMPANADAS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#FF6B6B',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🥟 EMPANADAS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        12 productos
+                                    </span>
+                                    </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                                        'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                                        'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                    </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                                    </div>
+                                                </div>
+                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                    </div>
+                                </div>
+                                
+                            {/* PIZZAS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#4CAF50',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🍕 PIZZAS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        3 productos
+                                    </span>
+                                        </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                        </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                    </div>
+                                                </div>
+                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+
+                            {/* PASTELITOS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#FF9800',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🥧 PASTELITOS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        2 productos
+                                    </span>
+                                        </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'BATATA - Batata', 'MEMBRIL - Membrillo'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                        </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                    </div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* OTROS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#9C27B0',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🍬 OTROS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        2 productos
+                                    </span>
+                                </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'DULCES - Dulces', 'CHIPA - Chipa'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                                    </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                                    </div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botón guardar */}
+                                    <button
+                            onClick={mostrarPrevisualizacion}
+                            className="w-full text-black font-bold text-base py-3 rounded-lg"
+                            style={{
+                                backgroundColor: '#FFD700',
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: '1px solid #B8860B'
+                            }}
+                        >
+                            👁️ Previsualizar y Guardar
+                                    </button>
+                                </div>
+                );
+            }
+
+            // Mostrar pantalla de ingreso si está seleccionada
+            if (pantallaActual === 'ingreso') {
+                return (
+                    <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '16px'}}>
+                        {/* Header con botón volver */}
+                        <div className="flex justify-between items-center mb-4">
+                            <button 
+                                onClick={volverAlMenu}
+                                className="text-2xl font-bold text-black"
+                            >
+                                ← Volver
+                            </button>
+                            <h1 className="text-xl font-bold text-black">Ingreso de Mercadería</h1>
+                            <div></div>
+                            </div>
+
+                        {/* Información de fecha */}
+                        <div 
+                            className="w-full mb-4 p-3 rounded-lg"
+                            style={{
+                                backgroundColor: '#F5F5F5',
+                                padding: '12px',
+                                borderRadius: '8px'
+                            }}
+                        >
+                            <div 
+                                className="text-lg font-bold text-black mb-1"
+                                style={{color: '#3700B3'}}
+                            >
+                                Ingreso de Mercadería
+                                        </div>
+                            <div 
+                                className="text-sm"
+                                style={{color: '#6200EE'}}
+                            >
+                                {formatearFecha(fechaSeleccionada)}
+                        </div>
+                    </div>
+
+                        {/* Lista de productos */}
+                        <div className="bg-white rounded-lg mb-4 p-4">
+                            <h2 className="text-lg font-semibold mb-4 text-black">
+                                Productos a Ingresar
+                                {cargandoDatos && <span className="text-sm text-gray-500 ml-2">(Cargando datos...)</span>}
+                                        </h2>
+                            
+                            {/* EMPANADAS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#FF6B6B',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🥟 EMPANADAS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        12 productos
+                                    </span>
+                                </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                                        'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                                        'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                                    </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                                    </div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                    </div>
+                                </div>
+                                
+                            {/* PIZZAS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#4CAF50',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🍕 PIZZAS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        3 productos
+                                    </span>
+                                        </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                        </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                    </div>
+                                                </div>
+                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+
+                            {/* PASTELITOS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#FF9800',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🥧 PASTELITOS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        2 productos
+                                    </span>
+                                        </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'BATATA - Batata', 'MEMBRIL - Membrillo'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                        </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                                    </div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+
+                            {/* OTROS */}
+                            <div className="mb-4">
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2"
+                                    style={{
+                                        backgroundColor: '#9C27B0',
+                                        borderRadius: '8px'
+                                    }}
+                                >
+                                    <span className="text-lg">🍬 OTROS</span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        2 productos
+                                    </span>
+                                </div>
+                                
+                                <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
+                                    {[
+                                        'DULCES - Dulces', 'CHIPA - Chipa'
+                                    ].map((producto, index) => {
+                                        const [codigo, nombre] = producto.split(' - ');
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex items-center justify-between p-3 mb-2 rounded"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '6px'
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold" style={{color: '#3700B3'}}>
+                                                        {codigo}
+                                </div>
+                                                    <div className="text-base text-black mt-1">
+                                                        {nombre}
+                            </div>
+                        </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-20 h-10 text-center font-bold rounded"
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #E0E0E0',
+                                                        color: '#3700B3',
+                                                        fontSize: '16px'
+                                                    }}
+                                                    placeholder="0"
+                                                    value={pantallaActual === 'stock' ? (datosStock[nombre] || 0) : (datosIngreso[nombre] || 0)}
+                                                    onChange={(e) => {
+                                                        const valor = parseInt(e.target.value) || 0;
+                                                        if (pantallaActual === 'stock') {
+                                                            setDatosStock(prev => ({...prev, [nombre]: valor}));
+                                                        } else {
+                                                            setDatosIngreso(prev => ({...prev, [nombre]: valor}));
+                                                        }
+                                                    }}
+                                                    data-nombre={nombre}
+                                                />
+                    </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botón guardar */}
+                                    <button
+                            onClick={mostrarPrevisualizacion}
+                            className="w-full text-black font-bold text-base py-3 rounded-lg"
+                            style={{
+                                backgroundColor: '#FFD700',
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: '1px solid #B8860B'
+                            }}
+                        >
+                            👁️ Previsualizar y Guardar
+                                    </button>
+                                </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '20px'}}>
+                    {/* Header con botón volver */}
+                    <div className="flex justify-between items-center mb-4">
+                        <button 
+                            onClick={() => {
+                                // Detectar si vino de GestionLocales
+                                if (usuario.id && usuario.id.startsWith('temp_')) {
+                                    // Vino de GestionLocales, volver ahí
+                                    if (onVolverGestion) {
+                                        onVolverGestion();
+                                    } else {
+                                        // Fallback: ir a login
+                                        onLogout();
+                                    }
+                                } else {
+                                    // Vino del login normal, hacer logout
+                                    onLogout();
+                                }
+                            }}
+                            className="px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                            style={{
+                                backgroundColor: '#2196F3',
+                                border: '1px solid #1976D2',
+                                borderRadius: '8px',
+                                fontSize: '16px'
+                            }}
+                        >
+                            ← Volver
+                        </button>
+                        <h1 className="text-xl font-bold text-black">Menú Principal</h1>
+                        <div></div>
+                            </div>
+
+                    {/* Header del Local */}
+                    <div 
+                        className="w-full mb-5 text-center text-lg font-bold text-white"
+                        style={{
+                            backgroundColor: '#FFD700',
+                            padding: '16px',
+                            borderRadius: '12px'
+                        }}
+                    >
+                        🏪 {usuario.localNombre}
+                                        </div>
+
+                    {/* Selector de Fecha */}
+                    <div 
+                        className="w-full mb-8 flex items-center justify-between"
+                        style={{
+                            backgroundColor: '#F5F5F5',
+                            padding: '16px',
+                            borderRadius: '12px'
+                        }}
+                    >
+                        <button 
+                            className="text-2xl font-bold text-black px-3 py-3"
+                            onClick={() => {
+                                const nuevaFecha = new Date(fechaSeleccionada);
+                                nuevaFecha.setDate(nuevaFecha.getDate() - 1);
+                                setFechaSeleccionada(nuevaFecha);
+                            }}
+                        >
+                            ◀
+                        </button>
+                        
+                        <div 
+                            className="flex-1 text-center text-lg font-bold text-black cursor-pointer"
+                            onClick={mostrarCalendarioPersonalizado}
+                        >
+                            {fechaSeleccionada.toLocaleDateString('es-ES', { 
+                                weekday: 'long', 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                year: '2-digit' 
+                            })}
+                                        </div>
+                        
+                        <button 
+                            className="text-2xl font-bold text-black px-3 py-3"
+                            onClick={() => {
+                                const nuevaFecha = new Date(fechaSeleccionada);
+                                nuevaFecha.setDate(nuevaFecha.getDate() + 1);
+                                setFechaSeleccionada(nuevaFecha);
+                            }}
+                        >
+                            ▶
+                        </button>
+                        
+                        <svg className="w-6 h-6 text-black ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                    </div>
+
+                    {/* Botones */}
+                    <div className="space-y-5">
+                        <button
+                            onClick={() => navegarA('Ingreso de Mercadería')}
+                            className="w-full font-bold text-base"
+                            style={{
+                                backgroundColor: tieneIngreso ? '#4CAF50' : (esFechaActual(fechaSeleccionada) ? '#FFD700' : '#FF9800'),
+                                color: tieneIngreso ? '#FFFFFF' : (esFechaActual(fechaSeleccionada) ? '#000000' : '#FFFFFF'),
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: tieneIngreso ? '1px solid #388E3C' : (esFechaActual(fechaSeleccionada) ? '1px solid #B8860B' : '1px solid #F57C00')
+                            }}
+                        >
+                            {tieneIngreso ? '✅ Ingreso de Mercadería' : 'Ingreso de Mercadería'}
+                        </button>
+
+                                    <button
+                                        onClick={() => navegarA('Stock Final')}
+                            className="w-full font-bold text-base"
+                            style={{
+                                backgroundColor: tieneStock ? '#4CAF50' : (esFechaActual(fechaSeleccionada) ? '#FFD700' : '#FF9800'),
+                                color: tieneStock ? '#FFFFFF' : (esFechaActual(fechaSeleccionada) ? '#000000' : '#FFFFFF'),
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: tieneStock ? '1px solid #388E3C' : (esFechaActual(fechaSeleccionada) ? '1px solid #B8860B' : '1px solid #F57C00')
+                            }}
+                        >
+                            {tieneStock ? '✅ Stock Final' : 'Stock Final'}
+                        </button>
+
+                        <button
+                            onClick={() => navegarA('Promedio de Ventas')}
+                            className="w-full text-black font-bold text-base"
+                            style={{
+                                backgroundColor: '#FFD700',
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: '1px solid #B8860B'
+                            }}
+                        >
+                            Promedio de Ventas
+                                    </button>
+                                </div>
+
+                    {/* Enlace de descarga de la app Android */}
+                    <div className="mt-6 text-center">
+                        <a
+                            href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                            style={{
+                                backgroundColor: '#4CAF50',
+                                border: '1px solid #388E3C',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                textDecoration: 'none'
+                            }}
+                        >
+                            📱 Descargar App Android
+                        </a>
+                    </div>
+
+                    {/* Modal del Calendario Personalizado - EXACTO como MainActivity.kt */}
+                    {mostrarCalendario && (
+                        <CalendarioPersonalizado 
+                            fechaSeleccionada={fechaSeleccionada}
+                            setFechaSeleccionada={setFechaSeleccionada}
+                            onCerrar={() => setMostrarCalendario(false)}
+                            fechasCompletas={fechasCompletas}
+                            fechasParciales={fechasParciales}
+                            cargando={cargandoCalendario}
+                        />
+                    )}
+                                        </div>
+            );
+        }
+
+        // Componente de Promedio de Ventas - EXACTO como PromedioVentasActivity.kt
+        const PromedioVentas = ({ onVolver, usuario }) => {
+            const [promedios, setPromedios] = useState({});
+            const [cargando, setCargando] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                calcularPromedios();
+            }, []);
+
+            const calcularPromedios = async () => {
+                try {
+                    setCargando(true);
+                    console.log('🔍 Calculando promedios de ventas...');
+                    
+                    // Obtener todos los registros del local
+                    const snapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .get();
+                    
+                    const registros = [];
+                    snapshot.forEach(doc => {
+                        registros.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    console.log(`📊 Registros encontrados: ${registros.length}`);
+                    console.log('📋 Registros:', registros);
+                    
+                    if (registros.length === 0) {
+                        setError('No hay datos para calcular promedios');
+                        setCargando(false);
+                        return;
+                    }
+                    
+                    // Calcular promedios por día de la semana
+                    const promediosCalculados = calcularPromediosPorDia(registros);
+                    setPromedios(promediosCalculados);
+                    console.log('✅ Promedios calculados:', promediosCalculados);
+                    
+                } catch (error) {
+                    console.error('❌ Error calculando promedios:', error);
+                    setError('Error calculando promedios: ' + error.message);
+                } finally {
+                    setCargando(false);
+                }
+            };
+
+            const calcularPromediosPorDia = (registros) => {
+                console.log('🔄 calcularPromediosPorDia iniciado con registros:', registros.length);
+                
+                // Orden EXACTO como en la tabla: ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
+                const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+                const promediosPorDia = {};
+                
+                // Inicializar estructura
+                diasSemana.forEach(dia => {
+                    promediosPorDia[dia] = {};
+                });
+
+                // Agrupar registros por fecha
+                const registrosPorFecha = {};
+                
+                registros.forEach(registro => {
+                    const fecha = registro.fecha;
+                    if (!registrosPorFecha[fecha]) {
+                        registrosPorFecha[fecha] = { ingreso: null, stock: null };
+                    }
+                    
+                    if (registro.tipo === 'Ingreso de Mercadería') {
+                        registrosPorFecha[fecha].ingreso = registro;
+                    } else if (registro.tipo === 'Stock Final') {
+                        registrosPorFecha[fecha].stock = registro;
+                    }
+                });
+
+                console.log('📅 Registros agrupados por fecha:', registrosPorFecha);
+
+                // Ordenar fechas para poder calcular stock del día anterior
+                const fechasOrdenadas = Object.keys(registrosPorFecha).sort();
+                console.log('📅 Fechas ordenadas:', fechasOrdenadas);
+
+                // Calcular ventas por día usando la fórmula correcta:
+                // Ventas = (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
+                const ventasPorDia = {};
+                
+                // Inicializar todos los días de la semana
+                diasSemana.forEach(dia => {
+                    ventasPorDia[dia] = [];
+                });
+                
+                for (let i = 1; i < fechasOrdenadas.length; i++) { // Empezar desde el segundo día
+                    const fechaActual = fechasOrdenadas[i];
+                    const fechaAnterior = fechasOrdenadas[i - 1];
+                    
+                    const registrosActual = registrosPorFecha[fechaActual];
+                    const registrosAnterior = registrosPorFecha[fechaAnterior];
+                    
+                    // Solo calcular si tenemos todos los datos necesarios
+                    if (registrosActual.ingreso && registrosActual.stock && registrosAnterior.stock) {
+                        const diaSemana = obtenerDiaSemana(fechaActual);
+                        
+                        // Calcular ventas: (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
+                        const ventasDia = calcularVentasConFormulaCorrecta(
+                            registrosAnterior.stock,  // Stock Final día anterior
+                            registrosActual.ingreso,  // Ingreso de Mercadería
+                            registrosActual.stock     // Stock Final de hoy
+                        );
+                        
+                        console.log(`💰 Ventas del ${diaSemana} (${fechaActual}):`, ventasDia);
+                        console.log(`   Stock anterior (${fechaAnterior}):`, registrosAnterior.stock);
+                        console.log(`   Ingreso (${fechaActual}):`, registrosActual.ingreso);
+                        console.log(`   Stock actual (${fechaActual}):`, registrosActual.stock);
+                        
+                        if (ventasDia && Object.keys(ventasDia).length > 0) {
+                            ventasPorDia[diaSemana].push(ventasDia);
+                        }
+                    }
+                }
+                
+                // También calcular ventas para días que no tienen día anterior (primer día)
+                // En este caso, asumimos que el stock anterior es 0
+                fechasOrdenadas.forEach(fecha => {
+                    const registrosDia = registrosPorFecha[fecha];
+                    const diaSemana = obtenerDiaSemana(fecha);
+                    
+                    // Solo si no se calculó ya para este día
+                    if (registrosDia.ingreso && registrosDia.stock && ventasPorDia[diaSemana].length === 0) {
+                        // Crear un registro de stock anterior con valores 0
+                        const stockAnteriorCero = {
+                            productos: registrosDia.stock.productos.map(p => ({ ...p, cantidad: 0 }))
+                        };
+                        
+                        const ventasDia = calcularVentasConFormulaCorrecta(
+                            stockAnteriorCero,        // Stock anterior = 0
+                            registrosDia.ingreso,     // Ingreso de Mercadería
+                            registrosDia.stock        // Stock Final de hoy
+                        );
+                        
+                        console.log(`💰 Ventas del ${diaSemana} (${fecha}) - Primer día:`, ventasDia);
+                        
+                        if (ventasDia && Object.keys(ventasDia).length > 0) {
+                            ventasPorDia[diaSemana].push(ventasDia);
+                        }
+                    }
+                });
+
+                console.log('📊 Ventas por día de la semana:', ventasPorDia);
+                console.log('📊 Ventas LUNES:', ventasPorDia['LUNES']);
+                console.log('📊 Ventas MARTES:', ventasPorDia['MARTES']);
+                console.log('📊 Ventas MIERCOLES:', ventasPorDia['MIERCOLES']);
+                console.log('📊 Ventas JUEVES:', ventasPorDia['JUEVES']);
+                console.log('📊 Ventas VIERNES:', ventasPorDia['VIERNES']);
+                console.log('📊 Ventas SABADO:', ventasPorDia['SABADO']);
+                console.log('📊 Ventas DOMINGO:', ventasPorDia['DOMINGO']);
+
+                // Calcular promedios para todos los días de la semana
+                diasSemana.forEach(dia => {
+                    const ventasDelDia = ventasPorDia[dia];
+                    if (ventasDelDia.length > 0) {
+                        // Obtener todos los productos únicos de todas las ventas de este día
+                        const todosProductos = new Set();
+                        ventasDelDia.forEach(venta => {
+                            Object.keys(venta).forEach(producto => todosProductos.add(producto));
+                        });
+                        
+                        // Calcular promedio para cada producto
+                        todosProductos.forEach(producto => {
+                            const suma = ventasDelDia.reduce((acc, venta) => acc + (venta[producto] || 0), 0);
+                            const promedio = suma / ventasDelDia.length;
+                            promediosPorDia[dia][producto] = Math.round(promedio * 10) / 10; // Redondear a 1 decimal
+                        });
+                        
+                            console.log(`📊 Promedios calculados para ${dia}:`, promediosPorDia[dia]);
+                            if (dia === 'LUNES') {
+                                console.log('🔍 LUNES - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'MARTES') {
+                                console.log('🔍 MARTES - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'MIERCOLES') {
+                                console.log('🔍 MIERCOLES - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'JUEVES') {
+                                console.log('🔍 JUEVES - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'VIERNES') {
+                                console.log('🔍 VIERNES - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'SABADO') {
+                                console.log('🔍 SABADO - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                            if (dia === 'DOMINGO') {
+                                console.log('🔍 DOMINGO - Promedios individuales:', promediosPorDia[dia]);
+                            }
+                    } else {
+                        console.log(`⚠️ No hay datos para ${dia}`);
+                    }
+                });
+
+                console.log('✅ Promedios finales calculados:', promediosPorDia);
+                return promediosPorDia;
+            };
+
+            const obtenerDiaSemana = (fecha) => {
+                const date = new Date(fecha);
+                const diaIndex = date.getDay();
+                
+                // Mapeo CORREGIDO según los datos reales
+                // Los datos muestran que:
+                // - 2409 es SÁBADO (debería estar en índice 5)
+                // - 1092 es DOMINGO (debería estar en índice 6)
+                // - 1609 es LUNES (debería estar en índice 0)
+                const mapeoDias = {
+                    0: 'LUNES',    // JavaScript Sunday (0) -> LUNES (índice 0)
+                    1: 'MARTES',   // JavaScript Monday (1) -> MARTES (índice 1)
+                    2: 'MIERCOLES', // JavaScript Tuesday (2) -> MIERCOLES (índice 2)
+                    3: 'JUEVES',   // JavaScript Wednesday (3) -> JUEVES (índice 3)
+                    4: 'VIERNES',  // JavaScript Thursday (4) -> VIERNES (índice 4)
+                    5: 'SABADO',   // JavaScript Friday (5) -> SABADO (índice 5)
+                    6: 'DOMINGO'   // JavaScript Saturday (6) -> DOMINGO (índice 6)
+                };
+                
+                const diaResultado = mapeoDias[diaIndex];
+                console.log(`🗓️ Fecha: ${fecha}, getDay(): ${diaIndex}, Mapeado a: ${diaResultado}`);
+                return diaResultado;
+            };
+
+            const calcularVentasConFormulaCorrecta = (stockAnterior, ingresoActual, stockActual) => {
+                // Fórmula correcta: Ventas = (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
+                const ventas = {};
+                
+                if (!stockAnterior.productos || !ingresoActual.productos || !stockActual.productos) {
+                    return ventas;
+                }
+                
+                // Crear mapas de productos para fácil acceso
+                const stockAnteriorMap = {};
+                const ingresoMap = {};
+                const stockActualMap = {};
+                
+                stockAnterior.productos.forEach(producto => {
+                    const nombreCompleto = producto.nombre;
+                    const partes = nombreCompleto.split(' - ');
+                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                    stockAnteriorMap[nombre] = producto.cantidad || 0;
+                });
+                
+                ingresoActual.productos.forEach(producto => {
+                    const nombreCompleto = producto.nombre;
+                    const partes = nombreCompleto.split(' - ');
+                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                    ingresoMap[nombre] = producto.cantidad || 0;
+                });
+                
+                stockActual.productos.forEach(producto => {
+                    const nombreCompleto = producto.nombre;
+                    const partes = nombreCompleto.split(' - ');
+                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                    stockActualMap[nombre] = producto.cantidad || 0;
+                });
+                
+                // Calcular ventas para cada producto usando la fórmula correcta
+                const todosProductos = new Set([
+                    ...Object.keys(stockAnteriorMap), 
+                    ...Object.keys(ingresoMap), 
+                    ...Object.keys(stockActualMap)
+                ]);
+                
+                todosProductos.forEach(producto => {
+                    const stockAnt = stockAnteriorMap[producto] || 0;
+                    const ingreso = ingresoMap[producto] || 0;
+                    const stockAct = stockActualMap[producto] || 0;
+                    
+                    // Fórmula: (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
+                    const venta = (stockAnt + ingreso) - stockAct;
+                    
+                    // Solo incluir si hay venta positiva
+                    if (venta > 0) {
+                        ventas[producto] = venta;
+                    }
+                });
+                
+                return ventas;
+            };
+
+            const procesarProductos = (productos) => {
+                const ventas = {};
+                if (Array.isArray(productos)) {
+                    productos.forEach(producto => {
+                        const nombreCompleto = producto.nombre;
+                        const partes = nombreCompleto.split(' - ');
+                        const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                        ventas[nombre] = producto.cantidad || 0;
+                    });
+                }
+                return ventas;
+            };
+
+            const diasSemana = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+            const diasCompletos = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+            
+            const productosPorCategoria = {
+                'EMPANADAS': [
+                    'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                    'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                    'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger'
+                ],
+                'PIZZAS': ['MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni'],
+                'PASTELITOS': ['BATATA - Batata', 'MEMBRIL - Membrillo'],
+                'OTROS': ['DULCES - Dulces', 'CHIPA - Chipa']
+            };
+
+            if (cargando) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#E0E0E0'}}>
+                        <div className="text-center">
+                            <div className="text-2xl mb-4">📊</div>
+                            <div className="text-lg font-bold text-black">Calculando promedios...</div>
+                                        </div>
+                                    </div>
+                );
+            }
+
+            if (error) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#E0E0E0'}}>
+                        <div className="text-center">
+                            <div className="text-2xl mb-4">❌</div>
+                            <div className="text-lg font-bold text-red-600 mb-4">{error}</div>
+                                    <button
+                                onClick={onVolver}
+                                className="px-4 py-2 bg-blue-500 text-white rounded"
+                                    >
+                                Volver
+                                    </button>
+                                </div>
+                            </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
+                    {/* Header con botón volver */}
+                    <div className="flex justify-between items-center mb-4">
+                        <button 
+                            onClick={onVolver}
+                            className="text-2xl font-bold text-black"
+                        >
+                            ← Volver
+                        </button>
+                        <h1 className="text-xl font-bold text-black">Promedio de Ventas</h1>
+                        <div></div>
+                        </div>
+
+                    {/* Tabla de promedios - EXACTO como PromedioVentasActivity.kt */}
+                    <div className="bg-white rounded-lg p-4" style={{minHeight: 'calc(100vh - 200px)'}}>
+                        {/* Indicador de local - EXACTO como línea 273-280 */}
+                        <div 
+                            className="text-center p-2 mb-4"
+                            style={{color: '#2196F3', fontSize: '16px', fontWeight: 'bold'}}
+                        >
+                            LOCAL: {usuario.localNombre}
+                                </div>
+                        
+                        {/* Título principal - EXACTO como línea 284-291 */}
+                        <div 
+                            className="text-center p-4 mb-4"
+                            style={{color: '#4CAF50', fontSize: '24px', fontWeight: 'bold'}}
+                        >
+                            PROMEDIO DE VENTA POR DÍA
+                                </div>
+                            
+                        {/* Header de la tabla - EXACTO como línea 305-331 */}
+                        <div 
+                            className="flex p-2 text-white text-xs font-bold mb-2"
+                            style={{
+                                backgroundColor: '#2196F3',
+                                border: '1px solid #1976D2',
+                                borderRadius: '4px 4px 0 0'
+                            }}
+                        >
+                            <div className="p-1 border-r border-blue-300" style={{flex: '1.2'}}>TIPO</div>
+                            {diasSemana.map((dia, index) => (
+                                <div 
+                                    key={dia} 
+                                    className={`p-1 text-center ${index < diasSemana.length - 1 ? 'border-r border-blue-300' : ''}`} 
+                                    style={{flex: '0.8'}}
+                                >
+                                    {dia}
+                            </div>
+                            ))}
+                        </div>
+
+                        {/* Productos por categoría con iconos y separaciones */}
+                        {Object.entries(productosPorCategoria).map(([categoria, productos]) => (
+                            <div key={categoria}>
+                                {/* Header de categoría con icono - EXACTO como Ingreso de Mercadería */}
+                                <div 
+                                    className="flex items-center justify-between p-3 text-white font-bold mb-2 mt-4"
+                                    style={{
+                                        backgroundColor: categoria === 'EMPANADAS' ? '#FF6B6B' : 
+                                                       categoria === 'PIZZAS' ? '#4CAF50' : 
+                                                       categoria === 'PASTELITOS' ? '#FF9800' : '#9C27B0',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    <span className="text-lg">
+                                        {categoria === 'EMPANADAS' ? '🥟' : 
+                                         categoria === 'PIZZAS' ? '🍕' : 
+                                         categoria === 'PASTELITOS' ? '🥧' : '🍬'} {categoria}
+                                    </span>
+                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                        {productos.length} productos
+                                    </span>
+                    </div>
+
+                                {/* Productos de la categoría */}
+                                <div className="mb-4" style={{backgroundColor: '#F8F9FA', borderRadius: '8px', padding: '8px'}}>
+                                    {productos.map((producto, index) => {
+                                        const nombre = producto.split(' - ')[1] || producto;
+                                        return (
+                                            <div 
+                                                key={producto} 
+                                                className="flex text-xs mb-1"
+                                                style={{
+                                                    backgroundColor: 'white',
+                                                    border: '1px solid #E0E0E0',
+                                                    borderRadius: '4px',
+                                                    margin: '2px'
+                                                }}
+                                            >
+                                                <div 
+                                                    className="p-2 text-left text-black border-r border-gray-300" 
+                                                    style={{flex: '1.2'}}
+                                                >
+                                                    {nombre}
+                </div>
+                                                {diasCompletos.map((diaCompleto, diaIndex) => {
+                                                    const valor = promedios[diaCompleto]?.[nombre] || 0;
+                                                    
+                                                    // Log para debug
+                                                    if (nombre === 'Jamón y Queso' && valor > 0) {
+                                                        console.log(`🔍 ${nombre} - ${diaCompleto} (índice ${diaIndex}): ${valor}`);
+                                                    }
+                                                    
+                                                    return (
+                                                        <div 
+                                                            key={diaCompleto} 
+                                                            className={`p-2 text-center text-black ${diaIndex < diasCompletos.length - 1 ? 'border-r border-gray-300' : ''}`} 
+                                                            style={{flex: '0.8'}}
+                                                        >
+                                                            {valor > 0 ? valor : '-'}
+                </div>
+            );
+                                                })}
+                                            </div>
+                                        );
+                                    })}
+                                    
+                                    {/* Total de empanadas - EXACTO como línea 345-388 */}
+                                    {categoria === 'EMPANADAS' && (
+                                        <div 
+                                            className="flex p-2 text-white text-xs font-bold mt-2"
+                                            style={{
+                                                backgroundColor: '#4CAF50',
+                                                border: '1px solid #388E3C',
+                                                borderRadius: '4px'
+                                            }}
+                                        >
+                                            <div className="p-2 border-r border-green-300" style={{flex: '1.2'}}>TOTAL</div>
+                                            {diasCompletos.map((diaCompleto, index) => {
+                                                const totalDia = productos.reduce((acc, producto) => {
+                                                    const nombre = producto.split(' - ')[1] || producto;
+                                                    return acc + (promedios[diaCompleto]?.[nombre] || 0);
+                                                }, 0);
+                                                
+                                                // Log para debug del total
+                                                console.log(`🔍 TOTAL ${diaCompleto} (índice ${index}): ${totalDia}`);
+                                                
+                                                return (
+                                                    <div 
+                                                        key={diaCompleto} 
+                                                        className={`p-2 text-center ${index < diasCompletos.length - 1 ? 'border-r border-green-300' : ''}`} 
+                                                        style={{flex: '0.8'}}
+                                                    >
+                                                        {totalDia > 0 ? Math.round(totalDia) : '-'}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // App Component
+        function App() {
+            const [usuario, setUsuario] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [vistaActual, setVistaActual] = useState('login');
+
+            useEffect(() => {
+                // Verificar si hay usuario guardado
+                const usuarioGuardado = localStorage.getItem('usuario');
+                if (usuarioGuardado) {
+                    setUsuario(JSON.parse(usuarioGuardado));
+                    setVistaActual('main');
+                }
+                setLoading(false);
+            }, []);
+
+            // Manejar navegación por hash
+            useEffect(() => {
+                const handleHashChange = () => {
+                    const hash = window.location.hash;
+                    console.log('🔗 Hash cambiado:', hash, 'Usuario:', usuario, 'VistaActual:', vistaActual);
+                    
+                    // Manejar navegación por hash
+                    if (hash === '#gestion-locales') {
+                        setVistaActual('gestion-locales');
+                    } else if (hash === '#main' || (usuario && vistaActual === 'main')) {
+                        setVistaActual('main');
+                    } else if (!usuario && hash === '') {
+                        setVistaActual('login');
+                    }
+                };
+
+                window.addEventListener('hashchange', handleHashChange);
+                handleHashChange(); // Ejecutar al cargar
+
+                return () => window.removeEventListener('hashchange', handleHashChange);
+            }, [usuario, vistaActual]);
+
+            const handleLoginSuccess = (usuarioData) => {
+                console.log('🚀 handleLoginSuccess llamado con:', usuarioData);
+                setUsuario(usuarioData);
+                setVistaActual('main');
+                // Cambiar hash para evitar conflicto con useEffect
+                window.location.hash = '#main';
+                console.log('✅ Vista establecida a main, usuario:', usuarioData);
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('usuario');
+                setUsuario(null);
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Cargando...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            console.log('🎯 App render - usuario:', usuario, 'vistaActual:', vistaActual);
+
+            if (usuario && vistaActual === 'main') {
+                console.log('✅ Renderizando Main');
+                return <Main 
+                    usuario={usuario} 
+                    onLogout={handleLogout} 
+                    onVolverGestion={() => {
+                        console.log('🔄 Volviendo a Gestión de Locales');
+                        setVistaActual('gestion-locales');
+                        window.location.hash = '#gestion-locales';
+                    }}
+                />;
+            }
+
+            if (vistaActual === 'gestion-locales') {
+                console.log('✅ Renderizando GestionLocales');
+                return <GestionLocales 
+                    onVolver={() => {
+                        console.log('🔄 Volviendo al Login');
+                        setVistaActual('login');
+                        window.location.hash = '';
+                    }} 
+                    onLoginSuccess={handleLoginSuccess}
+                />;
+            }
+
+            return <Login onLoginSuccess={handleLoginSuccess} />;
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

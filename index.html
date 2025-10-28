@@ -156,7 +156,7 @@
             };
 
             const mostrarDialogoContraseñaGestion = () => {
-                // Crear modal EXACTO como LoginActivity.kt líneas 343-408
+                // Crear modal EXACTO como LoginActivity.kt líneas 380-432
                 const modal = document.createElement('div');
                 modal.style.cssText = `
                     position: fixed;
@@ -183,31 +183,68 @@
                 
                 dialogContent.innerHTML = `
                     <div style="margin-bottom: 20px;">
-                        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #333;">
-                            🔑 Acceso a Gestión de Locales
+                        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #333; display: flex; align-items: center;">
+                            🔐 Gestión de Locales
                         </h3>
-                        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
-                            Ingresa la contraseña de administración para acceder a la gestión de locales:
+                        <p style="color: #666; margin-bottom: 8px; font-size: 14px;">
+                            Acceso administrativo
                         </p>
+                        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+                            Seleccione el usuario y ingrese la contraseña para acceder a la gestión completa de locales:
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px; position: relative;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
+                            Usuario:
+                        </label>
+                        <div style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="usuarioInput"
+                                placeholder="Seleccione un usuario"
+                                readonly
+                                style="
+                                    width: 100%;
+                                    padding: 12px 40px 12px 12px;
+                                    border: 2px solid #FFD700;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    box-sizing: border-box;
+                                    background: white;
+                                    cursor: pointer;
+                                "
+                            />
+                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #FFD700; font-size: 18px;">
+                                ▼
+                            </div>
+                        </div>
+                        <div id="usuariosDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1002; max-height: 200px; overflow-y: auto;">
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
-                            Contraseña:
+                            Contraseña de administración:
                         </label>
-                        <input 
-                            type="password" 
-                            id="passwordInput"
-                            placeholder="Ingrese la contraseña"
-                            style="
-                                width: 100%;
-                                padding: 12px;
-                                border: 1px solid #ddd;
-                                border-radius: 8px;
-                                font-size: 16px;
-                                box-sizing: border-box;
-                            "
-                        />
+                        <div style="position: relative;">
+                            <input 
+                                type="password" 
+                                id="passwordInput"
+                                placeholder="Ingrese la contraseña"
+                                style="
+                                    width: 100%;
+                                    padding: 12px 40px 12px 12px;
+                                    border: 1px solid #ddd;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    box-sizing: border-box;
+                                "
+                            />
+                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 18px;">
+                                👁️
+                            </div>
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
@@ -215,9 +252,9 @@
                             <input 
                                 type="checkbox" 
                                 id="rememberPassword"
-                                style="margin-right: 8px;"
+                                style="margin-right: 8px; accent-color: #FFD700;"
                             />
-                            Recordar contraseña
+                            Recordar contraseña en este dispositivo
                         </label>
                     </div>
                     
@@ -225,31 +262,32 @@
                         <button 
                             id="cancelBtn"
                             style="
-                                padding: 10px 20px;
-                                border: 1px solid #ddd;
-                                background: white;
-                                color: #666;
-                                border-radius: 8px;
-                                cursor: pointer;
-                                font-size: 14px;
-                            "
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            id="accessBtn"
-                            style="
-                                padding: 10px 20px;
+                                padding: 12px 24px;
                                 border: none;
-                                background: #2196F3;
+                                background: #FFD700;
                                 color: white;
                                 border-radius: 8px;
                                 cursor: pointer;
                                 font-size: 14px;
-                                font-weight: 500;
+                                font-weight: bold;
                             "
                         >
-                            Acceder
+                            CANCELAR
+                        </button>
+                        <button 
+                            id="accessBtn"
+                            style="
+                                padding: 12px 24px;
+                                border: none;
+                                background: #FFD700;
+                                color: white;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: bold;
+                            "
+                        >
+                            ACCEDER
                         </button>
                     </div>
                 `;
@@ -257,58 +295,201 @@
                 modal.appendChild(dialogContent);
                 document.body.appendChild(modal);
                 
-                // Cargar contraseña guardada si existe
-                const savedPassword = localStorage.getItem('contraseña_gestion');
-                const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
-                const passwordInput = dialogContent.querySelector('#passwordInput');
+                // Cargar usuarios disponibles (como en la APK líneas 480-515)
+                let closeDropdown; // Declarar fuera del scope
                 
-                if (savedPassword) {
-                    passwordInput.value = savedPassword;
-                    rememberCheckbox.checked = true;
-                }
+                const cargarUsuariosDisponibles = async () => {
+                    try {
+                        const usuarios = ['Lucas PIARRISTEGUY']; // Usuario maestro por defecto
+                        
+                        // Cargar supervisores desde Firebase
+                        const supervisoresSnapshot = await db.collection('supervisores')
+                            .where('activo', '==', true)
+                            .get();
+                        
+                        supervisoresSnapshot.forEach(doc => {
+                            const supervisor = doc.data();
+                            usuarios.push(supervisor.usuario);
+                        });
+                        
+                        // Configurar dropdown
+                        const usuarioInput = dialogContent.querySelector('#usuarioInput');
+                        const usuariosDropdown = dialogContent.querySelector('#usuariosDropdown');
+                        
+                        usuariosDropdown.innerHTML = usuarios.map(usuario => 
+                            `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" 
+                                 onmouseover="this.style.backgroundColor='#f5f5f5'" 
+                                 onmouseout="this.style.backgroundColor='white'"
+                                 onclick="seleccionarUsuario('${usuario}')">
+                                ${usuario}
+                             </div>`
+                        ).join('');
+                        
+                        // Mostrar dropdown al hacer click
+                        usuarioInput.onclick = (e) => {
+                            e.stopPropagation();
+                            const isVisible = usuariosDropdown.style.display === 'block';
+                            usuariosDropdown.style.display = isVisible ? 'none' : 'block';
+                        };
+                        
+                        // Cerrar dropdown al hacer click fuera
+                        closeDropdown = (e) => {
+                            if (!dialogContent.contains(e.target)) {
+                                usuariosDropdown.style.display = 'none';
+                            }
+                        };
+                        
+                        // Agregar listener temporal
+                        setTimeout(() => {
+                            document.addEventListener('click', closeDropdown);
+                        }, 100);
+                        
+                        // Cargar credenciales guardadas
+                        const savedUsuario = localStorage.getItem('usuario_gestion');
+                        const savedPassword = localStorage.getItem('contraseña_gestion');
+                        const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
+                        const passwordInput = dialogContent.querySelector('#passwordInput');
+                        
+                        if (savedUsuario && savedPassword) {
+                            usuarioInput.value = savedUsuario;
+                            passwordInput.value = savedPassword;
+                            rememberCheckbox.checked = true;
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error cargando usuarios:', error);
+                    }
+                };
                 
-                // Enfocar el campo de contraseña
-                passwordInput.focus();
+                // Función para seleccionar usuario
+                window.seleccionarUsuario = (usuario) => {
+                    dialogContent.querySelector('#usuarioInput').value = usuario;
+                    dialogContent.querySelector('#usuariosDropdown').style.display = 'none';
+                };
+                
+                // Cargar usuarios
+                cargarUsuariosDisponibles();
+                
+                // Enfocar el campo de usuario
+                dialogContent.querySelector('#usuarioInput').focus();
                 
                 // Event listeners
                 dialogContent.querySelector('#cancelBtn').onclick = () => {
                     document.body.removeChild(modal);
+                    delete window.seleccionarUsuario;
+                    // Limpiar listener si existe
+                    if (closeDropdown) {
+                        document.removeEventListener('click', closeDropdown);
+                    }
                 };
                 
-                dialogContent.querySelector('#accessBtn').onclick = () => {
-                    const password = passwordInput.value.trim();
-                    const remember = rememberCheckbox.checked;
+                dialogContent.querySelector('#accessBtn').onclick = async () => {
+                    const usuario = dialogContent.querySelector('#usuarioInput').value.trim();
+                    const password = dialogContent.querySelector('#passwordInput').value.trim();
+                    const remember = dialogContent.querySelector('#rememberPassword').checked;
                     
-                    if (!password) {
-                        passwordInput.style.borderColor = '#F44336';
-                        passwordInput.placeholder = 'Ingrese la contraseña';
+                    if (!usuario) {
+                        alert('Seleccione un usuario');
                         return;
                     }
                     
-                    if (password === 'admin123') {
-                        // Guardar contraseña si está marcado el checkbox
-                        if (remember) {
-                            localStorage.setItem('contraseña_gestion', password);
-                        } else {
-                            localStorage.removeItem('contraseña_gestion');
+                    if (!password) {
+                        alert('Ingrese la contraseña');
+                        return;
+                    }
+                    
+                    try {
+                        // Verificar credenciales como en la APK líneas 611-700
+                        
+                        // Primero verificar si es usuario maestro
+                        const configDoc = await db.collection('configuracion')
+                            .doc('admin')
+                            .get();
+                        
+                        const passwordMaestro = configDoc.data()?.password || 'admin123';
+                        
+                        if (usuario === 'Lucas PIARRISTEGUY' && password === passwordMaestro) {
+                            // Es usuario maestro
+                            console.log('🔑 CREDENCIALES DE MAESTRO CORRECTAS');
+                            
+                            // Guardar credenciales si está marcado el checkbox
+                            if (remember) {
+                                localStorage.setItem('usuario_gestion', usuario);
+                                localStorage.setItem('contraseña_gestion', password);
+                            } else {
+                                localStorage.removeItem('usuario_gestion');
+                                localStorage.removeItem('contraseña_gestion');
+                            }
+                            
+                            // Guardar datos del usuario maestro en localStorage
+                            localStorage.setItem('usuario_actual', JSON.stringify({
+                                metodoLogin: 'admin123',
+                                rol: 'maestro',
+                                usuarioId: 'maestro',
+                                usuario: 'maestro'
+                            }));
+                            
+                            document.body.removeChild(modal);
+                            delete window.seleccionarUsuario;
+                            // Limpiar listener si existe
+                            if (closeDropdown) {
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                            
+                            // Ir a gestión de locales
+                            window.location.href = '#gestion-locales';
+                            return;
                         }
                         
-                        document.body.removeChild(modal);
+                        // Si no es maestro, verificar si es supervisor
+                        const supervisoresSnapshot = await db.collection('supervisores')
+                            .where('usuario', '==', usuario)
+                            .where('contraseña', '==', password)
+                            .where('activo', '==', true)
+                            .get();
                         
-                        // Navegar a gestión de locales
-                        window.location.href = '#gestion-locales';
+                        if (!supervisoresSnapshot.empty) {
+                            const supervisorDoc = supervisoresSnapshot.docs[0];
+                            const supervisor = supervisorDoc.data();
+                            
+                            console.log('🔑 SUPERVISOR AUTENTICADO:', supervisor.usuario);
+                            
+                            // Guardar credenciales si está marcado el checkbox
+                            if (remember) {
+                                localStorage.setItem('usuario_gestion', usuario);
+                                localStorage.setItem('contraseña_gestion', password);
+                            } else {
+                                localStorage.removeItem('usuario_gestion');
+                                localStorage.removeItem('contraseña_gestion');
+                            }
+                            
+                            // Guardar datos del supervisor en localStorage
+                            localStorage.setItem('usuario_actual', JSON.stringify({
+                                metodoLogin: 'supervisor',
+                                rol: 'supervisor',
+                                usuarioId: supervisorDoc.id,
+                                usuario: supervisor.usuario,
+                                localesAsignados: supervisor.localesAsignados || []
+                            }));
+                            
+                            document.body.removeChild(modal);
+                            delete window.seleccionarUsuario;
+                            // Limpiar listener si existe
+                            if (closeDropdown) {
+                                document.removeEventListener('click', closeDropdown);
+                            }
+                            
+                            // Ir a gestión de locales
+                            window.location.href = '#gestion-locales';
+                            return;
+                        }
                         
-                    } else {
-                        passwordInput.style.borderColor = '#F44336';
-                        passwordInput.value = '';
-                        passwordInput.placeholder = 'Contraseña incorrecta';
-                    }
-                };
-                
-                // Enter key
-                passwordInput.onkeypress = (e) => {
-                    if (e.key === 'Enter') {
-                        dialogContent.querySelector('#accessBtn').click();
+                        // Si no se encontró usuario válido
+                        alert('Credenciales incorrectas');
+                        
+                    } catch (error) {
+                        console.error('Error verificando credenciales:', error);
+                        alert('Error verificando credenciales: ' + error.message);
                     }
                 };
             };
@@ -455,6 +636,25 @@
                                 📱 Descargar App Android
                             </a>
                         </div>
+
+                        {/* Botón de Administración */}
+                        <div className="mt-4 text-center">
+                            <a
+                                href="/administracion-se/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                                style={{
+                                    backgroundColor: '#2196F3',
+                                    border: '1px solid #1976D2',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    textDecoration: 'none'
+                                }}
+                            >
+                                🔧 Administración
+                            </a>
+                        </div>
                         </div>
                 </div>
             );
@@ -466,17 +666,54 @@
             
             const [locales, setLocales] = useState([]);
             const [localesFiltrados, setLocalesFiltrados] = useState([]);
+            const [supervisores, setSupervisores] = useState([]);
+            const [supervisoresFiltrados, setSupervisoresFiltrados] = useState([]);
             const [cargando, setCargando] = useState(true);
             const [error, setError] = useState('');
             const [mostrarFormulario, setMostrarFormulario] = useState(false);
+            const [mostrarFormularioSupervisor, setMostrarFormularioSupervisor] = useState(false);
+            const [pestanaActiva, setPestanaActiva] = useState('locales');
+            const [usuarioActual, setUsuarioActual] = useState(null);
+            const [esUsuarioMaestro, setEsUsuarioMaestro] = useState(false);
             const [nuevoLocal, setNuevoLocal] = useState({
                 nombre: '',
                 contraseña: ''
             });
+            const [nuevoSupervisor, setNuevoSupervisor] = useState({
+                nombre: '',
+                usuario: '',
+                contraseña: '',
+                localesAsignados: []
+            });
 
             useEffect(() => {
-                cargarLocales();
+                cargarUsuarioActual();
             }, []);
+
+            useEffect(() => {
+                if (usuarioActual) {
+                    if (esUsuarioMaestro) {
+                        cargarLocales();
+                        cargarSupervisores();
+                    } else {
+                        cargarLocalesAsignados();
+                    }
+                }
+            }, [usuarioActual, esUsuarioMaestro]);
+
+            const cargarUsuarioActual = () => {
+                try {
+                    const usuarioData = localStorage.getItem('usuario_actual');
+                    if (usuarioData) {
+                        const usuario = JSON.parse(usuarioData);
+                        setUsuarioActual(usuario);
+                        setEsUsuarioMaestro(usuario.rol === 'maestro');
+                        console.log('Usuario cargado:', usuario.usuario, 'Rol:', usuario.rol, 'EsMaestro:', usuario.rol === 'maestro');
+                    }
+                } catch (error) {
+                    console.error('Error cargando usuario actual:', error);
+                }
+            };
 
             const cargarLocales = async () => {
                 try {
@@ -505,6 +742,76 @@
                 } catch (error) {
                     console.error('Error cargando locales:', error);
                     setError('Error cargando locales: ' + error.message);
+                } finally {
+                    setCargando(false);
+                }
+            };
+
+            const cargarLocalesAsignados = async () => {
+                try {
+                    setCargando(true);
+                    setError('');
+                    
+                    const localesAsignados = usuarioActual?.localesAsignados || [];
+                    
+                    if (localesAsignados.length === 0) {
+                        setError('No tienes locales asignados');
+                        setLocales([]);
+                        setLocalesFiltrados([]);
+                        return;
+                    }
+                    
+                    // Cargar solo los locales asignados
+                    const snapshot = await db.collection('locales').get();
+                    const localesData = [];
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (localesAsignados.includes(doc.id)) {
+                            localesData.push({ 
+                                id: doc.id, 
+                                ...data
+                            });
+                        }
+                    });
+                    
+                    console.log('Locales asignados cargados:', localesData.length);
+                    setLocales(localesData);
+                    setLocalesFiltrados(localesData);
+                    
+                } catch (error) {
+                    console.error('Error cargando locales asignados:', error);
+                    setError('Error cargando locales asignados: ' + error.message);
+                } finally {
+                    setCargando(false);
+                }
+            };
+
+            const cargarSupervisores = async () => {
+                try {
+                    setCargando(true);
+                    setError('');
+                    
+                    const snapshot = await db.collection('supervisores').get();
+                    const supervisoresData = [];
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.activo) {
+                            supervisoresData.push({ 
+                                id: doc.id, 
+                                ...data
+                            });
+                        }
+                    });
+                    
+                    console.log('Supervisores cargados:', supervisoresData.length);
+                    setSupervisores(supervisoresData);
+                    setSupervisoresFiltrados(supervisoresData);
+                    
+                } catch (error) {
+                    console.error('Error cargando supervisores:', error);
+                    setError('Error cargando supervisores: ' + error.message);
                 } finally {
                     setCargando(false);
                 }
@@ -556,8 +863,12 @@
                     });
                     setMostrarFormulario(false);
                     
-                    // Recargar locales
-                    cargarLocales();
+                    // Recargar locales según el tipo de usuario
+                    if (esUsuarioMaestro) {
+                        cargarLocales();
+                    } else {
+                        cargarLocalesAsignados();
+                    }
                     
                     // Mostrar credenciales
                     alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n👤 Usuario: ${usuarioAdmin.usuario}\n🔑 Contraseña: ${usuarioAdmin.contraseña}\n\n⚠️ Guarda estas credenciales para acceder al local`);
@@ -571,6 +882,79 @@
             const generarContraseña = () => {
                 const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                 return Array.from({length: 8}, () => caracteres[Math.floor(Math.random() * caracteres.length)]).join('');
+            };
+
+            const crearSupervisor = async (e) => {
+                e.preventDefault();
+                try {
+                    setError('');
+                    
+                    // Verificar si el supervisor ya existe
+                    const snapshot = await db.collection('supervisores')
+                        .where('usuario', '==', nuevoSupervisor.usuario)
+                        .get();
+                    
+                    if (!snapshot.empty) {
+                        setError('El usuario ' + nuevoSupervisor.usuario + ' ya existe');
+                        return;
+                    }
+                    
+                    // Crear el supervisor
+                    const supervisorData = {
+                        nombre: nuevoSupervisor.nombre,
+                        usuario: nuevoSupervisor.usuario,
+                        contraseña: nuevoSupervisor.contraseña || generarContraseña(),
+                        localesAsignados: nuevoSupervisor.localesAsignados,
+                        activo: true,
+                        fechaCreacion: new Date().toISOString().split('T')[0]
+                    };
+
+                    await db.collection('supervisores').doc(nuevoSupervisor.usuario).set(supervisorData);
+                    
+                    // Limpiar formulario
+                    setNuevoSupervisor({
+                        nombre: '',
+                        usuario: '',
+                        contraseña: '',
+                        localesAsignados: []
+                    });
+                    setMostrarFormularioSupervisor(false);
+                    
+                    // Recargar supervisores
+                    cargarSupervisores();
+                    
+                    // Mostrar credenciales
+                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Nombre: ${nuevoSupervisor.nombre}\n👤 Usuario: ${nuevoSupervisor.usuario}\n🔑 Contraseña: ${supervisorData.contraseña}\n\n⚠️ Guarda estas credenciales para acceder como supervisor`);
+                    
+                } catch (error) {
+                    console.error('Error creando supervisor:', error);
+                    setError('Error creando supervisor: ' + error.message);
+                }
+            };
+
+            const filtrarLocales = (termino) => {
+                if (!termino.trim()) {
+                    setLocalesFiltrados(locales);
+                    return;
+                }
+                
+                const filtrados = locales.filter(local => 
+                    local.nombre.toLowerCase().includes(termino.toLowerCase())
+                );
+                setLocalesFiltrados(filtrados);
+            };
+
+            const filtrarSupervisores = (termino) => {
+                if (!termino.trim()) {
+                    setSupervisoresFiltrados(supervisores);
+                    return;
+                }
+                
+                const filtrados = supervisores.filter(supervisor => 
+                    supervisor.nombre.toLowerCase().includes(termino.toLowerCase()) ||
+                    supervisor.usuario.toLowerCase().includes(termino.toLowerCase())
+                );
+                setSupervisoresFiltrados(filtrados);
             };
 
             const eliminarLocal = async (local) => {
@@ -599,8 +983,12 @@
                     // Eliminar el local
                     await db.collection('locales').doc(local.nombre).delete();
                     
-                    // Recargar locales
-                    cargarLocales();
+                    // Recargar locales según el tipo de usuario
+                    if (esUsuarioMaestro) {
+                        cargarLocales();
+                    } else {
+                        cargarLocalesAsignados();
+                    }
                     
                     alert('✅ Local eliminado exitosamente');
                     
@@ -668,21 +1056,212 @@
                 alert(`Usuarios de ${local.nombre}\n\n${mensaje}`);
             };
 
-            const filtrarLocales = (busqueda) => {
-                if (!busqueda.trim()) {
-                    setLocalesFiltrados(locales);
+            // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt
+            
+            const mostrarLocalesAsignados = (supervisor) => {
+                // Los locales asignados están guardados por nombre, no por ID
+                const nombresLocales = supervisor.localesAsignados || [];
+                
+                const mensaje = nombresLocales.length === 0 
+                    ? "Este supervisor no tiene locales asignados"
+                    : "Locales asignados:\n\n" + nombresLocales.map(nombre => `🏪 ${nombre}`).join('\n');
+                
+                alert(`Locales de ${supervisor.usuario}\n\n${mensaje}`);
+            };
+            
+            const mostrarContraseñaSupervisor = (supervisor) => {
+                const mensaje = `👤 Usuario: ${supervisor.usuario}\n\n🔑 Contraseña: ${supervisor.contraseña}\n\n📅 Creado: ${supervisor.fechaCreacion}`;
+                alert(`Credenciales de ${supervisor.usuario}\n\n${mensaje}`);
+            };
+            
+            const mostrarDialogoAsignarLocales = async (supervisor) => {
+                try {
+                    console.log('🔍 Supervisor seleccionado:', supervisor);
+                    console.log('🔍 Locales asignados del supervisor:', supervisor.localesAsignados);
+                    
+                    // Recargar locales para asegurar datos actualizados
+                    await cargarLocales();
+                    
+                    console.log('🔍 Locales cargados:', locales.map(l => ({id: l.id, nombre: l.nombre})));
+                    
+                    if (locales.length === 0) {
+                        alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
+                        return;
+                    }
+                    
+                    const contenido = `Selecciona los locales que quieres asignar a ${supervisor.usuario}:\n\nℹ️ Los locales pueden estar asignados a múltiples supervisores simultáneamente.`;
+                    
+                    // Crear modal con checkboxes
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1000;
+                    `;
+                    
+                    const dialogContent = document.createElement('div');
+                    dialogContent.style.cssText = `
+                        background: white;
+                        padding: 24px;
+                        border-radius: 12px;
+                        max-width: 500px;
+                        width: 90%;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                    `;
+                    
+                    dialogContent.innerHTML = `
+                        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #333;">
+                            Asignar Locales
+                        </h3>
+                        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+                            ${contenido}
+                        </p>
+                        <div id="checkboxesContainer"></div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                            <button id="cancelBtn" style="padding: 10px 20px; border: 1px solid #ddd; background: white; color: #666; border-radius: 8px; cursor: pointer;">
+                                Cancelar
+                            </button>
+                            <button id="assignBtn" style="padding: 10px 20px; border: none; background: #4CAF50; color: white; border-radius: 8px; cursor: pointer;">
+                                ASIGNAR
+                            </button>
+                        </div>
+                    `;
+                    
+                    modal.appendChild(dialogContent);
+                    document.body.appendChild(modal);
+                    
+                    const checkboxesContainer = dialogContent.querySelector('#checkboxesContainer');
+                    const checkboxes = {};
+                    
+                    locales.forEach(local => {
+                        // Verificar si el local está asignado a otros supervisores
+                        // Usar local.nombre para la comparación ya que los locales asignados están guardados por nombre
+                        const otrosSupervisores = supervisores.filter(s => 
+                            s.id !== supervisor.id && s.localesAsignados?.includes(local.nombre)
+                        );
+                        
+                        const textoLocal = otrosSupervisores.length > 0
+                            ? `🏪 ${local.nombre} (📋 Asignado a: ${otrosSupervisores.map(s => s.usuario).join(', ')})`
+                            : `🏪 ${local.nombre}`;
+                        
+                        // Debug: verificar si el local está asignado
+                        // Comparar por nombre ya que los locales asignados están guardados por nombre
+                        const estaAsignado = supervisor.localesAsignados?.includes(local.nombre) || false;
+                        console.log(`🔍 Local: ${local.nombre} (ID: ${local.id}), Asignado: ${estaAsignado}, LocalesAsignados:`, supervisor.localesAsignados);
+                        
+                        const checkboxDiv = document.createElement('div');
+                        checkboxDiv.style.cssText = 'margin-bottom: 8px;';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `local-${local.id}`;
+                        checkbox.checked = estaAsignado;
+                        checkbox.style.cssText = 'margin-right: 8px;';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `local-${local.id}`;
+                        label.textContent = textoLocal;
+                        label.style.cssText = 'font-size: 14px; cursor: pointer;';
+                        
+                        if (otrosSupervisores.length > 0) {
+                            label.style.color = '#FF9800';
+                        }
+                        
+                        checkboxDiv.appendChild(checkbox);
+                        checkboxDiv.appendChild(label);
+                        checkboxesContainer.appendChild(checkboxDiv);
+                        
+                        checkboxes[local.id] = checkbox;
+                    });
+                    
+                    // Event listeners
+                    dialogContent.querySelector('#cancelBtn').onclick = () => {
+                        document.body.removeChild(modal);
+                    };
+                    
+                    dialogContent.querySelector('#assignBtn').onclick = async () => {
+                        const localesSeleccionados = Object.keys(checkboxes).filter(localId => 
+                            checkboxes[localId].checked
+                        );
+                        
+                        await asignarLocalesASupervisor(supervisor, localesSeleccionados);
+                        document.body.removeChild(modal);
+                    };
+                    
+                } catch (error) {
+                    console.error('Error mostrando diálogo de asignación:', error);
+                    alert('Error cargando locales: ' + error.message);
+                }
+            };
+            
+            const asignarLocalesASupervisor = async (supervisor, localesAsignados) => {
+                try {
+                    // Convertir IDs de locales a nombres para guardar
+                    const nombresLocalesAsignados = localesAsignados.map(localId => {
+                        const local = locales.find(l => l.id === localId);
+                        return local ? local.nombre : localId;
+                    });
+                    
+                    console.log('🔍 Guardando locales por nombre:', nombresLocalesAsignados);
+                    
+                    const supervisorActualizado = {
+                        ...supervisor,
+                        localesAsignados: nombresLocalesAsignados
+                    };
+                    
+                    // Actualizar en Firebase
+                    await db.collection('supervisores').doc(supervisor.id).update({
+                        localesAsignados: nombresLocalesAsignados
+                    });
+                    
+                    // Actualizar en el estado local
+                    setSupervisores(prev => prev.map(s => 
+                        s.id === supervisor.id ? supervisorActualizado : s
+                    ));
+                    setSupervisoresFiltrados(prev => prev.map(s => 
+                        s.id === supervisor.id ? supervisorActualizado : s
+                    ));
+                    
+                    alert(`✅ Locales asignados exitosamente a ${supervisor.usuario}`);
+                    
+                } catch (error) {
+                    console.error('Error asignando locales:', error);
+                    alert('Error asignando locales: ' + error.message);
+                }
+            };
+            
+            const mostrarDialogoEliminarSupervisor = (supervisor) => {
+                if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el supervisor '${supervisor.usuario}'?\n\nEsta acción NO se puede deshacer.`)) {
                     return;
                 }
                 
-                const filtrados = locales.filter(local => 
-                    local.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-                    local.fechaCreacion.includes(busqueda) ||
-                    Object.values(local.usuarios || {}).some(usuario => 
-                        usuario.usuario.toLowerCase().includes(busqueda.toLowerCase()) ||
-                        usuario.rol.toLowerCase().includes(busqueda.toLowerCase())
-                    )
-                );
-                setLocalesFiltrados(filtrados);
+                eliminarSupervisor(supervisor);
+            };
+            
+            const eliminarSupervisor = async (supervisor) => {
+                try {
+                    // Eliminar de Firebase
+                    await db.collection('supervisores').doc(supervisor.id).delete();
+                    
+                    // Actualizar estado local
+                    setSupervisores(prev => prev.filter(s => s.id !== supervisor.id));
+                    setSupervisoresFiltrados(prev => prev.filter(s => s.id !== supervisor.id));
+                    
+                    alert(`✅ Supervisor '${supervisor.usuario}' eliminado exitosamente`);
+                    
+                } catch (error) {
+                    console.error('Error eliminando supervisor:', error);
+                    alert('Error eliminando supervisor: ' + error.message);
+                }
             };
 
             if (cargando) {
@@ -716,17 +1295,48 @@
                         <div></div>
                     </div>
 
-                    {/* Botón Agregar Local - EXACTO como líneas 51-53 */}
-                    <button
-                        onClick={() => setMostrarFormulario(true)}
-                        className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
-                        style={{
-                            backgroundColor: '#4CAF50',
-                            fontSize: '16px'
-                        }}
-                    >
-                        ➕ AGREGAR NUEVO LOCAL
-                    </button>
+                    {/* Pestañas - Solo visible para usuario maestro */}
+                    {esUsuarioMaestro && (
+                        <div className="flex mb-4">
+                            <button
+                                onClick={() => setPestanaActiva('locales')}
+                                className="flex-1 py-3 font-bold rounded-l-lg transition-colors"
+                                style={{
+                                    backgroundColor: pestanaActiva === 'locales' ? '#2196F3' : '#90CAF9',
+                                    color: pestanaActiva === 'locales' ? 'white' : '#424242'
+                                }}
+                            >
+                                🏪 Locales
+                            </button>
+                            <button
+                                onClick={() => setPestanaActiva('supervisores')}
+                                className="flex-1 py-3 font-bold rounded-r-lg transition-colors"
+                                style={{
+                                    backgroundColor: pestanaActiva === 'supervisores' ? '#2196F3' : '#90CAF9',
+                                    color: pestanaActiva === 'supervisores' ? 'white' : '#424242'
+                                }}
+                            >
+                                👥 Supervisores
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Contenido de Locales */}
+                    {pestanaActiva === 'locales' && (
+                        <>
+                            {/* Botón Agregar Local - Solo visible para usuario maestro */}
+                            {esUsuarioMaestro && (
+                                <button
+                                    onClick={() => setMostrarFormulario(true)}
+                                    className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                                    style={{
+                                        backgroundColor: '#4CAF50',
+                                        fontSize: '16px'
+                                    }}
+                                >
+                                    ➕ AGREGAR NUEVO LOCAL
+                                </button>
+                            )}
 
                     {/* Buscador - EXACTO como líneas 55-63 */}
                     <input
@@ -835,15 +1445,18 @@
                                         🔑 Cambiar Contraseña
                                     </button>
                                     
-                                    <button
-                                        onClick={() => eliminarLocal(local)}
-                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
-                                        style={{
-                                            backgroundColor: '#F44336'
-                                        }}
-                                    >
-                                        🗑️ Eliminar
-                                    </button>
+                                    {/* Solo mostrar botón Eliminar para usuarios maestro */}
+                                    {esUsuarioMaestro && (
+                                        <button
+                                            onClick={() => eliminarLocal(local)}
+                                            className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                            style={{
+                                                backgroundColor: '#F44336'
+                                            }}
+                                        >
+                                            🗑️ Eliminar
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             );
@@ -874,6 +1487,125 @@
                     <div className="text-center mt-2 text-xs text-gray-500">
                         Debug: locales={locales.length}, filtrados={localesFiltrados.length}
                     </div>
+                        </>
+                    )}
+
+                    {/* Contenido de Supervisores */}
+                    {pestanaActiva === 'supervisores' && esUsuarioMaestro && (
+                        <>
+                            {/* Botón Agregar Supervisor */}
+                            <button
+                                onClick={() => setMostrarFormularioSupervisor(true)}
+                                className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                                style={{
+                                    backgroundColor: '#4CAF50',
+                                    fontSize: '16px'
+                                }}
+                            >
+                                ➕ AGREGAR NUEVO SUPERVISOR
+                            </button>
+
+                            {/* Buscador de supervisores */}
+                            <input
+                                type="text"
+                                placeholder="🔍 Buscar supervisores por nombre o usuario..."
+                                className="w-full p-3 mb-4 rounded-lg"
+                                style={{
+                                    backgroundColor: 'white',
+                                    border: '1px solid #E0E0E0',
+                                    fontSize: '14px'
+                                }}
+                                onChange={(e) => filtrarSupervisores(e.target.value)}
+                            />
+
+                            {/* Lista de Supervisores */}
+                            <div className="space-y-2" style={{minHeight: 'calc(100vh - 200px)'}}>
+                                {(supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores).map((supervisor, index) => (
+                                    <div 
+                                        key={supervisor.id || `supervisor-${index}`} 
+                                        className="p-3 rounded-lg"
+                                        style={{
+                                            backgroundColor: '#9C27B0',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        <div className="text-lg font-bold mb-2">
+                                            👤 {supervisor.nombre}
+                                        </div>
+                                        
+                                        <div className="text-sm mb-1">
+                                            Usuario: {supervisor.usuario}
+                                        </div>
+                                        
+                                        <div className="text-sm mb-3">
+                                            Locales asignados: {supervisor.localesAsignados?.length || 0}
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => mostrarLocalesAsignados(supervisor)}
+                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                                style={{
+                                                    backgroundColor: '#2196F3'
+                                                }}
+                                            >
+                                                🏪 LOCALES
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => mostrarDialogoAsignarLocales(supervisor)}
+                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                                style={{
+                                                    backgroundColor: '#4CAF50'
+                                                }}
+                                            >
+                                                ➕ ASIGNAR
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => mostrarContraseñaSupervisor(supervisor)}
+                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                                style={{
+                                                    backgroundColor: '#FF9800'
+                                                }}
+                                            >
+                                                🔑 CONTRASEÑA
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => mostrarDialogoEliminarSupervisor(supervisor)}
+                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                                style={{
+                                                    backgroundColor: '#F44336'
+                                                }}
+                                            >
+                                                🗑️ ELIMINAR
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {supervisores.length === 0 && (
+                                    <div className="text-center p-8">
+                                        <div className="text-lg text-gray-600 mb-4">👥 No hay supervisores registrados</div>
+                                        <button
+                                            onClick={() => setMostrarFormularioSupervisor(true)}
+                                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                                        >
+                                            Crear Supervisor
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div 
+                                className="text-center mt-4 text-sm"
+                                style={{color: '#F44336'}}
+                            >
+                                {error || `${supervisores.length} supervisores encontrados (${supervisoresFiltrados.length} filtrados)`}
+                            </div>
+                        </>
+                    )}
                                 
                     {/* Modal de nuevo local - EXACTO como líneas 251-295 */}
                     {mostrarFormulario && (
@@ -934,6 +1666,115 @@
                                         <button
                                             type="submit"
                                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            Crear
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal de nuevo supervisor */}
+                    {mostrarFormularioSupervisor && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Agregar Nuevo Supervisor</h3>
+                                    <button
+                                        onClick={() => setMostrarFormularioSupervisor(false)}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={crearSupervisor}>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Nombre completo
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={nuevoSupervisor.nombre}
+                                            onChange={(e) => setNuevoSupervisor({...nuevoSupervisor, nombre: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            placeholder="Nombre del supervisor"
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Usuario de acceso
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={nuevoSupervisor.usuario}
+                                            onChange={(e) => setNuevoSupervisor({...nuevoSupervisor, usuario: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            placeholder="Usuario para login"
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Contraseña (opcional)
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={nuevoSupervisor.contraseña}
+                                            onChange={(e) => setNuevoSupervisor({...nuevoSupervisor, contraseña: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            placeholder="Contraseña (se generará automáticamente si se deja vacío)"
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Locales asignados
+                                        </label>
+                                        <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                                            {locales.map((local) => (
+                                                <div key={local.id} className="flex items-center mb-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`local-${local.id}`}
+                                                        checked={nuevoSupervisor.localesAsignados.includes(local.id)}
+                                                        onChange={(e) => {
+                                                            const localesActualizados = e.target.checked
+                                                                ? [...nuevoSupervisor.localesAsignados, local.id]
+                                                                : nuevoSupervisor.localesAsignados.filter(id => id !== local.id);
+                                                            setNuevoSupervisor({...nuevoSupervisor, localesAsignados: localesActualizados});
+                                                        }}
+                                                        className="mr-2 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                                    />
+                                                    <label htmlFor={`local-${local.id}`} className="text-sm">
+                                                        {local.nombre}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {error && (
+                                        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                                            {error}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarFormularioSupervisor(false)}
+                                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                                         >
                                             Crear
                                         </button>
@@ -1389,7 +2230,7 @@
                     'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                     'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                     'BATATA - Batata', 'MEMBRIL - Membrillo',
-                    'DULCES - Dulces', 'CHIPA - Chipa'
+                    'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                 ];
                 
                 // Crear mensaje de previsualización - EXACTO como APK
@@ -1447,7 +2288,7 @@
                         'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                         'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                         'BATATA - Batata', 'MEMBRIL - Membrillo',
-                        'DULCES - Dulces', 'CHIPA - Chipa'
+                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                     ];
                     
                     // Leer valores directamente de los inputs del DOM
@@ -1710,7 +2551,7 @@
                                 >
                                     <span className="text-lg">🥧 PASTELITOS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        2 productos
+                                        3 productos
                                     </span>
                                         </div>
                                 
@@ -1776,13 +2617,13 @@
                                 >
                                     <span className="text-lg">🍬 OTROS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        2 productos
+                                        3 productos
                                     </span>
                                 </div>
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa'
+                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -2040,7 +2881,7 @@
                                 >
                                     <span className="text-lg">🥧 PASTELITOS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        2 productos
+                                        3 productos
                                     </span>
                                         </div>
                                 
@@ -2106,13 +2947,13 @@
                                 >
                                     <span className="text-lg">🍬 OTROS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        2 productos
+                                        3 productos
                                     </span>
                                 </div>
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa'
+                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -2519,9 +3360,31 @@
                         
                         // Calcular promedio para cada producto
                         todosProductos.forEach(producto => {
-                            const suma = ventasDelDia.reduce((acc, venta) => acc + (venta[producto] || 0), 0);
-                            const promedio = suma / ventasDelDia.length;
-                            promediosPorDia[dia][producto] = Math.round(promedio * 10) / 10; // Redondear a 1 decimal
+                            // Filtrar solo los días donde este producto tiene ventas > 0
+                            const ventasConDatos = ventasDelDia.map(venta => venta[producto] || 0).filter(v => v > 0);
+                            
+                            if (ventasConDatos.length > 0) {
+                                const suma = ventasConDatos.reduce((acc, venta) => acc + venta, 0);
+                                const promedio = suma / ventasConDatos.length;
+                                promediosPorDia[dia][producto] = Math.round(promedio); // Redondear a número entero
+                                
+                                // Log específico para CRIOLLITO
+                                if (producto.includes('CRIOLLITO')) {
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Día: ${dia}`);
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Total días en lista: ${ventasDelDia.length}`);
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Días con ventas > 0: ${ventasConDatos.length}`);
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Ventas encontradas: ${ventasConDatos}`);
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Suma: ${suma}, Promedio: ${promedio}, Redondeado: ${Math.round(promedio)}`);
+                                }
+                            } else {
+                                // Si no hay días con ventas > 0, el promedio es 0
+                                promediosPorDia[dia][producto] = 0.0;
+                                
+                                // Log específico para CRIOLLITO
+                                if (producto.includes('CRIOLLITO')) {
+                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Día: ${dia} - sin ventas registradas, promedio=0.0`);
+                                }
+                            }
                         });
                         
                             console.log(`📊 Promedios calculados para ${dia}:`, promediosPorDia[dia]);
@@ -2594,23 +3457,20 @@
                 
                 stockAnterior.productos.forEach(producto => {
                     const nombreCompleto = producto.nombre;
-                    const partes = nombreCompleto.split(' - ');
-                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
-                    stockAnteriorMap[nombre] = producto.cantidad || 0;
+                    // Usar el nombre completo como en la APK, no extraer solo la parte después del " - "
+                    stockAnteriorMap[nombreCompleto] = producto.cantidad || 0;
                 });
                 
                 ingresoActual.productos.forEach(producto => {
                     const nombreCompleto = producto.nombre;
-                    const partes = nombreCompleto.split(' - ');
-                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
-                    ingresoMap[nombre] = producto.cantidad || 0;
+                    // Usar el nombre completo como en la APK, no extraer solo la parte después del " - "
+                    ingresoMap[nombreCompleto] = producto.cantidad || 0;
                 });
                 
                 stockActual.productos.forEach(producto => {
                     const nombreCompleto = producto.nombre;
-                    const partes = nombreCompleto.split(' - ');
-                    const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
-                    stockActualMap[nombre] = producto.cantidad || 0;
+                    // Usar el nombre completo como en la APK, no extraer solo la parte después del " - "
+                    stockActualMap[nombreCompleto] = producto.cantidad || 0;
                 });
                 
                 // Calcular ventas para cada producto usando la fórmula correcta
@@ -2628,6 +3488,16 @@
                     // Fórmula: (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
                     const venta = (stockAnt + ingreso) - stockAct;
                     
+                    // Log específico para CRIOLLITO
+                    if (producto.includes('Criollito') || producto.includes('CRIOLLITO')) {
+                        console.log(`🔍 CRIOLLITO DEBUG - Producto: ${producto}`);
+                        console.log(`🔍 CRIOLLITO DEBUG - Stock Ant: ${stockAnt}, Ingreso: ${ingreso}, Stock Act: ${stockAct}`);
+                        console.log(`🔍 CRIOLLITO DEBUG - Venta calculada: ${venta}`);
+                        console.log(`🔍 CRIOLLITO DEBUG - Stock Anterior Map keys:`, Object.keys(stockAnteriorMap));
+                        console.log(`🔍 CRIOLLITO DEBUG - Ingreso Map keys:`, Object.keys(ingresoMap));
+                        console.log(`🔍 CRIOLLITO DEBUG - Stock Actual Map keys:`, Object.keys(stockActualMap));
+                    }
+                    
                     // Solo incluir si hay venta positiva
                     if (venta > 0) {
                         ventas[producto] = venta;
@@ -2642,9 +3512,8 @@
                 if (Array.isArray(productos)) {
                     productos.forEach(producto => {
                         const nombreCompleto = producto.nombre;
-                        const partes = nombreCompleto.split(' - ');
-                        const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
-                        ventas[nombre] = producto.cantidad || 0;
+                        // Usar el nombre completo como en la APK, no extraer solo la parte después del " - "
+                        ventas[nombreCompleto] = producto.cantidad || 0;
                     });
                 }
                 return ventas;
@@ -2661,7 +3530,7 @@
                 ],
                 'PIZZAS': ['MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni'],
                 'PASTELITOS': ['BATATA - Batata', 'MEMBRIL - Membrillo'],
-                'OTROS': ['DULCES - Dulces', 'CHIPA - Chipa']
+                'OTROS': ['DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito']
             };
 
             if (cargando) {
@@ -2791,11 +3660,12 @@
                                                     {nombre}
                 </div>
                                                 {diasCompletos.map((diaCompleto, diaIndex) => {
-                                                    const valor = promedios[diaCompleto]?.[nombre] || 0;
+                                                    const valor = promedios[diaCompleto]?.[producto] || 0;
                                                     
                                                     // Log para debug
-                                                    if (nombre === 'Jamón y Queso' && valor > 0) {
-                                                        console.log(`🔍 ${nombre} - ${diaCompleto} (índice ${diaIndex}): ${valor}`);
+                                                    if (producto.includes('CRIOLLITO')) {
+                                                        console.log(`🔍 CRIOLLITO - ${diaCompleto} (índice ${diaIndex}): ${valor}`);
+                                                        console.log(`🔍 Promedios disponibles para ${diaCompleto}:`, promedios[diaCompleto]);
                                                     }
                                                     
                                                     return (
@@ -2825,8 +3695,7 @@
                                             <div className="p-2 border-r border-green-300" style={{flex: '1.2'}}>TOTAL</div>
                                             {diasCompletos.map((diaCompleto, index) => {
                                                 const totalDia = productos.reduce((acc, producto) => {
-                                                    const nombre = producto.split(' - ')[1] || producto;
-                                                    return acc + (promedios[diaCompleto]?.[nombre] || 0);
+                                                    return acc + (promedios[diaCompleto]?.[producto] || 0);
                                                 }, 0);
                                                 
                                                 // Log para debug del total

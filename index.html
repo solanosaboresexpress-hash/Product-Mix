@@ -14,6 +14,29 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.8"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.8"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Responsive layout for Promedio de Ventas */
+        .ventas-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .ventas-grid { min-width: 980px; }
+        .ventas-name { white-space: nowrap; }
+        .ventas-cell { white-space: nowrap; }
+
+        @media (max-width: 1024px) {
+            .ventas-grid { min-width: 900px; }
+        }
+
+        @media (max-width: 768px) {
+            .ventas-grid { min-width: 780px; }
+            .ventas-header, .ventas-row { font-size: 12px; }
+        }
+
+        @media (max-width: 480px) {
+            .ventas-grid { min-width: 720px; }
+            .ventas-header, .ventas-row { font-size: 11px; }
+            .ventas-name { min-width: 140px; }
+            .ventas-cell { min-width: 60px; padding-left: 6px !important; padding-right: 6px !important; }
+        }
+    </style>
     
     <script>
         // Firebase Config
@@ -228,19 +251,19 @@
                             Contraseña de administración:
                         </label>
                         <div style="position: relative;">
-                            <input 
-                                type="password" 
-                                id="passwordInput"
-                                placeholder="Ingrese la contraseña"
-                                style="
-                                    width: 100%;
+                        <input 
+                            type="password" 
+                            id="passwordInput"
+                            placeholder="Ingrese la contraseña"
+                            style="
+                                width: 100%;
                                     padding: 12px 40px 12px 12px;
-                                    border: 1px solid #ddd;
-                                    border-radius: 8px;
-                                    font-size: 16px;
-                                    box-sizing: border-box;
-                                "
-                            />
+                                border: 1px solid #ddd;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                box-sizing: border-box;
+                            "
+                        />
                             <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 18px;">
                                 👁️
                             </div>
@@ -346,16 +369,16 @@
                         
                         // Cargar credenciales guardadas
                         const savedUsuario = localStorage.getItem('usuario_gestion');
-                        const savedPassword = localStorage.getItem('contraseña_gestion');
-                        const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
-                        const passwordInput = dialogContent.querySelector('#passwordInput');
-                        
+                const savedPassword = localStorage.getItem('contraseña_gestion');
+                const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
+                const passwordInput = dialogContent.querySelector('#passwordInput');
+                
                         if (savedUsuario && savedPassword) {
                             usuarioInput.value = savedUsuario;
-                            passwordInput.value = savedPassword;
-                            rememberCheckbox.checked = true;
-                        }
-                        
+                    passwordInput.value = savedPassword;
+                    rememberCheckbox.checked = true;
+                }
+                
                     } catch (error) {
                         console.error('Error cargando usuarios:', error);
                     }
@@ -413,13 +436,13 @@
                             console.log('🔑 CREDENCIALES DE MAESTRO CORRECTAS');
                             
                             // Guardar credenciales si está marcado el checkbox
-                            if (remember) {
+                        if (remember) {
                                 localStorage.setItem('usuario_gestion', usuario);
-                                localStorage.setItem('contraseña_gestion', password);
-                            } else {
+                            localStorage.setItem('contraseña_gestion', password);
+                        } else {
                                 localStorage.removeItem('usuario_gestion');
-                                localStorage.removeItem('contraseña_gestion');
-                            }
+                            localStorage.removeItem('contraseña_gestion');
+                        }
                             
                             // Guardar datos del usuario maestro en localStorage
                             localStorage.setItem('usuario_actual', JSON.stringify({
@@ -428,16 +451,16 @@
                                 usuarioId: 'maestro',
                                 usuario: 'maestro'
                             }));
-                            
-                            document.body.removeChild(modal);
+                        
+                        document.body.removeChild(modal);
                             delete window.seleccionarUsuario;
                             // Limpiar listener si existe
                             if (closeDropdown) {
                                 document.removeEventListener('click', closeDropdown);
                             }
-                            
+                        
                             // Ir a gestión de locales
-                            window.location.href = '#gestion-locales';
+                        window.location.href = '#gestion-locales';
                             return;
                         }
                         
@@ -458,7 +481,7 @@
                             if (remember) {
                                 localStorage.setItem('usuario_gestion', usuario);
                                 localStorage.setItem('contraseña_gestion', password);
-                            } else {
+                    } else {
                                 localStorage.removeItem('usuario_gestion');
                                 localStorage.removeItem('contraseña_gestion');
                             }
@@ -865,7 +888,7 @@
                     
                     // Recargar locales según el tipo de usuario
                     if (esUsuarioMaestro) {
-                        cargarLocales();
+                    cargarLocales();
                     } else {
                         cargarLocalesAsignados();
                     }
@@ -985,7 +1008,7 @@
                     
                     // Recargar locales según el tipo de usuario
                     if (esUsuarioMaestro) {
-                        cargarLocales();
+                    cargarLocales();
                     } else {
                         cargarLocalesAsignados();
                     }
@@ -1086,9 +1109,9 @@
                     
                     if (locales.length === 0) {
                         alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
-                        return;
-                    }
-                    
+                    return;
+                }
+                
                     const contenido = `Selecciona los locales que quieres asignar a ${supervisor.usuario}:\n\nℹ️ Los locales pueden estar asignados a múltiples supervisores simultáneamente.`;
                     
                     // Crear modal con checkboxes
@@ -1326,16 +1349,16 @@
                         <>
                             {/* Botón Agregar Local - Solo visible para usuario maestro */}
                             {esUsuarioMaestro && (
-                                <button
-                                    onClick={() => setMostrarFormulario(true)}
-                                    className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
-                                    style={{
-                                        backgroundColor: '#4CAF50',
-                                        fontSize: '16px'
-                                    }}
-                                >
-                                    ➕ AGREGAR NUEVO LOCAL
-                                </button>
+                    <button
+                        onClick={() => setMostrarFormulario(true)}
+                        className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                        style={{
+                            backgroundColor: '#4CAF50',
+                            fontSize: '16px'
+                        }}
+                    >
+                        ➕ AGREGAR NUEVO LOCAL
+                    </button>
                             )}
 
                     {/* Buscador - EXACTO como líneas 55-63 */}
@@ -1447,15 +1470,15 @@
                                     
                                     {/* Solo mostrar botón Eliminar para usuarios maestro */}
                                     {esUsuarioMaestro && (
-                                        <button
-                                            onClick={() => eliminarLocal(local)}
-                                            className="flex-1 text-white font-bold text-xs py-1 rounded"
-                                            style={{
-                                                backgroundColor: '#F44336'
-                                            }}
-                                        >
-                                            🗑️ Eliminar
-                                        </button>
+                                    <button
+                                        onClick={() => eliminarLocal(local)}
+                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
+                                        style={{
+                                            backgroundColor: '#F44336'
+                                        }}
+                                    >
+                                        🗑️ Eliminar
+                                    </button>
                                     )}
                                 </div>
                             </div>
@@ -3593,20 +3616,21 @@
                             PROMEDIO DE VENTA POR DÍA
                                 </div>
                             
+                        <div className="ventas-scroll"><div className="ventas-grid">
                         {/* Header de la tabla - EXACTO como línea 305-331 */}
                         <div 
-                            className="flex p-2 text-white text-xs font-bold mb-2"
+                            className="flex p-2 text-white text-xs font-bold mb-2 ventas-header"
                             style={{
                                 backgroundColor: '#2196F3',
                                 border: '1px solid #1976D2',
                                 borderRadius: '4px 4px 0 0'
                             }}
                         >
-                            <div className="p-1 border-r border-blue-300" style={{flex: '1.2'}}>TIPO</div>
+                            <div className="p-1 border-r border-blue-300 ventas-name" style={{flex: '1.2'}}>TIPO</div>
                             {diasSemana.map((dia, index) => (
                                 <div 
                                     key={dia} 
-                                    className={`p-1 text-center ${index < diasSemana.length - 1 ? 'border-r border-blue-300' : ''}`} 
+                                    className={`p-1 text-center ventas-cell ${index < diasSemana.length - 1 ? 'border-r border-blue-300' : ''}`} 
                                     style={{flex: '0.8'}}
                                 >
                                     {dia}
@@ -3645,7 +3669,7 @@
                                         return (
                                             <div 
                                                 key={producto} 
-                                                className="flex text-xs mb-1"
+                                                className="flex text-xs mb-1 ventas-row"
                                                 style={{
                                                     backgroundColor: 'white',
                                                     border: '1px solid #E0E0E0',
@@ -3654,7 +3678,7 @@
                                                 }}
                                             >
                                                 <div 
-                                                    className="p-2 text-left text-black border-r border-gray-300" 
+                                                    className="p-2 text-left text-black border-r border-gray-300 ventas-name" 
                                                     style={{flex: '1.2'}}
                                                 >
                                                     {nombre}
@@ -3671,7 +3695,7 @@
                                                     return (
                                                         <div 
                                                             key={diaCompleto} 
-                                                            className={`p-2 text-center text-black ${diaIndex < diasCompletos.length - 1 ? 'border-r border-gray-300' : ''}`} 
+                                                            className={`p-2 text-center text-black ventas-cell ${diaIndex < diasCompletos.length - 1 ? 'border-r border-gray-300' : ''}`} 
                                                             style={{flex: '0.8'}}
                                                         >
                                                             {valor > 0 ? valor : '-'}
@@ -3716,6 +3740,7 @@
                                 </div>
                             </div>
                         ))}
+                        </div></div>
                     </div>
                 </div>
             );

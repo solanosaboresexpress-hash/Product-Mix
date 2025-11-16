@@ -1380,7 +1380,7 @@
             return (
                 <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
                     {/* Header con botón volver */}
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-2">
                         <button 
                             onClick={onVolver}
                             className="px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
@@ -1393,95 +1393,156 @@
                         >
                             ← Volver
                         </button>
-                        <h1 className="text-xl font-bold text-black">Gestión de Locales</h1>
                         <div></div>
                     </div>
 
-                    {/* Pestañas - Solo visible para usuario maestro */}
+                    {/* Título - EXACTO como APK */}
+                    <h1 style={{
+                        textAlign: 'center',
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        color: '#000000',
+                        padding: '16px',
+                        marginBottom: '8px'
+                    }}>
+                        GESTIÓN DE LOCALES
+                    </h1>
+
+                    {/* Pestañas - EXACTO como APK */}
                     {esUsuarioMaestro && (
-                        <div className="flex mb-4">
+                        <div style={{
+                            display: 'flex',
+                            backgroundColor: '#FFD700',
+                            padding: '4px',
+                            marginLeft: '16px',
+                            marginRight: '16px',
+                            marginBottom: '16px',
+                            borderRadius: '8px'
+                        }}>
                             <button
                                 onClick={() => setPestanaActiva('locales')}
-                                className="flex-1 py-3 font-bold rounded-l-lg transition-colors"
                                 style={{
-                                    backgroundColor: pestanaActiva === 'locales' ? '#2196F3' : '#90CAF9',
-                                    color: pestanaActiva === 'locales' ? 'white' : '#424242'
+                                    flex: 1,
+                                    height: '48px',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    backgroundColor: pestanaActiva === 'locales' ? '#FFD700' : 'transparent',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    marginRight: '2px',
+                                    cursor: 'pointer'
                                 }}
                             >
-                                🏪 Locales
+                                🏪 LOCALES
                             </button>
                             <button
                                 onClick={() => setPestanaActiva('supervisores')}
-                                className="flex-1 py-3 font-bold rounded-r-lg transition-colors"
                                 style={{
-                                    backgroundColor: pestanaActiva === 'supervisores' ? '#2196F3' : '#90CAF9',
-                                    color: pestanaActiva === 'supervisores' ? 'white' : '#424242'
+                                    flex: 1,
+                                    height: '48px',
+                                    fontSize: '14px',
+                                    fontWeight: 'bold',
+                                    backgroundColor: pestanaActiva === 'supervisores' ? '#FFD700' : 'transparent',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    marginLeft: '2px',
+                                    cursor: 'pointer'
                                 }}
                             >
-                                👥 Supervisores
+                                👥 SUPERVISORES
                             </button>
                         </div>
                     )}
 
-                    {/* Contenido de Locales */}
+                    {/* Contenido de Locales - EXACTO como APK */}
                     {pestanaActiva === 'locales' && (
-                        <>
-                            {/* Botón Agregar Local - Solo visible para usuario maestro */}
+                        <div style={{padding: '16px'}}>
+                            {/* Botón Agregar Local - EXACTO como APK */}
                             {esUsuarioMaestro && (
                     <button
                         onClick={() => setMostrarFormulario(true)}
-                        className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                        className="w-full font-bold mb-4"
                         style={{
-                            backgroundColor: '#4CAF50',
-                            fontSize: '16px'
+                            backgroundColor: '#FFD700',
+                            fontSize: '16px',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '2px solid #FFA500',
+                            color: '#000000',
+                            cursor: 'pointer'
                         }}
                     >
                         ➕ AGREGAR NUEVO LOCAL
                     </button>
                             )}
 
-                    {/* Buscador - EXACTO como líneas 55-63 */}
+                    {/* Buscador - EXACTO como APK */}
                     <input
                         type="text"
                         placeholder="🔍 Buscar locales por nombre, fecha o usuario..."
-                        className="w-full p-3 mb-4 rounded-lg"
+                        className="w-full mb-4"
                         style={{
                             backgroundColor: 'white',
                             border: '1px solid #E0E0E0',
-                            fontSize: '14px'
+                            fontSize: '14px',
+                            padding: '12px',
+                            borderRadius: '8px'
                         }}
                         onChange={(e) => filtrarLocales(e.target.value)}
                     />
 
-                    {/* Lista de Locales - EXACTO como líneas 100-121 */}
-                    <div className="space-y-2" style={{minHeight: 'calc(100vh - 200px)'}}>
+                    {/* Lista de Locales - EXACTO como APK */}
+                    <div style={{minHeight: 'calc(100vh - 200px)'}}>
                         {(localesFiltrados.length > 0 ? localesFiltrados : locales).map((local, index) => {
                             console.log('Renderizando local', index, local);
                             return (
                             <div 
                                 key={local.nombre || `local-${index}`} 
-                                className="p-3 rounded-lg"
                                 style={{
-                                    backgroundColor: '#2196F3',
-                                    color: 'white'
+                                    backgroundColor: '#E3F2FD',
+                                    border: '2px solid #BBDEFB',
+                                    borderRadius: '16px',
+                                    padding: '20px',
+                                    marginLeft: '16px',
+                                    marginRight: '16px',
+                                    marginTop: '8px',
+                                    marginBottom: '16px',
+                                    color: '#000000'
                                 }}
                             >
-                                {/* Nombre del local - EXACTO como líneas 137-143 */}
-                                <div className="text-lg font-bold mb-2">
+                                {/* Nombre del local - EXACTO como APK */}
+                                <div style={{
+                                    fontSize: '20px',
+                                    fontWeight: 'bold',
+                                    color: '#000000',
+                                    marginBottom: '8px'
+                                }}>
                                     🏪 {local.nombre}
                                 </div>
                                 
-                                {/* Fecha de creación - EXACTO como líneas 145-151 */}
-                                <div className="text-sm mb-1">
+                                {/* Fecha de creación - EXACTO como APK */}
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#000000',
+                                    paddingTop: '4px',
+                                    paddingBottom: '4px'
+                                }}>
                                     Creado: {local.fechaCreacion}
                                 </div>
                                 
-                                {/* Usuarios - EXACTO como líneas 153-159 */}
-                                <div className="text-sm mb-3">
+                                {/* Usuarios - EXACTO como APK */}
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#000000',
+                                    paddingTop: '4px',
+                                    paddingBottom: '8px'
+                                }}>
                                     Usuarios: {Object.keys(local.usuarios || {}).length}
                                 </div>
                                 
-                                {/* Botón de acceso directo - EXACTO como líneas 161-177 */}
+                                {/* Botón de acceso directo - EXACTO como APK */}
                                 <button
                                     onClick={() => {
                                         // Crear usuario temporal para el local seleccionado
@@ -1517,15 +1578,24 @@
                                             window.location.href = window.location.origin + window.location.pathname;
                                         }
                                     }}
-                                    className="w-full text-white font-bold text-sm py-2 rounded mb-2"
                                     style={{
-                                        backgroundColor: '#9C27B0'
+                                        width: '100%',
+                                        color: '#FFFFFF',
+                                        fontWeight: 'bold',
+                                        fontSize: '14px',
+                                        backgroundColor: '#9C27B0',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px',
+                                        marginTop: '8px',
+                                        marginBottom: '8px',
+                                        cursor: 'pointer'
                                     }}
                                 >
                                     🚀 Ingresar al Local
                                 </button>
 
-                                {/* VER STOCK Y VENCIMIENTOS - igual APK, debajo de Ingresar */}
+                                {/* VER STOCK Y VENCIMIENTOS - EXACTO como APK */}
                                 <button
                                     onClick={() => {
                                         if (window.openVencimientosHistorial) {
@@ -1534,46 +1604,83 @@
                                             window.openVencLocal();
                                         }
                                     }}
-                                    className="w-full text-white font-bold text-sm py-2 rounded mb-2"
                                     style={{
-                                        backgroundColor: '#0EA5E9'
+                                        width: '100%',
+                                        color: '#FFFFFF',
+                                        fontWeight: 'bold',
+                                        fontSize: '14px',
+                                        backgroundColor: '#1976D2',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px',
+                                        marginTop: '8px',
+                                        marginBottom: '8px',
+                                        cursor: 'pointer'
                                     }}
                                 >
-                                    VER STOCK Y VENCIMIENTOS
+                                    📦 Ver Stock y Vencimientos
                                 </button>
                                 
-                                {/* Botones de administración - EXACTO como líneas 179-233 */}
-                                <div className="flex space-x-2">
+                                {/* Botones de administración - EXACTO como APK */}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    marginTop: '8px'
+                                }}>
                                     <button
                                         onClick={() => mostrarUsuarios(local)}
-                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
                                         style={{
-                                            backgroundColor: '#FF9800'
+                                            flex: 1,
+                                            color: '#FFFFFF',
+                                            fontWeight: 'bold',
+                                            fontSize: '11px',
+                                            backgroundColor: '#2196F3',
+                                            border: '2px solid #1976D2',
+                                            borderRadius: '12px',
+                                            padding: '8px',
+                                            cursor: 'pointer'
                                         }}
                                     >
-                                        👥 Usuarios
+                                        👥 USUARIOS
                                     </button>
                                     
                                     <button
                                         onClick={() => cambiarContraseña(local)}
-                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
                                         style={{
-                                            backgroundColor: '#4CAF50'
+                                            flex: 1,
+                                            color: '#FFFFFF',
+                                            fontWeight: 'bold',
+                                            fontSize: '11px',
+                                            backgroundColor: '#4CAF50',
+                                            border: '2px solid #45A049',
+                                            borderRadius: '12px',
+                                            padding: '8px',
+                                            marginLeft: '4px',
+                                            marginRight: '4px',
+                                            cursor: 'pointer'
                                         }}
                                     >
-                                        🔑 Cambiar Contraseña
+                                        🔑 CONTRASEÑA
                                     </button>
                                     
                                     {/* Solo mostrar botón Eliminar para usuarios maestro */}
                                     {esUsuarioMaestro && (
                                     <button
                                         onClick={() => eliminarLocal(local)}
-                                        className="flex-1 text-white font-bold text-xs py-1 rounded"
                                         style={{
-                                            backgroundColor: '#F44336'
+                                            flex: 1,
+                                            color: '#FFFFFF',
+                                            fontWeight: 'bold',
+                                            fontSize: '11px',
+                                            backgroundColor: '#F44336',
+                                            border: '2px solid #D32F2F',
+                                            borderRadius: '12px',
+                                            padding: '8px',
+                                            marginLeft: '4px',
+                                            cursor: 'pointer'
                                         }}
                                     >
-                                        🗑️ Eliminar
+                                        🗑️ ELIMINAR
                                     </button>
                                     )}
                                 </div>
@@ -1606,66 +1713,116 @@
                     <div className="text-center mt-2 text-xs text-gray-500">
                         Debug: locales={locales.length}, filtrados={localesFiltrados.length}
                     </div>
-                        </>
+                        </div>
                     )}
 
-                    {/* Contenido de Supervisores */}
+                    {/* Contenido de Supervisores - EXACTO como APK */}
                     {pestanaActiva === 'supervisores' && esUsuarioMaestro && (
-                        <>
-                            {/* Botón Agregar Supervisor */}
+                        <div style={{padding: '16px'}}>
+                            {/* Botón Agregar Supervisor - EXACTO como APK */}
                             <button
                                 onClick={() => setMostrarFormularioSupervisor(true)}
-                                className="w-full text-white font-bold text-base py-3 rounded-lg mb-4"
+                                className="w-full font-bold mb-4"
                                 style={{
-                                    backgroundColor: '#4CAF50',
-                                    fontSize: '16px'
+                                    backgroundColor: '#FFD700',
+                                    fontSize: '16px',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    border: '2px solid #FFA500',
+                                    color: '#000000',
+                                    cursor: 'pointer'
                                 }}
                             >
                                 ➕ AGREGAR NUEVO SUPERVISOR
                             </button>
 
-                            {/* Buscador de supervisores */}
+                            {/* Buscador de supervisores - EXACTO como APK */}
                             <input
                                 type="text"
-                                placeholder="🔍 Buscar supervisores por nombre o usuario..."
-                                className="w-full p-3 mb-4 rounded-lg"
+                                placeholder="🔍 Buscar supervisores por nombre..."
+                                className="w-full mb-4"
                                 style={{
                                     backgroundColor: 'white',
                                     border: '1px solid #E0E0E0',
-                                    fontSize: '14px'
+                                    fontSize: '14px',
+                                    padding: '12px',
+                                    borderRadius: '8px'
                                 }}
                                 onChange={(e) => filtrarSupervisores(e.target.value)}
                             />
 
-                            {/* Lista de Supervisores */}
-                            <div className="space-y-2" style={{minHeight: 'calc(100vh - 200px)'}}>
-                                {(supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores).map((supervisor, index) => (
+                            {/* Lista de Supervisores - EXACTO como APK */}
+                            <div style={{minHeight: 'calc(100vh - 200px)'}}>
+                                {(supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores).map((supervisor, index) => {
+                                    // Obtener nombres de locales asignados
+                                    const nombresLocales = (supervisor.localesAsignados || []).map(localNombre => {
+                                        const local = locales.find(l => l.nombre === localNombre);
+                                        return local ? local.nombre : localNombre;
+                                    });
+                                    
+                                    return (
                                     <div 
                                         key={supervisor.id || `supervisor-${index}`} 
-                                        className="p-3 rounded-lg"
                                         style={{
-                                            backgroundColor: '#9C27B0',
-                                            color: 'white'
+                                            backgroundColor: '#E3F2FD',
+                                            border: '2px solid #BBDEFB',
+                                            borderRadius: '16px',
+                                            padding: '20px',
+                                            marginLeft: '16px',
+                                            marginRight: '16px',
+                                            marginTop: '8px',
+                                            marginBottom: '16px',
+                                            color: '#000000'
                                         }}
                                     >
-                                        <div className="text-lg font-bold mb-2">
-                                            👤 {supervisor.nombre}
+                                        {/* Nombre del supervisor - EXACTO como APK */}
+                                        <div style={{
+                                            fontSize: '20px',
+                                            fontWeight: 'bold',
+                                            color: '#000000',
+                                            marginBottom: '8px'
+                                        }}>
+                                            👨‍💼 {supervisor.usuario}
                                         </div>
                                         
-                                        <div className="text-sm mb-1">
-                                            Usuario: {supervisor.usuario}
+                                        {/* Fecha de creación - EXACTO como APK */}
+                                        <div style={{
+                                            fontSize: '12px',
+                                            color: '#000000',
+                                            paddingTop: '4px',
+                                            paddingBottom: '4px'
+                                        }}>
+                                            Creado: {supervisor.fechaCreacion || 'N/A'}
                                         </div>
                                         
-                                        <div className="text-sm mb-3">
-                                            Locales asignados: {supervisor.localesAsignados?.length || 0}
+                                        {/* Locales asignados - EXACTO como APK */}
+                                        <div style={{
+                                            fontSize: '12px',
+                                            color: '#000000',
+                                            paddingTop: '4px',
+                                            paddingBottom: '8px'
+                                        }}>
+                                            Locales asignados: {nombresLocales.length} {nombresLocales.length > 0 ? `(${nombresLocales.join(', ')})` : ''}
                                         </div>
                                         
-                                        <div className="flex gap-2">
+                                        {/* Botones de administración - EXACTO como APK */}
+                                        <div style={{
+                                            display: 'flex',
+                                            gap: '4px',
+                                            marginTop: '8px'
+                                        }}>
                                             <button
                                                 onClick={() => mostrarLocalesAsignados(supervisor)}
-                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
                                                 style={{
-                                                    backgroundColor: '#2196F3'
+                                                    flex: 1,
+                                                    color: '#FFFFFF',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '11px',
+                                                    backgroundColor: '#2196F3',
+                                                    border: '2px solid #1976D2',
+                                                    borderRadius: '12px',
+                                                    padding: '8px',
+                                                    cursor: 'pointer'
                                                 }}
                                             >
                                                 🏪 LOCALES
@@ -1673,9 +1830,18 @@
                                             
                                             <button
                                                 onClick={() => mostrarDialogoAsignarLocales(supervisor)}
-                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
                                                 style={{
-                                                    backgroundColor: '#4CAF50'
+                                                    flex: 1,
+                                                    color: '#FFFFFF',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '11px',
+                                                    backgroundColor: '#4CAF50',
+                                                    border: '2px solid #45A049',
+                                                    borderRadius: '12px',
+                                                    padding: '8px',
+                                                    marginLeft: '4px',
+                                                    marginRight: '4px',
+                                                    cursor: 'pointer'
                                                 }}
                                             >
                                                 ➕ ASIGNAR
@@ -1683,9 +1849,18 @@
                                             
                                             <button
                                                 onClick={() => mostrarContraseñaSupervisor(supervisor)}
-                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
                                                 style={{
-                                                    backgroundColor: '#FF9800'
+                                                    flex: 1,
+                                                    color: '#FFFFFF',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '11px',
+                                                    backgroundColor: '#2196F3',
+                                                    border: '2px solid #1976D2',
+                                                    borderRadius: '12px',
+                                                    padding: '8px',
+                                                    marginLeft: '4px',
+                                                    marginRight: '4px',
+                                                    cursor: 'pointer'
                                                 }}
                                             >
                                                 🔑 CONTRASEÑA
@@ -1693,16 +1868,25 @@
                                             
                                             <button
                                                 onClick={() => mostrarDialogoEliminarSupervisor(supervisor)}
-                                                className="flex-1 text-white font-bold text-xs py-1 rounded"
                                                 style={{
-                                                    backgroundColor: '#F44336'
+                                                    flex: 1,
+                                                    color: '#FFFFFF',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '11px',
+                                                    backgroundColor: '#F44336',
+                                                    border: '2px solid #D32F2F',
+                                                    borderRadius: '12px',
+                                                    padding: '8px',
+                                                    marginLeft: '4px',
+                                                    cursor: 'pointer'
                                                 }}
                                             >
                                                 🗑️ ELIMINAR
                                             </button>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                                 
                                 {supervisores.length === 0 && (
                                     <div className="text-center p-8">
@@ -1723,7 +1907,7 @@
                             >
                                 {error || `${supervisores.length} supervisores encontrados (${supervisoresFiltrados.length} filtrados)`}
                             </div>
-                        </>
+                        </div>
                     )}
                                 
                     {/* Modal de nuevo local - EXACTO como líneas 251-295 */}
@@ -4488,7 +4672,7 @@
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:95%;max-width:1000px;max-height:92vh;border-radius:8px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25)';
+    modal.style.cssText = 'background:#fff;width:95%;max-width:1000px;max-height:92vh;border-radius:8px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);display:flex;flex-direction:column';
     overlay.appendChild(modal);
 
     const header = document.createElement('div');
@@ -4497,13 +4681,13 @@
     modal.appendChild(header);
 
     const body = document.createElement('div');
-    body.style.cssText = 'display:flex;gap:12px;padding:12px;overflow:hidden;max-height:calc(92vh - 60px)';
+    body.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:12px;overflow-y:auto;max-height:calc(92vh - 60px)';
     modal.appendChild(body);
 
     const colLeft = document.createElement('div');
-    colLeft.style.cssText = 'flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:12px;min-width:300px;overflow-y:auto;max-height:calc(92vh - 84px)';
+    colLeft.style.cssText = 'width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:12px;overflow-y:visible';
     const colRight = document.createElement('div');
-    colRight.style.cssText = 'flex:1.5;border:1px solid #e5e7eb;border-radius:8px;padding:12px;overflow-y:auto;max-height:calc(92vh - 84px)';
+    colRight.style.cssText = 'width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:12px;overflow-y:visible';
     body.appendChild(colLeft);
     body.appendChild(colRight);
 

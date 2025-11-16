@@ -1378,32 +1378,38 @@
             }
 
             return (
-                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px', maxWidth: '100%', overflowX: 'hidden'}}>
                     {/* Header con botón volver */}
-                    <div className="flex justify-between items-center mb-2">
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', width: '100%'}}>
                         <button 
                             onClick={onVolver}
-                            className="px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
                             style={{
+                                padding: '8px 16px',
+                                color: '#FFFFFF',
+                                fontWeight: 'bold',
+                                borderRadius: '8px',
                                 backgroundColor: '#2196F3',
                                 border: '1px solid #1976D2',
-                                borderRadius: '8px',
-                                fontSize: '16px'
+                                fontSize: '16px',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap'
                             }}
                         >
                             ← Volver
                         </button>
-                        <div></div>
+                        <div style={{flex: 1}}></div>
                     </div>
 
                     {/* Título - EXACTO como APK */}
                     <h1 style={{
                         textAlign: 'center',
-                        fontSize: '24px',
+                        fontSize: 'clamp(18px, 5vw, 24px)',
                         fontWeight: 'bold',
                         color: '#000000',
                         padding: '16px',
-                        marginBottom: '8px'
+                        marginBottom: '8px',
+                        width: '100%',
+                        boxSizing: 'border-box'
                     }}>
                         GESTIÓN DE LOCALES
                     </h1>
@@ -1414,10 +1420,12 @@
                             display: 'flex',
                             backgroundColor: '#FFD700',
                             padding: '4px',
-                            marginLeft: '16px',
-                            marginRight: '16px',
+                            marginLeft: 'max(8px, calc((100% - 400px) / 2))',
+                            marginRight: 'max(8px, calc((100% - 400px) / 2))',
                             marginBottom: '16px',
-                            borderRadius: '8px'
+                            borderRadius: '8px',
+                            maxWidth: 'calc(100% - 16px)',
+                            boxSizing: 'border-box'
                         }}>
                             <button
                                 onClick={() => setPestanaActiva('locales')}
@@ -1458,20 +1466,24 @@
 
                     {/* Contenido de Locales - EXACTO como APK */}
                     {pestanaActiva === 'locales' && (
-                        <div style={{padding: '16px'}}>
+                        <div style={{padding: 'max(8px, 16px)', width: '100%', boxSizing: 'border-box'}}>
                             {/* Botón Agregar Local - EXACTO como APK */}
                             {esUsuarioMaestro && (
                     <button
                         onClick={() => setMostrarFormulario(true)}
-                        className="w-full font-bold mb-4"
                         style={{
+                            width: '100%',
+                            fontWeight: 'bold',
+                            marginBottom: '16px',
                             backgroundColor: '#FFD700',
-                            fontSize: '16px',
+                            fontSize: 'clamp(14px, 4vw, 16px)',
                             padding: '16px',
                             borderRadius: '12px',
                             border: '2px solid #FFA500',
                             color: '#000000',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            boxSizing: 'border-box',
+                            textAlign: 'center'
                         }}
                     >
                         ➕ AGREGAR NUEVO LOCAL
@@ -1482,13 +1494,15 @@
                     <input
                         type="text"
                         placeholder="🔍 Buscar locales por nombre, fecha o usuario..."
-                        className="w-full mb-4"
                         style={{
+                            width: '100%',
+                            marginBottom: '16px',
                             backgroundColor: 'white',
                             border: '1px solid #E0E0E0',
-                            fontSize: '14px',
+                            fontSize: 'clamp(12px, 3.5vw, 14px)',
                             padding: '12px',
-                            borderRadius: '8px'
+                            borderRadius: '8px',
+                            boxSizing: 'border-box'
                         }}
                         onChange={(e) => filtrarLocales(e.target.value)}
                     />
@@ -1504,40 +1518,46 @@
                                     backgroundColor: '#E3F2FD',
                                     border: '2px solid #BBDEFB',
                                     borderRadius: '16px',
-                                    padding: '20px',
-                                    marginLeft: '16px',
-                                    marginRight: '16px',
+                                    padding: 'max(12px, 20px)',
+                                    marginLeft: 'max(8px, 16px)',
+                                    marginRight: 'max(8px, 16px)',
                                     marginTop: '8px',
                                     marginBottom: '16px',
-                                    color: '#000000'
+                                    color: '#000000',
+                                    width: 'calc(100% - max(16px, 32px))',
+                                    boxSizing: 'border-box'
                                 }}
                             >
                                 {/* Nombre del local - EXACTO como APK */}
                                 <div style={{
-                                    fontSize: '20px',
+                                    fontSize: 'clamp(16px, 5vw, 20px)',
                                     fontWeight: 'bold',
                                     color: '#000000',
-                                    marginBottom: '8px'
+                                    marginBottom: '8px',
+                                    wordBreak: 'break-word',
+                                    textAlign: 'left'
                                 }}>
                                     🏪 {local.nombre}
                                 </div>
                                 
                                 {/* Fecha de creación - EXACTO como APK */}
                                 <div style={{
-                                    fontSize: '12px',
+                                    fontSize: 'clamp(11px, 3vw, 12px)',
                                     color: '#000000',
                                     paddingTop: '4px',
-                                    paddingBottom: '4px'
+                                    paddingBottom: '4px',
+                                    textAlign: 'left'
                                 }}>
                                     Creado: {local.fechaCreacion}
                                 </div>
                                 
                                 {/* Usuarios - EXACTO como APK */}
                                 <div style={{
-                                    fontSize: '12px',
+                                    fontSize: 'clamp(11px, 3vw, 12px)',
                                     color: '#000000',
                                     paddingTop: '4px',
-                                    paddingBottom: '8px'
+                                    paddingBottom: '8px',
+                                    textAlign: 'left'
                                 }}>
                                     Usuarios: {Object.keys(local.usuarios || {}).length}
                                 </div>
@@ -1582,14 +1602,16 @@
                                         width: '100%',
                                         color: '#FFFFFF',
                                         fontWeight: 'bold',
-                                        fontSize: '14px',
+                                        fontSize: 'clamp(12px, 3.5vw, 14px)',
                                         backgroundColor: '#9C27B0',
                                         border: 'none',
                                         borderRadius: '8px',
-                                        padding: '10px',
+                                        padding: 'max(8px, 10px)',
                                         marginTop: '8px',
                                         marginBottom: '8px',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        boxSizing: 'border-box'
                                     }}
                                 >
                                     🚀 Ingresar al Local
@@ -1608,14 +1630,16 @@
                                         width: '100%',
                                         color: '#FFFFFF',
                                         fontWeight: 'bold',
-                                        fontSize: '14px',
+                                        fontSize: 'clamp(12px, 3.5vw, 14px)',
                                         backgroundColor: '#1976D2',
                                         border: 'none',
                                         borderRadius: '8px',
-                                        padding: '10px',
+                                        padding: 'max(8px, 10px)',
                                         marginTop: '8px',
                                         marginBottom: '8px',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        boxSizing: 'border-box'
                                     }}
                                 >
                                     📦 Ver Stock y Vencimientos
@@ -1624,21 +1648,28 @@
                                 {/* Botones de administración - EXACTO como APK */}
                                 <div style={{
                                     display: 'flex',
-                                    gap: '4px',
-                                    marginTop: '8px'
+                                    gap: 'max(2px, 4px)',
+                                    marginTop: '8px',
+                                    flexWrap: 'wrap',
+                                    width: '100%'
                                 }}>
                                     <button
                                         onClick={() => mostrarUsuarios(local)}
                                         style={{
-                                            flex: 1,
+                                            flex: '1 1 calc(33.333% - 4px)',
+                                            minWidth: '80px',
                                             color: '#FFFFFF',
                                             fontWeight: 'bold',
-                                            fontSize: '11px',
+                                            fontSize: 'clamp(9px, 2.5vw, 11px)',
                                             backgroundColor: '#2196F3',
                                             border: '2px solid #1976D2',
                                             borderRadius: '12px',
-                                            padding: '8px',
-                                            cursor: 'pointer'
+                                            padding: 'max(6px, 8px)',
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
                                         }}
                                     >
                                         👥 USUARIOS
@@ -1647,17 +1678,22 @@
                                     <button
                                         onClick={() => cambiarContraseña(local)}
                                         style={{
-                                            flex: 1,
+                                            flex: '1 1 calc(33.333% - 4px)',
+                                            minWidth: '80px',
                                             color: '#FFFFFF',
                                             fontWeight: 'bold',
-                                            fontSize: '11px',
+                                            fontSize: 'clamp(9px, 2.5vw, 11px)',
                                             backgroundColor: '#4CAF50',
                                             border: '2px solid #45A049',
                                             borderRadius: '12px',
-                                            padding: '8px',
-                                            marginLeft: '4px',
-                                            marginRight: '4px',
-                                            cursor: 'pointer'
+                                            padding: 'max(6px, 8px)',
+                                            marginLeft: 'max(2px, 4px)',
+                                            marginRight: 'max(2px, 4px)',
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
                                         }}
                                     >
                                         🔑 CONTRASEÑA
@@ -1668,16 +1704,21 @@
                                     <button
                                         onClick={() => eliminarLocal(local)}
                                         style={{
-                                            flex: 1,
+                                            flex: '1 1 calc(33.333% - 4px)',
+                                            minWidth: '80px',
                                             color: '#FFFFFF',
                                             fontWeight: 'bold',
-                                            fontSize: '11px',
+                                            fontSize: 'clamp(9px, 2.5vw, 11px)',
                                             backgroundColor: '#F44336',
                                             border: '2px solid #D32F2F',
                                             borderRadius: '12px',
-                                            padding: '8px',
-                                            marginLeft: '4px',
-                                            cursor: 'pointer'
+                                            padding: 'max(6px, 8px)',
+                                            marginLeft: 'max(2px, 4px)',
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
                                         }}
                                     >
                                         🗑️ ELIMINAR
@@ -1718,19 +1759,23 @@
 
                     {/* Contenido de Supervisores - EXACTO como APK */}
                     {pestanaActiva === 'supervisores' && esUsuarioMaestro && (
-                        <div style={{padding: '16px'}}>
+                        <div style={{padding: 'max(8px, 16px)', width: '100%', boxSizing: 'border-box'}}>
                             {/* Botón Agregar Supervisor - EXACTO como APK */}
                             <button
                                 onClick={() => setMostrarFormularioSupervisor(true)}
-                                className="w-full font-bold mb-4"
                                 style={{
+                                    width: '100%',
+                                    fontWeight: 'bold',
+                                    marginBottom: '16px',
                                     backgroundColor: '#FFD700',
-                                    fontSize: '16px',
+                                    fontSize: 'clamp(14px, 4vw, 16px)',
                                     padding: '16px',
                                     borderRadius: '12px',
                                     border: '2px solid #FFA500',
                                     color: '#000000',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    boxSizing: 'border-box',
+                                    textAlign: 'center'
                                 }}
                             >
                                 ➕ AGREGAR NUEVO SUPERVISOR
@@ -1740,13 +1785,15 @@
                             <input
                                 type="text"
                                 placeholder="🔍 Buscar supervisores por nombre..."
-                                className="w-full mb-4"
                                 style={{
+                                    width: '100%',
+                                    marginBottom: '16px',
                                     backgroundColor: 'white',
                                     border: '1px solid #E0E0E0',
-                                    fontSize: '14px',
+                                    fontSize: 'clamp(12px, 3.5vw, 14px)',
                                     padding: '12px',
-                                    borderRadius: '8px'
+                                    borderRadius: '8px',
+                                    boxSizing: 'border-box'
                                 }}
                                 onChange={(e) => filtrarSupervisores(e.target.value)}
                             />
@@ -1767,40 +1814,47 @@
                                             backgroundColor: '#E3F2FD',
                                             border: '2px solid #BBDEFB',
                                             borderRadius: '16px',
-                                            padding: '20px',
-                                            marginLeft: '16px',
-                                            marginRight: '16px',
+                                            padding: 'max(12px, 20px)',
+                                            marginLeft: 'max(8px, 16px)',
+                                            marginRight: 'max(8px, 16px)',
                                             marginTop: '8px',
                                             marginBottom: '16px',
-                                            color: '#000000'
+                                            color: '#000000',
+                                            width: 'calc(100% - max(16px, 32px))',
+                                            boxSizing: 'border-box'
                                         }}
                                     >
                                         {/* Nombre del supervisor - EXACTO como APK */}
                                         <div style={{
-                                            fontSize: '20px',
+                                            fontSize: 'clamp(16px, 5vw, 20px)',
                                             fontWeight: 'bold',
                                             color: '#000000',
-                                            marginBottom: '8px'
+                                            marginBottom: '8px',
+                                            wordBreak: 'break-word',
+                                            textAlign: 'left'
                                         }}>
                                             👨‍💼 {supervisor.usuario}
                                         </div>
                                         
                                         {/* Fecha de creación - EXACTO como APK */}
                                         <div style={{
-                                            fontSize: '12px',
+                                            fontSize: 'clamp(11px, 3vw, 12px)',
                                             color: '#000000',
                                             paddingTop: '4px',
-                                            paddingBottom: '4px'
+                                            paddingBottom: '4px',
+                                            textAlign: 'left'
                                         }}>
                                             Creado: {supervisor.fechaCreacion || 'N/A'}
                                         </div>
                                         
                                         {/* Locales asignados - EXACTO como APK */}
                                         <div style={{
-                                            fontSize: '12px',
+                                            fontSize: 'clamp(11px, 3vw, 12px)',
                                             color: '#000000',
                                             paddingTop: '4px',
-                                            paddingBottom: '8px'
+                                            paddingBottom: '8px',
+                                            textAlign: 'left',
+                                            wordBreak: 'break-word'
                                         }}>
                                             Locales asignados: {nombresLocales.length} {nombresLocales.length > 0 ? `(${nombresLocales.join(', ')})` : ''}
                                         </div>
@@ -1808,21 +1862,28 @@
                                         {/* Botones de administración - EXACTO como APK */}
                                         <div style={{
                                             display: 'flex',
-                                            gap: '4px',
-                                            marginTop: '8px'
+                                            gap: 'max(2px, 4px)',
+                                            marginTop: '8px',
+                                            flexWrap: 'wrap',
+                                            width: '100%'
                                         }}>
                                             <button
                                                 onClick={() => mostrarLocalesAsignados(supervisor)}
                                                 style={{
-                                                    flex: 1,
+                                                    flex: '1 1 calc(25% - 6px)',
+                                                    minWidth: '70px',
                                                     color: '#FFFFFF',
                                                     fontWeight: 'bold',
-                                                    fontSize: '11px',
+                                                    fontSize: 'clamp(9px, 2.5vw, 11px)',
                                                     backgroundColor: '#2196F3',
                                                     border: '2px solid #1976D2',
                                                     borderRadius: '12px',
-                                                    padding: '8px',
-                                                    cursor: 'pointer'
+                                                    padding: 'max(6px, 8px)',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
                                                 }}
                                             >
                                                 🏪 LOCALES
@@ -1831,17 +1892,22 @@
                                             <button
                                                 onClick={() => mostrarDialogoAsignarLocales(supervisor)}
                                                 style={{
-                                                    flex: 1,
+                                                    flex: '1 1 calc(25% - 6px)',
+                                                    minWidth: '70px',
                                                     color: '#FFFFFF',
                                                     fontWeight: 'bold',
-                                                    fontSize: '11px',
+                                                    fontSize: 'clamp(9px, 2.5vw, 11px)',
                                                     backgroundColor: '#4CAF50',
                                                     border: '2px solid #45A049',
                                                     borderRadius: '12px',
-                                                    padding: '8px',
-                                                    marginLeft: '4px',
-                                                    marginRight: '4px',
-                                                    cursor: 'pointer'
+                                                    padding: 'max(6px, 8px)',
+                                                    marginLeft: 'max(2px, 4px)',
+                                                    marginRight: 'max(2px, 4px)',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
                                                 }}
                                             >
                                                 ➕ ASIGNAR
@@ -1850,17 +1916,22 @@
                                             <button
                                                 onClick={() => mostrarContraseñaSupervisor(supervisor)}
                                                 style={{
-                                                    flex: 1,
+                                                    flex: '1 1 calc(25% - 6px)',
+                                                    minWidth: '70px',
                                                     color: '#FFFFFF',
                                                     fontWeight: 'bold',
-                                                    fontSize: '11px',
+                                                    fontSize: 'clamp(9px, 2.5vw, 11px)',
                                                     backgroundColor: '#2196F3',
                                                     border: '2px solid #1976D2',
                                                     borderRadius: '12px',
-                                                    padding: '8px',
-                                                    marginLeft: '4px',
-                                                    marginRight: '4px',
-                                                    cursor: 'pointer'
+                                                    padding: 'max(6px, 8px)',
+                                                    marginLeft: 'max(2px, 4px)',
+                                                    marginRight: 'max(2px, 4px)',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
                                                 }}
                                             >
                                                 🔑 CONTRASEÑA
@@ -1869,16 +1940,21 @@
                                             <button
                                                 onClick={() => mostrarDialogoEliminarSupervisor(supervisor)}
                                                 style={{
-                                                    flex: 1,
+                                                    flex: '1 1 calc(25% - 6px)',
+                                                    minWidth: '70px',
                                                     color: '#FFFFFF',
                                                     fontWeight: 'bold',
-                                                    fontSize: '11px',
+                                                    fontSize: 'clamp(9px, 2.5vw, 11px)',
                                                     backgroundColor: '#F44336',
                                                     border: '2px solid #D32F2F',
                                                     borderRadius: '12px',
-                                                    padding: '8px',
-                                                    marginLeft: '4px',
-                                                    cursor: 'pointer'
+                                                    padding: 'max(6px, 8px)',
+                                                    marginLeft: 'max(2px, 4px)',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
                                                 }}
                                             >
                                                 🗑️ ELIMINAR

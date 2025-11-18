@@ -1260,6 +1260,10 @@
                 contraseña: '',
                 localesAsignados: []
             });
+            
+            // Estados para alertas
+            const [badgesVencimientos, setBadgesVencimientos] = useState({}); // {localId: {hoy: 0, manana: 0}}
+            const [problemasLocales, setProblemasLocales] = useState({}); // {localId: [problemas]}
 
             useEffect(() => {
                 cargarUsuarioActual();
@@ -1275,6 +1279,13 @@
                     }
                 }
             }, [usuarioActual, esUsuarioMaestro]);
+            
+            // Cargar badges y verificar problemas cuando cambian los locales
+            useEffect(() => {
+                if (locales.length > 0 && (esUsuarioMaestro || usuarioActual?.localesAsignados)) {
+                    cargarBadgesYProblemas();
+                }
+            }, [locales, esUsuarioMaestro, usuarioActual]);
 
             const cargarUsuarioActual = () => {
                 try {
@@ -1512,6 +1523,293 @@
                 }
             };
 
+            // Función para obtener resumen de vencimientos (similar a VencimientoRepository)
+            const obtenerResumenVencimientos = async (localId) => {
+                try {
+                    // Validar que localId no esté vacío
+                    if (!localId || localId.trim() === '') {
+                        console.log('⚠️ LocalId vacío, retornando valores por defecto');
+                        return { hoy: 0, manana: 0 };
+                    }
+                    
+                    const db = FirebaseRegionManager.getFirestore();
+                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    
+                    console.log('🔍 Obteniendo resumen vencimientos para local:', localId, 'fecha hoy:', fechaHoy);
+                    
+                    // Obtener todos los lotes del local desde la colección 'vencimientos_activos' (igual que en la pantalla de stock)
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    console.log('📦 Lotes encontrados (total):', lotesSnapshot.size, 'para local:', localId);
+                    
+                    let hoy = 0;
+                    let manana = 0;
+                    
+                    lotesSnapshot.forEach(doc => {
+                        const lote = doc.data();
+                        
+                        // Filtrar solo lotes activos (si tienen el campo activo, debe ser true; si no existe, asumimos activo)
+                        const esActivo = lote.activo !== false; // Si no existe o es true, está activo
+                        
+                        if (!esActivo) {
+                            console.log('⏭️ Lote inactivo ignorado:', lote.productoCodigo);
+                            return;
+                        }
+                        
+                        if (lote.fechaVencimiento) {
+                            // Parsear fecha de vencimiento (puede venir como string o timestamp)
+                            let fechaVenc;
+                            if (lote.fechaVencimiento.toDate) {
+                                // Es un Timestamp de Firestore
+                                fechaVenc = lote.fechaVencimiento.toDate();
+                            } else if (typeof lote.fechaVencimiento === 'string') {
+                                // Es un string en formato YYYY-MM-DD
+                                fechaVenc = new Date(lote.fechaVencimiento + 'T00:00:00');
+                            } else {
+                                // Intentar parsear como fecha
+                                fechaVenc = new Date(lote.fechaVencimiento);
+                            }
+                            
+                            // Validar que la fecha sea válida
+                            if (isNaN(fechaVenc.getTime())) {
+                                console.log('⚠️ Fecha inválida para lote:', lote.productoCodigo, 'fechaVencimiento:', lote.fechaVencimiento);
+                                return;
+                            }
+                            
+                            const fechaHoyDate = new Date(fechaHoy + 'T00:00:00');
+                            fechaVenc.setHours(0, 0, 0, 0);
+                            fechaHoyDate.setHours(0, 0, 0, 0);
+                            
+                            const diffTime = fechaVenc - fechaHoyDate;
+                            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            console.log('📅 Lote:', lote.productoCodigo || doc.id, 'fechaVenc:', fechaVenc.toISOString().split('T')[0], 'diffDays:', diffDays, 'activo:', esActivo);
+                            
+                            if (diffDays === 0) {
+                                hoy++;
+                                console.log('🔴 Producto vence HOY:', lote.productoCodigo || doc.id, 'cantidad:', lote.cantidad || 0);
+                            } else if (diffDays === 1) {
+                                manana++;
+                                console.log('🟡 Producto vence MAÑANA:', lote.productoCodigo || doc.id, 'cantidad:', lote.cantidad || 0);
+                            }
+                        } else {
+                            console.log('⚠️ Lote sin fechaVencimiento:', lote.productoCodigo || doc.id);
+                        }
+                    });
+                    
+                    console.log('✅ Resumen vencimientos para', localId, ':', { hoy, manana });
+                    return { hoy, manana };
+                } catch (error) {
+                    console.error('❌ Error obteniendo resumen vencimientos para', localId, ':', error);
+                    return { hoy: 0, manana: 0 };
+                }
+            };
+            
+            // Cargar badges de vencimientos y verificar problemas en paralelo
+            const cargarBadgesYProblemas = async () => {
+                const localesParaVerificar = esUsuarioMaestro 
+                    ? locales 
+                    : locales.filter(l => usuarioActual?.localesAsignados?.includes(l.id));
+                
+                // Filtrar locales que tienen ID válido (no vacío)
+                const localesConIdValido = localesParaVerificar.filter(l => l.id && l.id.trim() !== '');
+                
+                console.log('🔄 Cargando badges y problemas para', localesConIdValido.length, 'locales (de', localesParaVerificar.length, 'totales)');
+                
+                if (localesConIdValido.length === 0) {
+                    console.log('⚠️ No hay locales con ID válido para verificar');
+                    return;
+                }
+                
+                // Cargar badges y problemas en paralelo solo para locales con ID válido
+                const promesas = localesConIdValido.map(async (local) => {
+                    const [badge, problemas] = await Promise.all([
+                        obtenerResumenVencimientos(local.id),
+                        verificarProblemasLocal(local.id, local.nombre)
+                    ]);
+                    return { localId: local.id, badge, problemas };
+                });
+                
+                const resultados = await Promise.all(promesas);
+                
+                const nuevosBadges = {};
+                const nuevosProblemas = {};
+                
+                resultados.forEach(({ localId, badge, problemas }) => {
+                    nuevosBadges[localId] = badge;
+                    console.log('📊 Badge para', localId, ':', badge);
+                    if (problemas.length > 0) {
+                        nuevosProblemas[localId] = problemas;
+                    }
+                });
+                
+                console.log('✅ Badges cargados:', nuevosBadges);
+                console.log('✅ Problemas cargados:', nuevosProblemas);
+                
+                setBadgesVencimientos(nuevosBadges);
+                setProblemasLocales(nuevosProblemas);
+            };
+            
+            // Verificar problemas de datos en cero y días faltantes
+            const verificarProblemasLocal = async (localId, nombreLocal) => {
+                const problemas = [];
+                try {
+                    // Validar que localId no esté vacío
+                    if (!localId || localId.trim() === '') {
+                        console.log('⚠️ LocalId vacío para verificar problemas, retornando array vacío');
+                        return [];
+                    }
+                    
+                    const db = FirebaseRegionManager.getFirestore();
+                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    
+                    // Obtener todos los registros históricos
+                    const registrosSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('registros')
+                        .get();
+                    
+                    const registrosPorFecha = {};
+                    
+                    registrosSnapshot.forEach(doc => {
+                        const registro = doc.data();
+                        if (!registrosPorFecha[registro.fecha]) {
+                            registrosPorFecha[registro.fecha] = new Set();
+                        }
+                        registrosPorFecha[registro.fecha].add(registro.tipo);
+                        
+                        // Verificar datos en cero
+                        const todosEnCero = registro.productos?.every(p => p.cantidad === 0) || false;
+                        
+                        if (registro.tipo === 'Ingreso de Mercadería' && todosEnCero && !registro.noRecibioMercaderia) {
+                            const fecha = new Date(registro.fecha);
+                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                            const fechaFormateada = fecha.toLocaleDateString('es-AR');
+                            problemas.push(`📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`);
+                        } else if (registro.tipo === 'Stock Final' && todosEnCero) {
+                            const fecha = new Date(registro.fecha);
+                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                            const fechaFormateada = fecha.toLocaleDateString('es-AR');
+                            problemas.push(`📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`);
+                        }
+                    });
+                    
+                    // Verificar días faltantes en los últimos 7 días (excluyendo hoy)
+                    const fechaHoyDate = new Date(fechaHoy);
+                    for (let i = 1; i <= 7; i++) {
+                        const fechaCheck = new Date(fechaHoyDate);
+                        fechaCheck.setDate(fechaCheck.getDate() - i);
+                        const fechaCheckStr = fechaCheck.toISOString().split('T')[0];
+                        
+                        const tiposExistentes = registrosPorFecha[fechaCheckStr] || new Set();
+                        const faltantes = [];
+                        
+                        if (!tiposExistentes.has('Ingreso de Mercadería')) {
+                            faltantes.push('Ingreso de Mercadería');
+                        }
+                        if (!tiposExistentes.has('Stock Final')) {
+                            faltantes.push('Stock Final');
+                        }
+                        
+                        if (faltantes.length > 0) {
+                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaCheck.getDay()];
+                            const fechaFormateada = fechaCheck.toLocaleDateString('es-AR');
+                            problemas.push(`📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error verificando problemas:', error);
+                }
+                
+                return problemas;
+            };
+            
+            // Mostrar popup de vencimientos
+            const mostrarPopupVencimientos = async (local) => {
+                try {
+                    // Validar que local.id no esté vacío
+                    if (!local.id || local.id.trim() === '') {
+                        alert('⚠️ Este local no tiene un ID válido');
+                        return;
+                    }
+                    
+                    const db = FirebaseRegionManager.getFirestore();
+                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    
+                    // Usar la colección 'vencimientos_activos' (igual que en la pantalla de stock)
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(local.id)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    const lotesHoy = [];
+                    lotesSnapshot.forEach(doc => {
+                        const lote = doc.data();
+                        if (lote.fechaVencimiento) {
+                            // Parsear fecha de vencimiento (igual que en obtenerResumenVencimientos)
+                            let fechaVenc;
+                            if (lote.fechaVencimiento.toDate) {
+                                fechaVenc = lote.fechaVencimiento.toDate();
+                            } else if (typeof lote.fechaVencimiento === 'string') {
+                                fechaVenc = new Date(lote.fechaVencimiento + 'T00:00:00');
+                            } else {
+                                fechaVenc = new Date(lote.fechaVencimiento);
+                            }
+                            
+                            if (isNaN(fechaVenc.getTime())) {
+                                return; // Fecha inválida, saltar
+                            }
+                            
+                            const fechaHoyDate = new Date(fechaHoy + 'T00:00:00');
+                            fechaVenc.setHours(0, 0, 0, 0);
+                            fechaHoyDate.setHours(0, 0, 0, 0);
+                            
+                            const diffTime = fechaVenc - fechaHoyDate;
+                            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            if (diffDays === 0) {
+                                lotesHoy.push(lote);
+                            }
+                        }
+                    });
+                    
+                    if (lotesHoy.length === 0) {
+                        alert('No hay productos que venzan hoy');
+                        return;
+                    }
+                    
+                    // Agrupar por producto
+                    const lotesPorProducto = {};
+                    lotesHoy.forEach(lote => {
+                        if (!lotesPorProducto[lote.productoCodigo]) {
+                            lotesPorProducto[lote.productoCodigo] = [];
+                        }
+                        lotesPorProducto[lote.productoCodigo].push(lote);
+                    });
+                    
+                    let mensaje = '🔴 Productos que vencen HOY:\n\n';
+                    Object.keys(lotesPorProducto).forEach(codigo => {
+                        const total = lotesPorProducto[codigo].reduce((sum, l) => sum + (l.cantidad || 0), 0);
+                        mensaje += `${codigo}: ${total} unidades\n`;
+                    });
+                    
+                    alert(mensaje);
+                } catch (error) {
+                    console.error('Error mostrando popup vencimientos:', error);
+                    alert('Error cargando vencimientos: ' + error.message);
+                }
+            };
+            
+            // Mostrar popup de problemas
+            const mostrarPopupProblemas = (nombreLocal, problemas) => {
+                const mensaje = `⚠️ Problemas encontrados en ${nombreLocal}:\n\n${problemas.join('\n\n')}`;
+                alert(mensaje);
+            };
+            
             const filtrarLocales = (termino) => {
                 if (!termino.trim()) {
                     setLocalesFiltrados(locales);
@@ -2010,16 +2308,72 @@
                                     boxSizing: 'border-box'
                                 }}
                             >
-                                {/* Nombre del local - EXACTO como APK */}
+                                {/* Nombre del local con badge de vencimientos - EXACTO como APK */}
                                 <div style={{
-                                    fontSize: 'clamp(16px, 5vw, 20px)',
-                                    fontWeight: 'bold',
-                                    color: '#000000',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
                                     marginBottom: '8px',
-                                    wordBreak: 'break-word',
-                                    textAlign: 'left'
+                                    gap: '8px'
                                 }}>
-                                    🏪 {local.nombre}
+                                    <div 
+                                        style={{
+                                            fontSize: 'clamp(16px, 5vw, 20px)',
+                                            fontWeight: 'bold',
+                                            color: '#000000',
+                                            wordBreak: 'break-word',
+                                            textAlign: 'left',
+                                            flex: 1,
+                                            cursor: problemasLocales[local.id] ? 'pointer' : 'default'
+                                        }}
+                                        onClick={() => {
+                                            if (problemasLocales[local.id]) {
+                                                mostrarPopupProblemas(local.nombre, problemasLocales[local.id]);
+                                            }
+                                        }}
+                                    >
+                                        🏪 {local.nombre} {problemasLocales[local.id] ? '⚠️' : ''}
+                                    </div>
+                                    
+                                    {/* Badge de vencimientos */}
+                                    {(() => {
+                                        const badge = badgesVencimientos[local.id];
+                                        const tieneBadge = badge && (badge.hoy > 0 || badge.manana > 0);
+                                        
+                                        // Debug en consola
+                                        if (badge) {
+                                            console.log('🎯 Renderizando badge para', local.nombre, ':', badge, 'tieneBadge:', tieneBadge);
+                                        }
+                                        
+                                        if (!tieneBadge) {
+                                            return null;
+                                        }
+                                        
+                                        return (
+                                            <div
+                                                onClick={() => mostrarPopupVencimientos(local)}
+                                                style={{
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold',
+                                                    color: '#FFFFFF',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '12px',
+                                                    backgroundColor: badge.hoy > 0 ? '#F44336' : '#FF9800',
+                                                    cursor: 'pointer',
+                                                    whiteSpace: 'nowrap',
+                                                    minWidth: '40px',
+                                                    textAlign: 'center',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                            >
+                                                {badge.hoy > 0 
+                                                    ? `🔴 ${badge.hoy}` 
+                                                    : `🟡 ${badge.manana}`}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 
                                 {/* Fecha de creación - EXACTO como APK */}

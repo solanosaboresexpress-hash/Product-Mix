@@ -1,0 +1,77 @@
+[
+  {
+    "id": "region_1",
+    "nombre": "Región 1",
+    "proyectoFirebaseId": "inventario-app-multi-local",
+    "maestroNombre": "Lucas PIARRISTEGUY",
+    "activo": true,
+    "firebaseConfig": {
+      "apiKey": "AIzaSyD6dF6jCibROTO-oXBfKUdAjk9q6g6-Mu0",
+      "authDomain": "inventario-app-multi-local.firebaseapp.com",
+      "projectId": "inventario-app-multi-local",
+      "storageBucket": "inventario-app-multi-local.firebasestorage.app",
+      "messagingSenderId": "623222993471",
+      "appId": "1:623222993471:web:48bffda68352403f27be8a"
+    }
+  },
+  {
+    "id": "region_2",
+    "nombre": "Región 2",
+    "proyectoFirebaseId": "region2-99f04",
+    "maestroNombre": "",
+    "activo": true,
+    "firebaseConfig": {
+      "apiKey": "TU_API_KEY_REGION2",
+      "authDomain": "region2-99f04.firebaseapp.com",
+      "projectId": "region2-99f04",
+      "storageBucket": "region2-99f04.firebasestorage.app",
+      "messagingSenderId": "TU_MESSAGING_SENDER_ID",
+      "appId": "TU_APP_ID"
+    }
+  },
+  {
+    "id": "region_3",
+    "nombre": "Región 3",
+    "proyectoFirebaseId": "region3-e704a",
+    "maestroNombre": "",
+    "activo": true,
+    "firebaseConfig": {
+      "apiKey": "TU_API_KEY_REGION3",
+      "authDomain": "region3-e704a.firebaseapp.com",
+      "projectId": "region3-e704a",
+      "storageBucket": "region3-e704a.firebasestorage.app",
+      "messagingSenderId": "TU_MESSAGING_SENDER_ID",
+      "appId": "TU_APP_ID"
+    }
+  },
+  {
+    "id": "region_4",
+    "nombre": "Región 4",
+    "proyectoFirebaseId": "region4-30c0d",
+    "maestroNombre": "",
+    "activo": true,
+    "firebaseConfig": {
+      "apiKey": "TU_API_KEY_REGION4",
+      "authDomain": "region4-30c0d.firebaseapp.com",
+      "projectId": "region4-30c0d",
+      "storageBucket": "region4-30c0d.firebasestorage.app",
+      "messagingSenderId": "TU_MESSAGING_SENDER_ID",
+      "appId": "TU_APP_ID"
+    }
+  },
+  {
+    "id": "region_5",
+    "nombre": "Región 5",
+    "proyectoFirebaseId": "region5-41627",
+    "maestroNombre": "",
+    "activo": true,
+    "firebaseConfig": {
+      "apiKey": "TU_API_KEY_REGION5",
+      "authDomain": "region5-41627.firebaseapp.com",
+      "projectId": "region5-41627",
+      "storageBucket": "region5-41627.firebasestorage.app",
+      "messagingSenderId": "TU_MESSAGING_SENDER_ID",
+      "appId": "TU_APP_ID"
+    }
+  }
+]

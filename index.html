@@ -128,7 +128,204 @@
             appId: "1:623222993471:web:48bffda68352403f27be8a"
         };
 
-        // Initialize Firebase
+        // Configuración de Regiones (fallback si falla la carga del JSON)
+        const REGIONES_CONFIG_FALLBACK = [
+            {
+                id: "region_1",
+                nombre: "Región 1",
+                proyectoFirebaseId: "inventario-app-multi-local",
+                maestroNombre: "Lucas PIARRISTEGUY",
+                activo: true,
+                firebaseConfig: {
+                    apiKey: "AIzaSyD6dF6jCibROTO-oXBfKUdAjk9q6g6-Mu0",
+                    authDomain: "inventario-app-multi-local.firebaseapp.com",
+                    projectId: "inventario-app-multi-local",
+                    storageBucket: "inventario-app-multi-local.firebasestorage.app",
+                    messagingSenderId: "623222993471",
+                    appId: "1:623222993471:web:48bffda68352403f27be8a"
+                }
+            },
+            {
+                id: "region_2",
+                nombre: "Región 2",
+                proyectoFirebaseId: "region2-99f04",
+                maestroNombre: "",
+                activo: true,
+                firebaseConfig: {
+                    apiKey: "TU_API_KEY_REGION2",
+                    authDomain: "region2-99f04.firebaseapp.com",
+                    projectId: "region2-99f04",
+                    storageBucket: "region2-99f04.firebasestorage.app",
+                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
+                    appId: "TU_APP_ID"
+                }
+            },
+            {
+                id: "region_3",
+                nombre: "Región 3",
+                proyectoFirebaseId: "region3-e704a",
+                maestroNombre: "",
+                activo: true,
+                firebaseConfig: {
+                    apiKey: "TU_API_KEY_REGION3",
+                    authDomain: "region3-e704a.firebaseapp.com",
+                    projectId: "region3-e704a",
+                    storageBucket: "region3-e704a.firebasestorage.app",
+                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
+                    appId: "TU_APP_ID"
+                }
+            },
+            {
+                id: "region_4",
+                nombre: "Región 4",
+                proyectoFirebaseId: "region4-30c0d",
+                maestroNombre: "",
+                activo: true,
+                firebaseConfig: {
+                    apiKey: "TU_API_KEY_REGION4",
+                    authDomain: "region4-30c0d.firebaseapp.com",
+                    projectId: "region4-30c0d",
+                    storageBucket: "region4-30c0d.firebasestorage.app",
+                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
+                    appId: "TU_APP_ID"
+                }
+            },
+            {
+                id: "region_5",
+                nombre: "Región 5",
+                proyectoFirebaseId: "region5-41627",
+                maestroNombre: "",
+                activo: true,
+                firebaseConfig: {
+                    apiKey: "TU_API_KEY_REGION5",
+                    authDomain: "region5-41627.firebaseapp.com",
+                    projectId: "region5-41627",
+                    storageBucket: "region5-41627.firebasestorage.app",
+                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
+                    appId: "TU_APP_ID"
+                }
+            }
+        ];
+
+        // Cache de regiones cargadas
+        let REGIONES_CONFIG_CACHE = null;
+
+        // Gestor de Regiones
+        const FirebaseRegionManager = {
+            currentRegion: null,
+            currentApp: null,
+            currentDb: null,
+            currentAuth: null,
+
+            async cargarRegiones() {
+                // Si ya están en cache, retornar cache
+                if (REGIONES_CONFIG_CACHE) {
+                    return REGIONES_CONFIG_CACHE.filter(function(r) { return r.activo; });
+                }
+
+                try {
+                    // Intentar cargar desde regiones.json
+                    const response = await fetch('regiones.json');
+                    if (!response.ok) {
+                        throw new Error('No se pudo cargar regiones.json');
+                    }
+                    const regiones = await response.json();
+                    
+                    // Validar que sea un array y tenga la estructura correcta
+                    if (Array.isArray(regiones) && regiones.length > 0) {
+                        REGIONES_CONFIG_CACHE = regiones;
+                        console.log('✅ Regiones cargadas desde regiones.json:', regiones.length);
+                        return regiones.filter(function(r) { return r.activo; });
+                    } else {
+                        throw new Error('Formato inválido en regiones.json');
+                    }
+                } catch (error) {
+                    console.warn('⚠️ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
+                    // Usar fallback
+                    REGIONES_CONFIG_CACHE = REGIONES_CONFIG_FALLBACK;
+                    return REGIONES_CONFIG_FALLBACK.filter(function(r) { return r.activo; });
+                }
+            },
+
+            async cargarRegionActual() {
+                try {
+                    const regionData = localStorage.getItem('firebase_region_prefs');
+                    if (regionData) {
+                        const parsed = JSON.parse(regionData);
+                        const regionId = parsed.regionId;
+                        
+                        // Asegurar que las regiones estén cargadas
+                        if (!REGIONES_CONFIG_CACHE) {
+                            await this.cargarRegiones();
+                        }
+                        
+                        return REGIONES_CONFIG_CACHE.find(function(r) { return r.id === regionId; });
+                    }
+                } catch (error) {
+                    console.error('Error cargando region guardada:', error);
+                }
+                return null;
+            },
+
+            guardarRegionActual(region) {
+                try {
+                    localStorage.setItem('firebase_region_prefs', JSON.stringify({
+                        regionId: region.id,
+                        regionJson: region.proyectoFirebaseId
+                    }));
+                } catch (error) {
+                    console.error('Error guardando region:', error);
+                }
+            },
+
+            initializeFirebase(region) {
+                try {
+                    console.log('Inicializando Firebase para region:', region.nombre);
+                    
+                    if (this.currentApp) {
+                        try {
+                            this.currentApp.delete();
+                            console.log('Firebase anterior cerrado');
+                        } catch (e) {
+                            console.warn('No se pudo cerrar Firebase anterior:', e.message);
+                        }
+                    }
+
+                    this.currentApp = firebase.initializeApp(region.firebaseConfig, 'firebase_' + region.id);
+                    this.currentDb = firebase.firestore(this.currentApp);
+                    this.currentAuth = firebase.auth(this.currentApp);
+                    this.currentRegion = region;
+
+                    this.guardarRegionActual(region);
+
+                    console.log('Firebase inicializado para region:', region.nombre, 'Proyecto:', region.proyectoFirebaseId);
+                    return true;
+                } catch (error) {
+                    console.error('Error inicializando Firebase:', error);
+                    return false;
+                }
+            },
+
+            getFirestore() {
+                if (!this.currentDb) {
+                    throw new Error('Firebase no esta inicializado. Selecciona una region primero.');
+                }
+                return this.currentDb;
+            },
+
+            getAuth() {
+                if (!this.currentAuth) {
+                    throw new Error('Firebase no esta inicializado. Selecciona una region primero.');
+                }
+                return this.currentAuth;
+            },
+
+            getCurrentRegion() {
+                return this.currentRegion;
+            }
+        };
+
+        // Initialize Firebase (mantener funcionamiento actual)
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -148,18 +345,146 @@
 
         // Login Component
         function Login({ onLoginSuccess }) {
+            const [regiones, setRegiones] = useState([]);
+            const [regionSeleccionada, setRegionSeleccionada] = useState(null);
+            const [nombresMaestros, setNombresMaestros] = useState([]);
             const [locales, setLocales] = useState([]);
             const [localSeleccionado, setLocalSeleccionado] = useState('');
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
             const [cargandoLocales, setCargandoLocales] = useState(true);
+            const [cargandoRegiones, setCargandoRegiones] = useState(true);
             const [recordarDatos, setRecordarDatos] = useState(false);
 
             useEffect(() => {
-                cargarLocales();
-                cargarDatosGuardados();
+                // Resetear estados al montar el componente
+                setCargandoRegiones(true);
+                setCargandoLocales(false);
+                setError('');
+                setLocales([]);
+                setLocalSeleccionado('');
+                setPassword('');
+                cargarRegiones();
             }, []);
+
+            useEffect(() => {
+                if (regionSeleccionada) {
+                    console.log('Region seleccionada cambiada, cargando locales para:', regionSeleccionada.nombre);
+                    cargarLocales();
+                    cargarDatosGuardados();
+                } else {
+                    console.log('No hay región seleccionada, limpiando locales');
+                    setLocales([]);
+                    setCargandoLocales(false);
+                }
+            }, [regionSeleccionada]);
+
+            const cargarRegiones = async () => {
+                try {
+                    setCargandoRegiones(true);
+                    setError('');
+                    
+                    const regionesDisponibles = await FirebaseRegionManager.cargarRegiones();
+                    
+                    if (!regionesDisponibles || regionesDisponibles.length === 0) {
+                        setError('No se encontraron regiones disponibles');
+                        setCargandoRegiones(false);
+                        return;
+                    }
+                    
+                    setRegiones(regionesDisponibles);
+
+                    const nombres = [];
+                    for (let i = 0; i < regionesDisponibles.length; i++) {
+                        const region = regionesDisponibles[i];
+                        try {
+                            const tempApp = firebase.initializeApp(region.firebaseConfig, 'temp_' + region.id);
+                            const tempDb = firebase.firestore(tempApp);
+                            
+                            const configDoc = await tempDb.collection('configuracion')
+                                .doc('admin')
+                                .get();
+                            
+                            const nombreMaestro = configDoc.exists 
+                                ? (configDoc.data().maestro_nombre || region.maestroNombre || 'Maestro')
+                                : (region.maestroNombre || 'Maestro');
+                            
+                            tempApp.delete();
+                            nombres.push({
+                                regionId: region.id,
+                                nombre: nombreMaestro
+                            });
+                        } catch (e) {
+                            console.warn('No se pudo cargar nombre del maestro para ' + region.nombre + ':', e.message);
+                            nombres.push({
+                                regionId: region.id,
+                                nombre: region.maestroNombre || 'Maestro'
+                            });
+                        }
+                    }
+                    
+                    setNombresMaestros(nombres);
+
+                    const regionGuardada = await FirebaseRegionManager.cargarRegionActual();
+                    const regionInicial = regionGuardada || regionesDisponibles[0];
+                    
+                    if (regionInicial) {
+                        seleccionarRegion(regionInicial).catch(err => {
+                            console.error('Error en seleccionarRegion:', err);
+                            setCargandoRegiones(false);
+                        });
+                    } else {
+                        setCargandoRegiones(false);
+                    }
+                } catch (error) {
+                    console.error('Error cargando regiones:', error);
+                    setError('Error cargando regiones: ' + error.message);
+                    setCargandoRegiones(false);
+                }
+            };
+
+            const seleccionarRegion = async (region) => {
+                try {
+                    console.log('Cambiando a region:', region.nombre);
+                    
+                    setLocales([]);
+                    setLocalSeleccionado('');
+                    setPassword('');
+                    
+                    const usuarioData = localStorage.getItem('usuario');
+                    if (usuarioData) {
+                        try {
+                            const usuario = JSON.parse(usuarioData);
+                            const regionIdUsuario = localStorage.getItem('region_id');
+                            if (regionIdUsuario && regionIdUsuario !== region.id) {
+                                console.log('Region cambio, limpiando datos del usuario...');
+                                localStorage.removeItem('usuario');
+                                localStorage.removeItem('loginData');
+                            }
+                        } catch (e) {
+                            console.warn('Error verificando cambio de region:', e);
+                        }
+                    }
+                    
+                    const exito = FirebaseRegionManager.initializeFirebase(region);
+                    
+                    if (exito) {
+                        setRegionSeleccionada(region);
+                        localStorage.setItem('region_id', region.id);
+                        console.log('Region seleccionada:', region.nombre);
+                        // Asegurar que se termine de cargar regiones cuando se selecciona una región
+                        setCargandoRegiones(false);
+                    } else {
+                        setError('Error inicializando region: ' + region.nombre);
+                        setCargandoRegiones(false);
+                    }
+                } catch (error) {
+                    console.error('Error seleccionando region:', error);
+                    setError('Error seleccionando region: ' + error.message);
+                    setCargandoRegiones(false);
+                }
+            };
 
             const cargarDatosGuardados = () => {
                 try {
@@ -179,21 +504,51 @@
 
             const cargarLocales = async () => {
                 try {
+                    if (!regionSeleccionada) {
+                        setCargandoLocales(false);
+                        return;
+                    }
+                    
                     setCargandoLocales(true);
-                    const snapshot = await db.collection('locales').get();
+                    setError('');
+                    
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (firebaseError) {
+                        console.error('Error obteniendo Firestore:', firebaseError);
+                        setError('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
+                        setCargandoLocales(false);
+                        return;
+                    }
+                    
+                    // Timeout de seguridad para evitar que se quede cargando indefinidamente
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Timeout cargando locales')), 10000);
+                    });
+                    
+                    const snapshotPromise = db.collection('locales').get();
+                    const snapshot = await Promise.race([snapshotPromise, timeoutPromise]);
+                    
                     const localesData = [];
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        localesData.push({ 
-                            id: doc.id, 
-                            nombre: data.nombre,
-                            activo: data.activo 
-                        });
+                        // Solo incluir locales activos (o todos si activo no está definido)
+                        if (data.activo !== false) {
+                            localesData.push({ 
+                                id: doc.id, 
+                                nombre: data.nombre || doc.id,
+                                activo: data.activo !== undefined ? data.activo : true
+                            });
+                        }
                     });
+                    
+                    console.log('Locales cargados para región', regionSeleccionada.nombre, ':', localesData.length, localesData);
                     setLocales(localesData);
                 } catch (error) {
                     console.error('Error cargando locales:', error);
                     setError('Error cargando locales: ' + error.message);
+                    setLocales([]); // Asegurar que locales esté vacío si hay error
                 } finally {
                     setCargandoLocales(false);
                 }
@@ -201,6 +556,10 @@
 
             const handleLogin = async (e) => {
                 e.preventDefault();
+                if (!regionSeleccionada) {
+                    setError('Por favor selecciona una region');
+                    return;
+                }
                 if (!localSeleccionado || !password) {
                     setError('Por favor completa todos los campos');
                     return;
@@ -210,6 +569,7 @@
                     setLoading(true);
                     setError('');
                     
+                    const db = FirebaseRegionManager.getFirestore();
                     const localDoc = await db.collection('locales').doc(localSeleccionado).get();
                     const local = localDoc.data();
                     
@@ -230,10 +590,12 @@
                         localNombre: local.nombre,
                         usuarioId: usuario.id,
                         usuario: usuario.usuario,
-                        rol: usuario.rol
+                        rol: usuario.rol,
+                        regionId: regionSeleccionada.id
                     };
 
                     localStorage.setItem('usuario', JSON.stringify(usuarioData));
+                    localStorage.setItem('region_id', regionSeleccionada.id);
                     
                     // Guardar datos de login si está marcado recordar
                     if (recordarDatos) {
@@ -402,61 +764,98 @@
                 
                 const cargarUsuariosDisponibles = async () => {
                     try {
-                        const usuarios = ['Lucas PIARRISTEGUY']; // Usuario maestro por defecto
+                        const usuarios = [];
                         
-                        // Cargar supervisores desde Firebase
-                        const supervisoresSnapshot = await db.collection('supervisores')
-                            .where('activo', '==', true)
-                            .get();
+                        // Cargar nombre del maestro desde Firebase de la región actual
+                        let db;
+                        try {
+                            db = FirebaseRegionManager.getFirestore();
+                        } catch (firebaseInitError) {
+                            console.error('Firebase no está inicializado:', firebaseInitError);
+                            usuarios.push('Maestro'); // Fallback
+                            db = null;
+                        }
                         
-                        supervisoresSnapshot.forEach(doc => {
-                            const supervisor = doc.data();
-                            usuarios.push(supervisor.usuario);
-                        });
+                        if (db) {
+                            try {
+                                const configDoc = await db.collection('configuracion')
+                                    .doc('admin')
+                                    .get();
+                                
+                                const nombreMaestro = configDoc.exists 
+                                    ? (configDoc.data().maestro_nombre || 'Maestro')
+                                    : 'Maestro';
+                                
+                                usuarios.push(nombreMaestro);
+                                
+                                // Cargar supervisores desde Firebase
+                                const supervisoresSnapshot = await db.collection('supervisores')
+                                    .where('activo', '==', true)
+                                    .get();
+                                
+                                supervisoresSnapshot.forEach(doc => {
+                                    const supervisor = doc.data();
+                                    usuarios.push(supervisor.usuario);
+                                });
+                            } catch (firebaseError) {
+                                console.error('Error cargando desde Firebase:', firebaseError);
+                                if (usuarios.length === 0) {
+                                    usuarios.push('Maestro'); // Fallback solo si no hay usuarios
+                                }
+                            }
+                        }
                         
-                        // Configurar dropdown
+                        // Configurar dropdown solo si tenemos elementos
                         const usuarioInput = dialogContent.querySelector('#usuarioInput');
                         const usuariosDropdown = dialogContent.querySelector('#usuariosDropdown');
                         
-                        usuariosDropdown.innerHTML = usuarios.map(usuario => 
-                            `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" 
-                                 onmouseover="this.style.backgroundColor='#f5f5f5'" 
-                                 onmouseout="this.style.backgroundColor='white'"
-                                 onclick="seleccionarUsuario('${usuario}')">
-                                ${usuario}
-                             </div>`
-                        ).join('');
-                        
-                        // Mostrar dropdown al hacer click
-                        usuarioInput.onclick = (e) => {
-                            e.stopPropagation();
-                            const isVisible = usuariosDropdown.style.display === 'block';
-                            usuariosDropdown.style.display = isVisible ? 'none' : 'block';
-                        };
-                        
-                        // Cerrar dropdown al hacer click fuera
-                        closeDropdown = (e) => {
-                            if (!dialogContent.contains(e.target)) {
-                                usuariosDropdown.style.display = 'none';
+                        if (usuarioInput && usuariosDropdown) {
+                            if (usuarios.length > 0) {
+                                usuariosDropdown.innerHTML = usuarios.map(usuario => {
+                                    // Escapar comillas simples para evitar problemas
+                                    const usuarioEscapado = usuario.replace(/'/g, "\\'");
+                                    return `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" 
+                                         onmouseover="this.style.backgroundColor='#f5f5f5'" 
+                                         onmouseout="this.style.backgroundColor='white'"
+                                         onclick="seleccionarUsuario('${usuarioEscapado}')">
+                                        ${usuario}
+                                     </div>`;
+                                }).join('');
+                            } else {
+                                usuariosDropdown.innerHTML = '<div style="padding: 12px;">No hay usuarios disponibles</div>';
                             }
-                        };
-                        
-                        // Agregar listener temporal
-                        setTimeout(() => {
-                            document.addEventListener('click', closeDropdown);
-                        }, 100);
-                        
-                        // Cargar credenciales guardadas
-                        const savedUsuario = localStorage.getItem('usuario_gestion');
-                const savedPassword = localStorage.getItem('contraseña_gestion');
-                const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
-                const passwordInput = dialogContent.querySelector('#passwordInput');
-                
-                        if (savedUsuario && savedPassword) {
-                            usuarioInput.value = savedUsuario;
-                    passwordInput.value = savedPassword;
-                    rememberCheckbox.checked = true;
-                }
+                            
+                            // Mostrar dropdown al hacer click
+                            usuarioInput.onclick = (e) => {
+                                e.stopPropagation();
+                                const isVisible = usuariosDropdown.style.display === 'block';
+                                usuariosDropdown.style.display = isVisible ? 'none' : 'block';
+                            };
+                            
+                            // Cerrar dropdown al hacer click fuera
+                            closeDropdown = (e) => {
+                                if (!dialogContent.contains(e.target)) {
+                                    usuariosDropdown.style.display = 'none';
+                                }
+                            };
+                            
+                            // Agregar listener temporal
+                            setTimeout(() => {
+                                document.addEventListener('click', closeDropdown);
+                            }, 100);
+                            
+                            // Cargar credenciales guardadas
+                            const savedUsuario = localStorage.getItem('usuario_gestion');
+                            const savedPassword = localStorage.getItem('contraseña_gestion');
+                            const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
+                            const passwordInput = dialogContent.querySelector('#passwordInput');
+                            
+                            if (savedUsuario && savedPassword && rememberCheckbox && passwordInput) {
+                                usuarioInput.value = savedUsuario;
+                                passwordInput.value = savedPassword;
+                                rememberCheckbox.checked = true;
+                            }
+                        }
                 
                     } catch (error) {
                         console.error('Error cargando usuarios:', error);
@@ -503,14 +902,18 @@
                     try {
                         // Verificar credenciales como en la APK líneas 611-700
                         
+                        const db = FirebaseRegionManager.getFirestore();
                         // Primero verificar si es usuario maestro
                         const configDoc = await db.collection('configuracion')
                             .doc('admin')
                             .get();
                         
                         const passwordMaestro = configDoc.data()?.password || 'admin123';
+                        const nombreMaestro = configDoc.exists 
+                            ? (configDoc.data().maestro_nombre || 'Maestro')
+                            : 'Maestro';
                         
-                        if (usuario === 'Lucas PIARRISTEGUY' && password === passwordMaestro) {
+                        if (usuario === nombreMaestro && password === passwordMaestro) {
                             // Es usuario maestro
                             console.log('🔑 CREDENCIALES DE MAESTRO CORRECTAS');
                             
@@ -596,19 +999,80 @@
                 };
             };
 
-            if (cargandoLocales) {
+            if (cargandoRegiones || cargandoLocales) {
                 return (
                     <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#E0E0E0'}}>
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Cargando locales...</p>
+                            <p className="mt-4 text-gray-600">{cargandoRegiones ? 'Cargando regiones...' : 'Cargando locales...'}</p>
                         </div>
                     </div>
                 );
             }
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: '#E0E0E0'}}>
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0'}}>
+                    {/* Header Amarillo */}
+                    <div style={{
+                        backgroundColor: '#FFD700',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}>
+                        <div 
+                            className="text-base font-bold"
+                            style={{
+                                color: '#000000',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}
+                        >
+                            Sabores Product Mix v2
+                        </div>
+                        
+                        {/* Contenedor Selector de Región */}
+                        <div style={{flex: 1, minWidth: 0}}>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                style={{maxWidth: '100%'}}
+                                value={regionSeleccionada ? regionSeleccionada.id : ''}
+                                disabled={cargandoRegiones || regiones.length === 0}
+                                onChange={(e) => {
+                                    const regionId = e.target.value;
+                                    const region = regiones.find(r => r.id === regionId);
+                                    if (region) {
+                                        seleccionarRegion(region);
+                                    }
+                                }}
+                            >
+                                {cargandoRegiones ? (
+                                    <option value="">Cargando regiones...</option>
+                                ) : regiones.length === 0 ? (
+                                    <option value="">No hay regiones disponibles</option>
+                                ) : (
+                                    <>
+                                        <option value="">Selecciona una región</option>
+                                        {regiones.map((region) => {
+                                            const nombreMaestro = nombresMaestros && nombresMaestros.length > 0 
+                                                ? nombresMaestros.find(n => n.regionId === region.id)
+                                                : null;
+                                            return (
+                                                <option key={region.id} value={region.id}>
+                                                    {nombreMaestro ? nombreMaestro.nombre : (region.maestroNombre || region.nombre)}
+                                                </option>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-center p-4" style={{minHeight: 'calc(100vh - 64px)'}}>
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
                         <div className="text-center mb-8">
                             <div className="text-center mb-6">
@@ -644,14 +1108,22 @@
                                     onChange={(e) => setLocalSeleccionado(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                                     required
+                                    disabled={cargandoLocales}
                                 >
-                                    <option value="">Selecciona un local</option>
+                                    <option value="">
+                                        {cargandoLocales ? 'Cargando locales...' : locales.length === 0 ? 'No hay locales disponibles' : 'Selecciona un local'}
+                                    </option>
                                     {locales.map(local => (
                                         <option key={local.id} value={local.id}>
                                             {local.nombre}
                                         </option>
                                     ))}
                                 </select>
+                                {!cargandoLocales && locales.length === 0 && regionSeleccionada && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        No se encontraron locales para esta región. Verifica que la región tenga locales configurados en Firebase.
+                                    </p>
+                                )}
                             </div>
 
                             <div>
@@ -757,7 +1229,8 @@
                                 🔧 Ir a Administración
                             </a>
                         </div>
-                        </div>
+                    </div>
+                    </div>
                 </div>
             );
         }
@@ -823,6 +1296,7 @@
                     setError('');
                     
                     // Cargar TODOS los locales sin filtro
+                    const db = FirebaseRegionManager.getFirestore();
                     const snapshot = await db.collection('locales').get();
                     const localesData = [];
                     
@@ -864,6 +1338,7 @@
                     }
                     
                     // Cargar solo los locales asignados
+                    const db = FirebaseRegionManager.getFirestore();
                     const snapshot = await db.collection('locales').get();
                     const localesData = [];
                     
@@ -894,6 +1369,7 @@
                     setCargando(true);
                     setError('');
                     
+                    const db = FirebaseRegionManager.getFirestore();
                     const snapshot = await db.collection('supervisores').get();
                     const supervisoresData = [];
                     
@@ -924,6 +1400,7 @@
                 try {
                     setError('');
                     
+                    const db = FirebaseRegionManager.getFirestore();
                     // Verificar si el local ya existe
                     const snapshot = await db.collection('locales')
                         .where('nombre', '==', nuevoLocal.nombre)
@@ -991,6 +1468,7 @@
                 try {
                     setError('');
                     
+                    const db = FirebaseRegionManager.getFirestore();
                     // Verificar si el supervisor ya existe
                     const snapshot = await db.collection('supervisores')
                         .where('usuario', '==', nuevoSupervisor.usuario)
@@ -1083,6 +1561,7 @@
                     }
                     
                     // Eliminar el local
+                    const db = FirebaseRegionManager.getFirestore();
                     await db.collection('locales').doc(local.nombre).delete();
                     
                     // Recargar locales según el tipo de usuario
@@ -1130,6 +1609,7 @@
                     }
                     
                     // Actualizar contraseña
+                    const db = FirebaseRegionManager.getFirestore();
                     const usuarioActualizado = { ...usuarioAdmin, contraseña: contraseñaNueva };
                     const usuariosActualizados = { ...local.usuarios };
                     usuariosActualizados[usuarioAdmin.id] = usuarioActualizado;
@@ -1321,6 +1801,7 @@
                     };
                     
                     // Actualizar en Firebase
+                    const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).update({
                         localesAsignados: nombresLocalesAsignados
                     });
@@ -1352,6 +1833,7 @@
             const eliminarSupervisor = async (supervisor) => {
                 try {
                     // Eliminar de Firebase
+                    const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).delete();
                     
                     // Actualizar estado local
@@ -2395,7 +2877,15 @@
                 setCargandoCalendario(true);
                 
                 try {
-                    // Obtener todos los registros del local
+                    // Obtener todos los registros del local usando la región actual
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        setCargandoCalendario(false);
+                        return;
+                    }
                     const snapshot = await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -2463,6 +2953,14 @@
                     const fechaString = formatearFechaCorta(fechaSeleccionada);
                     console.log('📅 Fecha string:', fechaString);
                     
+                    // Usar la región actual de Firebase
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        return;
+                    }
                     const snapshot = await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -2525,6 +3023,15 @@
                 setCargandoDatos(true);
                 try {
                     const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    // Usar la región actual de Firebase
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        setCargandoDatos(false);
+                        return;
+                    }
                     const snapshot = await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -2709,7 +3216,14 @@
                     const idDocumento = `${fechaString}_${tipo.replace(/\s+/g, '_')}`;
                     console.log('🆔 ID del documento:', idDocumento);
                     
-                    // Guardar en Firebase con ID descriptivo
+                    // Guardar en Firebase con ID descriptivo usando la región actual
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        alert('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
+                        return;
+                    }
                     await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -3656,7 +4170,15 @@
                     setCargando(true);
                     console.log('🔍 Calculando promedios de ventas...');
                     
-                    // Obtener todos los registros del local
+                    // Obtener todos los registros del local usando la región actual
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        setError('Error: Firebase no está inicializado');
+                        setCargando(false);
+                        return;
+                    }
                     const snapshot = await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -4181,9 +4703,25 @@
             useEffect(() => {
                 // Verificar si hay usuario guardado
                 const usuarioGuardado = localStorage.getItem('usuario');
+                const regionIdActual = localStorage.getItem('region_id');
+                
                 if (usuarioGuardado) {
-                    setUsuario(JSON.parse(usuarioGuardado));
-                    setVistaActual('main');
+                    try {
+                        const usuarioData = JSON.parse(usuarioGuardado);
+                        // Verificar que la región del usuario coincida con la región actual
+                        if (usuarioData.regionId && regionIdActual && usuarioData.regionId === regionIdActual) {
+                            setUsuario(usuarioData);
+                            setVistaActual('main');
+                        } else {
+                            // Si la región cambió, limpiar el usuario guardado
+                            console.log('⚠️ Región cambió, limpiando usuario guardado');
+                            localStorage.removeItem('usuario');
+                            localStorage.removeItem('loginData');
+                        }
+                    } catch (error) {
+                        console.error('Error parseando usuario guardado:', error);
+                        localStorage.removeItem('usuario');
+                    }
                 }
                 setLoading(false);
             }, []);
@@ -4221,7 +4759,10 @@
 
             const handleLogout = () => {
                 localStorage.removeItem('usuario');
+                localStorage.removeItem('loginData');
                 setUsuario(null);
+                setVistaActual('login');
+                window.location.hash = '';
             };
 
             if (loading) {
@@ -4476,6 +5017,7 @@
       const ayer = fechaISO(fechaAyer);
       const stockMap = {};
       try {
+        const db = FirebaseRegionManager.getFirestore();
         const stockAyer = await db.collection('locales').doc(localId).collection('registros')
           .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
         stockAyer.forEach(d => {
@@ -4504,6 +5046,7 @@
       body.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">Cargando...</div>';
       try {
         console.log('🔍 Buscando lotes para localId:', localId);
+        const db = FirebaseRegionManager.getFirestore();
         const lotesSnap = await db.collection('locales').doc(localId).collection('vencimientos_activos').get();
         console.log('📦 Lotes encontrados:', lotesSnap.size);
         const stockMap = await calcularStockActual();
@@ -4843,6 +5386,7 @@
       const ayer = fechaISO(fechaAyer);
       const stockMap = {};
       try {
+        const db = FirebaseRegionManager.getFirestore();
         const stockAyer = await db.collection('locales').doc(localId).collection('registros')
           .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
         stockAyer.forEach(d => {
@@ -4916,6 +5460,7 @@
         const stockActual = stockMap[codigoNorm] || 0;
 
         // Calcular cuánto ya está lotado
+        const db = FirebaseRegionManager.getFirestore();
         const lotesSnap = await db.collection('locales').doc(localId).collection('vencimientos_activos').get();
         let cantidadLoteada = 0;
         lotesSnap.forEach(d => {
@@ -4945,6 +5490,7 @@
       const list = colRight.querySelector('#vl-list');
       list.innerHTML = '';
       try {
+        const db = FirebaseRegionManager.getFirestore();
         const [lotesSnap, stockMap] = await Promise.all([
           db.collection('locales').doc(localId).collection('vencimientos_activos').get(),
           calcularStockActual()
@@ -5132,6 +5678,7 @@
           btn.onclick = async () => {
             if (!confirm('¿Eliminar este lote?')) return;
             try {
+              const db = FirebaseRegionManager.getFirestore();
               await db.collection('locales').doc(localId).collection('vencimientos_activos').doc(btn.getAttribute('data-lote-id')).delete();
               await renderLotes();
               // Actualizar cantidad faltante después de eliminar el lote
@@ -5181,6 +5728,7 @@
           fechaCarga: fechaActual,
           timestamp: Date.now()
         };
+        const db = FirebaseRegionManager.getFirestore();
         await db.collection('locales').doc(localId).collection('vencimientos_activos').doc(nuevoLote.id).set(nuevoLote);
         msg.style.color = '#059669';
         msg.textContent = 'Lote agregado exitosamente';
@@ -5258,6 +5806,34 @@
       alert('Error: No se encontró el local');
       return;
     }
+    
+    // Verificar que Firebase esté inicializado, si no, inicializarlo con la región guardada
+    try {
+      FirebaseRegionManager.getFirestore();
+    } catch (e) {
+      // Firebase no está inicializado, intentar inicializarlo con la región guardada
+      const regionIdGuardada = localStorage.getItem('region_id');
+      if (regionIdGuardada && usuario.regionId) {
+        try {
+          // Cargar regiones disponibles
+          const regiones = await FirebaseRegionManager.cargarRegiones();
+          const regionGuardada = regiones.find(r => r.id === regionIdGuardada || r.id === usuario.regionId);
+          if (regionGuardada) {
+            FirebaseRegionManager.initializeFirebase(regionGuardada);
+            console.log('Firebase inicializado para Pedido a Fábrica con región:', regionGuardada.nombre);
+          } else {
+            throw new Error('No se encontró la región guardada');
+          }
+        } catch (error) {
+          console.error('Error inicializando Firebase:', error);
+          alert('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
+          return;
+        }
+      } else {
+        alert('Error: No se encontró la región. Por favor, selecciona una región primero.');
+        return;
+      }
+    }
 
     // Obtener fecha actual (Argentina UTC-3)
     const hoy = new Date();
@@ -5332,6 +5908,16 @@
     let productos = [];
     let promediosVenta = {}; // {codigo: {LUNES: 100, MARTES: 120, ...}}
 
+    // Función helper para obtener Firestore de la región actual
+    function obtenerFirestore() {
+      try {
+        return FirebaseRegionManager.getFirestore();
+      } catch (e) {
+        console.error('Error obteniendo Firestore:', e);
+        throw new Error('Firebase no está inicializado. Por favor, selecciona una región primero.');
+      }
+    }
+
     // Función para obtener día de la semana
     function obtenerDiaSemana(fecha) {
       const [y, m, d] = fecha.split('-').map(Number);
@@ -5343,6 +5929,14 @@
     // Función para cargar configuración desde Firebase
     async function cargarConfiguracion() {
       try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarConfiguracion, usando valores por defecto');
+          actualizarUI();
+          return;
+        }
         const configDoc = await db.collection('locales').doc(localId).collection('configuracion_pedido_fabrica').doc('config').get();
         if (configDoc.exists) {
           const data = configDoc.data();
@@ -5401,6 +5995,13 @@
     // Función para cargar promedios de ventas
     async function cargarPromediosVenta() {
       try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarPromediosVenta');
+          return;
+        }
         const registrosSnap = await db.collection('locales').doc(localId).collection('registros').orderBy('fecha', 'desc').limit(100).get();
         const registros = [];
         registrosSnap.forEach(d => {
@@ -5506,6 +6107,13 @@
     // Función para cargar pedido existente (replica de cargarPedidoExistente de la APK)
     async function cargarPedidoExistente(fecha) {
       try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarPedidoExistente');
+          return false;
+        }
         const pedidoDoc = await db.collection('locales').doc(localId).collection('pedidos_fabrica').doc(fecha).get();
         if (pedidoDoc.exists) {
           const data = pedidoDoc.data();
@@ -5575,15 +6183,28 @@
     async function cargarStockActualDesdeRegistros() {
       const stockMap = {};
       try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarStockActualDesdeRegistros');
+          return stockMap;
+        }
+        // Obtener fecha de HOY (no fechaSeleccionada, sino la fecha actual)
+        const hoy = new Date();
+        const offsetArgentina = -3 * 60;
+        const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
+        const fechaHoy = fechaISO(fechaArgentina);
+        
         // Obtener fecha anterior
-        const [y, m, d] = fechaSeleccionada.split('-').map(Number);
+        const [y, m, d] = fechaHoy.split('-').map(Number);
         const fechaAnterior = new Date(y, m - 1, d);
         fechaAnterior.setDate(fechaAnterior.getDate() - 1);
         const fechaAnteriorStr = fechaISO(fechaAnterior);
         
-        // Obtener ingreso de hoy
+        // Obtener ingreso de HOY (no de fechaSeleccionada)
         const ingresoHoySnap = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', fechaSeleccionada)
+          .where('fecha', '==', fechaHoy)
           .where('tipo', '==', 'Ingreso de Mercadería')
           .get();
         
@@ -5621,8 +6242,13 @@
     // Función para obtener datos de venta parcial (replica de obtenerDatosVentaParcial de la APK)
     async function obtenerDatosVentaParcial(codigo) {
       try {
+        const db = obtenerFirestore();
         const nombreProducto = productosFabrica[codigo]?.nombre || codigo;
-        const fechaHoy = fechaSeleccionada;
+        // Usar fecha de HOY, no fechaSeleccionada
+        const hoy = new Date();
+        const offsetArgentina = -3 * 60;
+        const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
+        const fechaHoy = fechaISO(fechaArgentina);
         
         // Calcular fecha anterior
         const [y, m, d] = fechaHoy.split('-').map(Number);
@@ -5840,9 +6466,8 @@
           const porcentajeAvance = promedioHoy > 0 ? Math.min(1, Math.max(0, ventaParcial / promedioHoy)) : 0;
           ventaRestanteHoy = promedioHoy * (1 - porcentajeAvance);
         } else {
-          // NO hay datos históricos
-          ventaParcial = Math.max(0, promedioHoy - stockActual);
-          ventaRestanteHoy = Math.max(0, promedioHoy - stockActual);
+          // NO hay datos históricos - NO sugerir pedidos
+          return 0;
         }
 
         // Porcentaje extra configurado
@@ -6229,6 +6854,7 @@
           timestamp: new Date().toISOString()
         };
 
+        const db = obtenerFirestore();
         await db.collection('locales').doc(localId).collection('pedidos_fabrica').doc(fechaSeleccionada).set(pedidoData);
         console.log('✅ Pedido guardado exitosamente');
       } catch (e) {
@@ -6676,6 +7302,7 @@
     // Función para guardar configuración en Firebase
     async function guardarConfiguracionEnFirebase() {
       try {
+        const db = obtenerFirestore();
         await db.collection('locales').doc(localId).collection('configuracion_pedido_fabrica').doc('config').set({
           porcentajeExtra: configuracion.porcentajeExtra,
           horaAlerta: configuracion.horaAlerta,
@@ -6692,6 +7319,7 @@
     // Función para guardar días de entrega en Firebase
     async function guardarDiasEntregaEnFirebase() {
       try {
+        const db = obtenerFirestore();
         await db.collection('locales').doc(localId).collection('configuracion_dias_entrega').doc('config').set({
           lunes: diasEntrega.lunes,
           martes: diasEntrega.martes,

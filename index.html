@@ -8470,6 +8470,8 @@
 
         const ventasPorDia = { LUNES: {}, MARTES: {}, MIERCOLES: {}, JUEVES: {}, VIERNES: {}, SABADO: {}, DOMINGO: {} };
         
+        console.log('📊 [Panificadora] Iniciando cálculo de promedios. Productos a procesar:', ordenProductosPanificadora);
+        
         const fechasProcesadas = new Set();
         registros.forEach(registro => {
           if (fechasProcesadas.has(registro.fecha)) return;
@@ -8489,17 +8491,29 @@
           const fechaAnteriorStr = fechaISO(fechaAnterior);
           const stockAnterior = registros.find(r => r.fecha === fechaAnteriorStr && r.tipo === 'Stock Final');
           
-          stockFinal.productos.forEach(p => {
+          // Filtrar SOLO productos de panificadora antes de procesar
+          const productosPanificadora = stockFinal.productos.filter(p => {
+            const nombreProducto = p.nombre || p.codigo || '';
+            const codigo = obtenerCodigoProducto(nombreProducto);
+            const esPanificadora = ordenProductosPanificadora.includes(codigo);
+            if (!esPanificadora && nombreProducto) {
+              // Log solo para productos que NO son de panificadora (para debug)
+              // console.log('⏭️ [Panificadora] Saltando producto:', nombreProducto, '→ código:', codigo);
+            }
+            return esPanificadora;
+          });
+          
+          if (productosPanificadora.length > 0) {
+            console.log(`📅 [Panificadora] Fecha ${registro.fecha} (${dia}): ${productosPanificadora.length} productos de panificadora de ${stockFinal.productos.length} totales`);
+          }
+          
+          // Solo procesar productos de panificadora
+          productosPanificadora.forEach(p => {
             const nombreProducto = p.nombre || p.codigo || '';
             const codigo = obtenerCodigoProducto(nombreProducto);
             
             // Debug: log para ver qué productos se están procesando
-            if (nombreProducto.toUpperCase().includes('DULCES') || codigo === 'MEDIALUNA_MANTECA') {
-              console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo, '| Es panificadora?', ordenProductosPanificadora.includes(codigo));
-            }
-            
-            // Solo procesar productos de panificadora
-            if (!ordenProductosPanificadora.includes(codigo)) return;
+            console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo);
             
             // Buscar en ingreso y stock anterior usando el mapeo de códigos
             // Necesitamos buscar por el nombre original del producto en la BD
@@ -8531,7 +8545,8 @@
           });
         });
 
-        // Calcular promedios
+        // Calcular promedios SOLO para productos de panificadora
+        console.log('📊 [Panificadora] Calculando promedios para productos:', ordenProductosPanificadora);
         ordenProductosPanificadora.forEach(codigo => {
           if (!promediosVenta[codigo]) {
             promediosVenta[codigo] = {};
@@ -8543,20 +8558,19 @@
               const promedio = suma / ventasDelDia.length;
               promediosVenta[codigo][dia] = Math.round(promedio);
               
-              // Debug: log para ver promedios calculados
-              if (codigo === 'MEDIALUNA_MANTECA') {
-                console.log('✅ [Panificadora] Promedio calculado para', codigo, 'en', dia, ':', Math.round(promedio), '(de', ventasDelDia.length, 'ventas)');
-              }
+              console.log(`✅ [Panificadora] Promedio calculado para ${codigo} en ${dia}: ${Math.round(promedio)} (de ${ventasDelDia.length} ventas)`);
             } else {
               promediosVenta[codigo][dia] = 0;
             }
           });
         });
         
-        // Debug: mostrar resumen de promedios para MEDIALUNA_MANTECA
-        if (promediosVenta['MEDIALUNA_MANTECA']) {
-          console.log('📈 [Panificadora] Resumen promedios MEDIALUNA_MANTECA:', promediosVenta['MEDIALUNA_MANTECA']);
-        }
+        // Debug: mostrar resumen de promedios para todos los productos de panificadora
+        ordenProductosPanificadora.forEach(codigo => {
+          if (promediosVenta[codigo]) {
+            console.log(`📈 [Panificadora] Resumen promedios ${codigo}:`, promediosVenta[codigo]);
+          }
+        });
       } catch (e) {
         console.warn('Error cargando promedios:', e);
       }
@@ -8653,38 +8667,56 @@
         }
         
         const hoy = getFechaActualArgentina();
-        const fechaAyer = getFechaArgentina();
-        fechaAyer.setDate(fechaAyer.getDate() - 1);
-        const ayer = fechaISO(fechaAyer);
-        
         const stockMap = {};
         
-        // Calcular: Stock Final de ayer + Ingreso de hoy
-        const stockAyer = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
-        stockAyer.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const nombreProducto = p.nombre || p.codigo || '';
-            const codigo = obtenerCodigoProducto(nombreProducto);
-            if (ordenProductosPanificadora.includes(codigo)) {
-              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-            }
-          });
-        });
+        // PRIMERO: Verificar si existe Stock Final de HOY (si existe, usarlo directamente)
+        const stockHoy = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', hoy).where('tipo', '==', 'Stock Final').get();
         
-        const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
-        ingresoHoy.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const nombreProducto = p.nombre || p.codigo || '';
-            const codigo = obtenerCodigoProducto(nombreProducto);
-            if (ordenProductosPanificadora.includes(codigo)) {
-              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-            }
+        if (!stockHoy.empty) {
+          // Si existe Stock Final de hoy, usarlo directamente
+          stockHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
           });
-        });
+        } else {
+          // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
+          const fechaAyer = getFechaArgentina();
+          fechaAyer.setDate(fechaAyer.getDate() - 1);
+          const ayer = fechaISO(fechaAyer);
+          
+          const stockAyer = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
+          stockAyer.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
+          });
+          
+          const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
+          ingresoHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
+          });
+        }
         
         return stockMap;
       } catch (e) {
@@ -8695,10 +8727,17 @@
 
     // Función para calcular sugerencia de pedido
     function calcularSugerencia(codigo, stockActual) {
+      // MEDIALUNA_GRASA es nuevo, no tiene sugerencia
+      if (codigo === 'MEDIALUNA_GRASA') return 0;
+      
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       const promedioDiaActual = promediosVenta[codigo]?.[diaActual] || 0;
       
-      if (!promedioDiaActual || !stockActual) return 0;
+      // Si no hay promedio, no hay sugerencia
+      if (!promedioDiaActual) return 0;
+      
+      // stockActual puede ser 0, pero igual debemos calcular la sugerencia
+      const stock = stockActual || 0;
       
       const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
       
@@ -8711,13 +8750,13 @@
         const ventaDomingo = promedioDomingo * (1 + porcentajeExtra);
         
         const totalNecesario = ventaRestanteHoy + ventaSabado + ventaDomingo;
-        const stockDisponible = stockActual - ventaRestanteHoy;
+        const stockDisponible = stock - ventaRestanteHoy;
         
         const pedido = Math.max(0, totalNecesario - stockDisponible);
         return redondearSugerencia(pedido, codigo);
       } else {
         const ventaEsperada = promedioDiaActual * (1 + porcentajeExtra);
-        const pedido = Math.max(0, ventaEsperada - stockActual);
+        const pedido = Math.max(0, ventaEsperada - stock);
         return redondearSugerencia(pedido, codigo);
       }
     }
@@ -8796,6 +8835,18 @@
           stockInput.style.background = '#d1d5db';
         } else {
           stockInput.onfocus = function() { this.select(); };
+          // Listener para actualizar sugerencia cuando cambia el stock
+          stockInput.addEventListener('input', async () => {
+            const stock = parseInt(stockInput.value) || 0;
+            const sugerencia = calcularSugerencia(prod.codigo, stock);
+            spanSugerencia.textContent = sugerencia;
+            // Actualizar el objeto producto
+            const producto = productos.find(p => p.codigo === prod.codigo);
+            if (producto) {
+              producto.stockActual = stock;
+              producto.sugerencia = sugerencia;
+            }
+          });
         }
         stockDiv.appendChild(stockInput);
         filaDiv.appendChild(stockDiv);

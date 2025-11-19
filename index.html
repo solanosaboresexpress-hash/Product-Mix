@@ -3370,6 +3370,7 @@
             const [datosIngreso, setDatosIngreso] = useState({});
             const [datosStock, setDatosStock] = useState({});
             const [cargandoDatos, setCargandoDatos] = useState(false);
+            const [noRecibioMercaderia, setNoRecibioMercaderia] = useState(false);
 
 
             // Función para cargar datos existentes - EXACTO como CargaActivity.kt
@@ -3422,7 +3423,9 @@
                         
                         if (tipo === 'Ingreso de Mercadería') {
                             setDatosIngreso(datosProductos);
-                            console.log('Datos de ingreso cargados:', datosProductos);
+                            // Cargar estado del switch "No recibió mercadería"
+                            setNoRecibioMercaderia(data.noRecibioMercaderia === true);
+                            console.log('Datos de ingreso cargados:', datosProductos, 'noRecibioMercaderia:', data.noRecibioMercaderia);
                         } else if (tipo === 'Stock Final') {
                             setDatosStock(datosProductos);
                             console.log('Datos de stock cargados:', datosProductos);
@@ -3432,6 +3435,7 @@
                         console.log(`📊 No hay datos ${tipo} para la fecha ${fechaString}`);
                         if (tipo === 'Ingreso de Mercadería') {
                             setDatosIngreso({});
+                            setNoRecibioMercaderia(false); // Resetear switch si no hay datos
                         } else if (tipo === 'Stock Final') {
                             setDatosStock({});
                         }
@@ -3509,9 +3513,14 @@
                 mensaje += `• Total productos: ${todosProductos.length}\n`;
                 mensaje += `• Productos con cantidad: ${productosConCantidad}\n`;
                 mensaje += `• Productos sin cantidad: ${todosProductos.length - productosConCantidad}\n`;
-                mensaje += `• Total unidades: ${totalUnidades}\n\n`;
+                mensaje += `• Total unidades: ${totalUnidades}\n`;
                 
-                mensaje += `¿Deseas guardar estos datos?`;
+                // Agregar información del switch solo para Ingreso de Mercadería
+                if (pantallaActual === 'ingreso') {
+                    mensaje += `• No recibió mercadería: ${noRecibioMercaderia ? 'SÍ' : 'NO'}\n`;
+                }
+                
+                mensaje += `\n¿Deseas guardar estos datos?`;
                 
                 if (confirm(mensaje)) {
                     guardarDatos();
@@ -3534,7 +3543,7 @@
                         'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                         'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                         'BATATA - Batata', 'MEMBRIL - Membrillo',
-                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                        'DULCES - Dulces', 'SALADO - Salado', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                     ];
                     
                     // Leer valores directamente de los inputs del DOM
@@ -3563,6 +3572,11 @@
                         usuario: usuario.usuario || 'admin',
                         localId: usuario.localId
                     };
+                    
+                    // Agregar campo noRecibioMercaderia solo para Ingreso de Mercadería
+                    if (tipo === 'Ingreso de Mercadería') {
+                        documento.noRecibioMercaderia = noRecibioMercaderia;
+                    }
                     
                     console.log('📄 Documento a guardar:', documento);
                     
@@ -3851,6 +3865,7 @@
                                                             setDatosIngreso(prev => ({...prev, [nombre]: valor}));
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     data-nombre={nombre}
                                                 />
                                             </div>
@@ -3870,13 +3885,13 @@
                                 >
                                     <span className="text-lg">🍬 OTROS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        3 productos
+                                        4 productos
                                     </span>
                                 </div>
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                                        'DULCES - Dulces', 'SALADO - Salado', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -3917,6 +3932,7 @@
                                                             setDatosIngreso(prev => ({...prev, [nombre]: valor}));
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     data-nombre={nombre}
                                                 />
                                             </div>
@@ -3982,10 +3998,49 @@
                         </div>
                     </div>
 
+                        {/* Switch "No recibió mercadería" - Solo para Ingreso de Mercadería */}
+                        {pantallaActual === 'ingreso' && (
+                            <div className="bg-white rounded-lg mb-4 p-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-base font-semibold text-black">
+                                        ⚠️ No recibió mercadería
+                                    </label>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={noRecibioMercaderia}
+                                            onChange={(e) => setNoRecibioMercaderia(e.target.checked)}
+                                            className="sr-only peer"
+                                            style={{display: 'none'}}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"
+                                            onClick={() => setNoRecibioMercaderia(!noRecibioMercaderia)}
+                                            style={{
+                                                backgroundColor: noRecibioMercaderia ? '#FF9800' : '#d1d5db',
+                                                transition: 'background-color 0.2s'
+                                            }}
+                                        >
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '2px',
+                                                left: noRecibioMercaderia ? 'calc(100% - 22px)' : '2px',
+                                                width: '20px',
+                                                height: '20px',
+                                                backgroundColor: 'white',
+                                                borderRadius: '50%',
+                                                transition: 'left 0.2s',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                            }}></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Lista de productos */}
                         <div className="bg-white rounded-lg mb-4 p-4">
                             <h2 className="text-lg font-semibold mb-4 text-black">
-                                Productos a Ingresar
+                                {pantallaActual === 'ingreso' ? 'Productos a Ingresar' : 'Productos en Stock'}
                                 {cargandoDatos && <span className="text-sm text-gray-500 ml-2">(Cargando datos...)</span>}
                                         </h2>
                             
@@ -4049,6 +4104,7 @@
                                                             setDatosIngreso(prev => ({...prev, [nombre]: valor}));
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     data-nombre={nombre}
                                                 />
                                             </div>
@@ -4181,6 +4237,7 @@
                                                             setDatosIngreso(prev => ({...prev, [nombre]: valor}));
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     data-nombre={nombre}
                                                 />
                                             </div>
@@ -4200,13 +4257,13 @@
                                 >
                                     <span className="text-lg">🍬 OTROS</span>
                                     <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
-                                        3 productos
+                                        4 productos
                                     </span>
                                 </div>
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                                        'DULCES - Dulces', 'SALADO - Salado', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -4247,6 +4304,7 @@
                                                             setDatosIngreso(prev => ({...prev, [nombre]: valor}));
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     data-nombre={nombre}
                                                 />
                     </div>
@@ -4530,11 +4588,15 @@
             );
         }
 
-        // Componente de Promedio de Ventas - EXACTO como PromedioVentasActivity.kt
+        // Componente de Promedio de Ventas - EXACTO como VentaVolumenActivity.kt
         const PromedioVentas = ({ onVolver, usuario }) => {
             const [promedios, setPromedios] = useState({});
             const [cargando, setCargando] = useState(true);
             const [error, setError] = useState(null);
+            const [vistaMenu, setVistaMenu] = useState(false); // false = tabla, true = menú
+            const [registrosCache, setRegistrosCache] = useState([]);
+            const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
+            const [periodoActual, setPeriodoActual] = useState('General');
 
             useEffect(() => {
                 calcularPromedios();
@@ -4573,9 +4635,14 @@
                         return;
                     }
                     
-                    // Calcular promedios por día de la semana
+                    // Guardar registros en cache
+                    setRegistrosCache(registros);
+                    setRegistrosFiltrados(registros);
+                    
+                    // Calcular promedios por día de la semana con todos los registros (vista general)
                     const promediosCalculados = calcularPromediosPorDia(registros);
                     setPromedios(promediosCalculados);
+                    setPeriodoActual('General - Todos los registros');
                     console.log('✅ Promedios calculados:', promediosCalculados);
                     
                 } catch (error) {
@@ -4876,7 +4943,7 @@
                 ],
                 'PIZZAS': ['MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni'],
                 'PASTELITOS': ['BATATA - Batata', 'MEMBRIL - Membrillo'],
-                'OTROS': ['DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito']
+                'OTROS': ['DULCES - Dulces', 'SALADO - Salado', 'CHIPA - Chipa', 'CRIOLLITO - Criollito']
             };
 
             if (cargando) {
@@ -4907,6 +4974,422 @@
                 );
             }
 
+            // Función helper para obtener fecha Argentina
+            const getFechaArgentina = () => {
+                return window.getFechaArgentina ? window.getFechaArgentina() : new Date();
+            };
+
+            // Función helper para convertir fecha a ISO
+            const fechaISO = (fecha) => {
+                if (typeof fecha === 'string') return fecha;
+                const año = fecha.getFullYear();
+                const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                const dia = String(fecha.getDate()).padStart(2, '0');
+                return `${año}-${mes}-${dia}`;
+            };
+
+            // Función para mostrar menú de promedios
+            const mostrarMenuPromedios = () => {
+                setVistaMenu(true);
+            };
+
+            // Función para mostrar promedio general
+            const mostrarPromedioGeneral = async () => {
+                setRegistrosFiltrados(registrosCache);
+                setPeriodoActual('General - Todos los registros');
+                const promediosCalculados = calcularPromediosPorDia(registrosCache);
+                setPromedios(promediosCalculados);
+                setVistaMenu(false);
+            };
+
+            // Función para mostrar última semana
+            const mostrarPromedioUltimaSemana = async () => {
+                const hoy = getFechaArgentina();
+                const diaSemanaActual = hoy.getDay();
+                const diasHastaLunes = diaSemanaActual === 0 ? 6 : diaSemanaActual - 1;
+                
+                // Ir al lunes de la semana actual
+                const lunesActual = new Date(hoy);
+                lunesActual.setDate(lunesActual.getDate() - diasHastaLunes);
+                lunesActual.setHours(0, 0, 0, 0);
+                
+                // Ir al lunes de la semana anterior (7 días antes)
+                const lunesAnterior = new Date(lunesActual);
+                lunesAnterior.setDate(lunesAnterior.getDate() - 7);
+                
+                // Ir al domingo de la semana anterior
+                const domingoAnterior = new Date(lunesAnterior);
+                domingoAnterior.setDate(domingoAnterior.getDate() + 6);
+                domingoAnterior.setHours(23, 59, 59, 999);
+                
+                const fechaInicio = fechaISO(lunesAnterior);
+                const fechaFin = fechaISO(domingoAnterior);
+                
+                const registrosFiltrados = registrosCache.filter(registro => {
+                    const fechaRegistro = registro.fecha;
+                    return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
+                });
+                
+                setRegistrosFiltrados(registrosFiltrados);
+                setPeriodoActual('Última Semana');
+                const promediosCalculados = calcularPromediosPorDia(registrosFiltrados);
+                setPromedios(promediosCalculados);
+                setVistaMenu(false);
+            };
+
+            // Función para mostrar mes actual
+            const mostrarPromedioMesActual = async () => {
+                const hoy = getFechaArgentina();
+                const mesActual = hoy.getMonth();
+                const añoActual = hoy.getFullYear();
+                
+                const registrosFiltrados = registrosCache.filter(registro => {
+                    const fechaRegistro = new Date(registro.fecha);
+                    return fechaRegistro.getMonth() === mesActual && fechaRegistro.getFullYear() === añoActual;
+                });
+                
+                const nombreMes = hoy.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+                setRegistrosFiltrados(registrosFiltrados);
+                setPeriodoActual(nombreMes);
+                const promediosCalculados = calcularPromediosPorDia(registrosFiltrados);
+                setPromedios(promediosCalculados);
+                setVistaMenu(false);
+            };
+
+            // Función para mostrar semana específica (selector de rango de fechas)
+            const mostrarPromedioSemanaEspecifica = () => {
+                // Crear modal para seleccionar rango de fechas
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;';
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:500px;width:100%;box-shadow:0 4px 6px rgba(0,0,0,0.1);margin:auto;';
+                
+                let fechaDesde = null;
+                let fechaHasta = null;
+                let seleccionandoDesde = true;
+                
+                // Función para formatear fecha DD/MM/YYYY
+                const formatoFecha = (fecha) => {
+                    if (!fecha) return 'Seleccionar fecha';
+                    const dia = String(fecha.getDate()).padStart(2, '0');
+                    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                    return `${dia}/${mes}/${fecha.getFullYear()}`;
+                };
+                
+                // Función para actualizar el texto de las fechas
+                const actualizarFechasTexto = () => {
+                    const txtDesde = document.getElementById('txt-fecha-desde');
+                    const txtHasta = document.getElementById('txt-fecha-hasta');
+                    if (txtDesde) txtDesde.textContent = formatoFecha(fechaDesde);
+                    if (txtHasta) txtHasta.textContent = formatoFecha(fechaHasta);
+                };
+                
+                const hoy = getFechaArgentina();
+                const fechaDefault = fechaISO(hoy);
+                
+                modal.innerHTML = `
+                    <h2 style="font-size:20px;font-weight:bold;margin-bottom:16px;color:#7C3AED;text-align:center">🗓️ Seleccionar Rango de Fechas</h2>
+                    
+                    <!-- Botones rápidos -->
+                    <div style="display:flex;gap:8px;margin-bottom:20px">
+                        <button 
+                            id="btn-ultimos-7-dias"
+                            style="flex:1;padding:10px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px"
+                        >
+                            Últimos 7 días
+                        </button>
+                        <button 
+                            id="btn-ultimos-30-dias"
+                            style="flex:1;padding:10px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px"
+                        >
+                            Últimos 30 días
+                        </button>
+                    </div>
+                    
+                    <!-- Fechas seleccionadas -->
+                    <div style="display:flex;gap:12px;margin-bottom:20px">
+                        <div style="flex:1">
+                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#6b7280">Desde:</label>
+                            <div 
+                                id="txt-fecha-desde"
+                                style="padding:10px;border:2px solid ${seleccionandoDesde ? '#7C3AED' : '#d1d5db'};border-radius:8px;font-size:14px;text-align:center;background:${seleccionandoDesde ? '#f3f4f6' : 'white'};cursor:pointer;min-height:20px"
+                            >
+                                Seleccionar fecha
+                            </div>
+                        </div>
+                        <div style="flex:1">
+                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#6b7280">Hasta:</label>
+                            <div 
+                                id="txt-fecha-hasta"
+                                style="padding:10px;border:2px solid ${!seleccionandoDesde ? '#7C3AED' : '#d1d5db'};border-radius:8px;font-size:14px;text-align:center;background:${!seleccionandoDesde ? '#f3f4f6' : 'white'};cursor:pointer;min-height:20px"
+                            >
+                                Seleccionar fecha
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selectores de fecha -->
+                    <div style="display:flex;gap:12px;margin-bottom:20px">
+                        <div style="flex:1">
+                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#6b7280">Fecha Desde:</label>
+                            <input 
+                                type="date" 
+                                id="input-fecha-desde" 
+                                style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box"
+                            />
+                        </div>
+                        <div style="flex:1">
+                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#6b7280">Fecha Hasta:</label>
+                            <input 
+                                type="date" 
+                                id="input-fecha-hasta" 
+                                style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box"
+                            />
+                        </div>
+                    </div>
+                    
+                    <!-- Botones -->
+                    <div style="display:flex;gap:8px">
+                        <button 
+                            id="btn-cancelar-rango"
+                            style="flex:1;padding:12px;background:#e5e7eb;color:#374151;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:16px"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            id="btn-aplicar-rango"
+                            style="flex:1;padding:12px;background:#7C3AED;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:16px"
+                        >
+                            Aplicar
+                        </button>
+                    </div>
+                `;
+                
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                const txtFechaDesde = document.getElementById('txt-fecha-desde');
+                const txtFechaHasta = document.getElementById('txt-fecha-hasta');
+                const inputFechaDesde = document.getElementById('input-fecha-desde');
+                const inputFechaHasta = document.getElementById('input-fecha-hasta');
+                
+                // Cuando cambia el input de fecha desde
+                inputFechaDesde.onchange = (e) => {
+                    if (e.target.value) {
+                        const [y, m, d] = e.target.value.split('-').map(Number);
+                        fechaDesde = new Date(y, m - 1, d);
+                        fechaDesde.setHours(0, 0, 0, 0);
+                        seleccionandoDesde = false;
+                        actualizarFechasTexto();
+                        // Actualizar estilo
+                        txtFechaDesde.style.borderColor = '#d1d5db';
+                        txtFechaDesde.style.background = 'white';
+                        txtFechaHasta.style.borderColor = '#7C3AED';
+                        txtFechaHasta.style.background = '#f3f4f6';
+                    }
+                };
+                
+                // Cuando cambia el input de fecha hasta
+                inputFechaHasta.onchange = (e) => {
+                    if (e.target.value) {
+                        const [y, m, d] = e.target.value.split('-').map(Number);
+                        fechaHasta = new Date(y, m - 1, d);
+                        fechaHasta.setHours(23, 59, 59, 999);
+                        
+                        // Asegurar que fechaDesde <= fechaHasta
+                        if (fechaDesde && fechaDesde.getTime() > fechaHasta.getTime()) {
+                            const temp = fechaDesde;
+                            fechaDesde = fechaHasta;
+                            fechaHasta = temp;
+                            inputFechaDesde.value = fechaISO(fechaDesde);
+                            inputFechaHasta.value = fechaISO(fechaHasta);
+                        }
+                        
+                        seleccionandoDesde = true;
+                        actualizarFechasTexto();
+                        // Actualizar estilo
+                        txtFechaHasta.style.borderColor = '#d1d5db';
+                        txtFechaHasta.style.background = 'white';
+                        txtFechaDesde.style.borderColor = '#7C3AED';
+                        txtFechaDesde.style.background = '#f3f4f6';
+                    }
+                };
+                
+                // Click en texto de fecha desde
+                txtFechaDesde.onclick = () => {
+                    inputFechaDesde.showPicker();
+                };
+                
+                // Click en texto de fecha hasta
+                txtFechaHasta.onclick = () => {
+                    inputFechaHasta.showPicker();
+                };
+                
+                // Botón últimos 7 días
+                document.getElementById('btn-ultimos-7-dias').onclick = () => {
+                    fechaHasta = new Date(hoy);
+                    fechaHasta.setHours(23, 59, 59, 999);
+                    
+                    fechaDesde = new Date(hoy);
+                    fechaDesde.setDate(fechaDesde.getDate() - 6);
+                    fechaDesde.setHours(0, 0, 0, 0);
+                    
+                    inputFechaDesde.value = fechaISO(fechaDesde);
+                    inputFechaHasta.value = fechaISO(fechaHasta);
+                    seleccionandoDesde = true;
+                    actualizarFechasTexto();
+                };
+                
+                // Botón últimos 30 días
+                document.getElementById('btn-ultimos-30-dias').onclick = () => {
+                    fechaHasta = new Date(hoy);
+                    fechaHasta.setHours(23, 59, 59, 999);
+                    
+                    fechaDesde = new Date(hoy);
+                    fechaDesde.setDate(fechaDesde.getDate() - 29);
+                    fechaDesde.setHours(0, 0, 0, 0);
+                    
+                    inputFechaDesde.value = fechaISO(fechaDesde);
+                    inputFechaHasta.value = fechaISO(fechaHasta);
+                    seleccionandoDesde = true;
+                    actualizarFechasTexto();
+                };
+                
+                // Botón cancelar
+                document.getElementById('btn-cancelar-rango').onclick = () => {
+                    document.body.removeChild(overlay);
+                };
+                
+                // Botón aplicar
+                document.getElementById('btn-aplicar-rango').onclick = () => {
+                    if (!fechaDesde || !fechaHasta) {
+                        alert('Por favor selecciona ambas fechas (desde y hasta)');
+                        return;
+                    }
+                    
+                    const fechaDesdeStr = fechaISO(fechaDesde);
+                    const fechaHastaStr = fechaISO(fechaHasta);
+                    
+                    // Filtrar registros del rango
+                    const registrosFiltrados = registrosCache.filter(registro => {
+                        const fechaRegistro = registro.fecha;
+                        return fechaRegistro >= fechaDesdeStr && fechaRegistro <= fechaHastaStr;
+                    });
+                    
+                    // Formatear período
+                    const periodoTexto = `${formatoFecha(fechaDesde)} a ${formatoFecha(fechaHasta)}`;
+                    
+                    setRegistrosFiltrados(registrosFiltrados);
+                    setPeriodoActual(periodoTexto);
+                    const promediosCalculados = calcularPromediosPorDia(registrosFiltrados);
+                    setPromedios(promediosCalculados);
+                    setVistaMenu(false);
+                    
+                    // Cerrar modal
+                    document.body.removeChild(overlay);
+                };
+                
+                // Cerrar al hacer clic fuera del modal
+                overlay.onclick = (e) => {
+                    if (e.target === overlay) {
+                        document.body.removeChild(overlay);
+                    }
+                };
+            };
+
+            // Si está en vista de menú, mostrar menú
+            if (vistaMenu) {
+                return (
+                    <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '16px'}}>
+                        {/* Header con botón volver */}
+                        <div className="flex justify-between items-center mb-4">
+                            <button 
+                                onClick={onVolver}
+                                className="text-2xl font-bold text-black"
+                            >
+                                ← Volver
+                            </button>
+                            <h1 className="text-xl font-bold text-black">Venta por Volumen</h1>
+                            <div></div>
+                        </div>
+
+                        {/* Switch para cambiar vista */}
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-base font-semibold text-black">Vista de Tabla</span>
+                                <div 
+                                    onClick={() => setVistaMenu(!vistaMenu)}
+                                    style={{
+                                        width: '44px',
+                                        height: '24px',
+                                        backgroundColor: !vistaMenu ? '#3B82F6' : '#d1d5db',
+                                        borderRadius: '12px',
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                >
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '2px',
+                                        left: !vistaMenu ? 'calc(100% - 22px)' : '2px',
+                                        width: '20px',
+                                        height: '20px',
+                                        backgroundColor: 'white',
+                                        borderRadius: '50%',
+                                        transition: 'left 0.2s',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                    }}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Menú de promedios */}
+                        <div className="bg-white rounded-lg p-6">
+                            <div className="text-center mb-6">
+                                <h2 className="text-2xl font-bold" style={{color: '#7C3AED'}}>📊 MENÚ DE PROMEDIOS</h2>
+                                <p className="text-sm text-gray-600 mt-2">Selecciona una opción para ver los promedios de ventas</p>
+                            </div>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={mostrarPromedioGeneral}
+                                    className="w-full p-4 text-white font-bold rounded-lg"
+                                    style={{backgroundColor: '#7C3AED'}}
+                                >
+                                    📈 PROMEDIO GENERAL
+                                </button>
+
+                                <button
+                                    onClick={mostrarPromedioUltimaSemana}
+                                    className="w-full p-4 text-white font-bold rounded-lg"
+                                    style={{backgroundColor: '#2E7D32'}}
+                                >
+                                    📅 ÚLTIMA SEMANA
+                                </button>
+
+                                <button
+                                    onClick={mostrarPromedioSemanaEspecifica}
+                                    className="w-full p-4 text-white font-bold rounded-lg"
+                                    style={{backgroundColor: '#0288D1'}}
+                                >
+                                    🗓️ SEMANA ESPECÍFICA
+                                </button>
+
+                                <button
+                                    onClick={mostrarPromedioMesActual}
+                                    className="w-full p-4 text-white font-bold rounded-lg"
+                                    style={{backgroundColor: '#C62828'}}
+                                >
+                                    📆 MES ACTUAL
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
                     {/* Header con botón volver */}
@@ -4917,12 +5400,51 @@
                         >
                             ← Volver
                         </button>
-                        <h1 className="text-xl font-bold text-black">Promedio de Ventas</h1>
+                        <h1 className="text-xl font-bold text-black">Venta por Volumen</h1>
                         <div></div>
                         </div>
 
+                    {/* Switch para cambiar vista */}
+                    <div className="bg-white rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-base font-semibold text-black">Vista de Tabla</span>
+                            <div 
+                                onClick={() => setVistaMenu(!vistaMenu)}
+                                style={{
+                                    width: '44px',
+                                    height: '24px',
+                                    backgroundColor: !vistaMenu ? '#3B82F6' : '#d1d5db',
+                                    borderRadius: '12px',
+                                    position: 'relative',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s'
+                                }}
+                            >
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '2px',
+                                    left: !vistaMenu ? 'calc(100% - 22px)' : '2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '50%',
+                                    transition: 'left 0.2s',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}></div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Tabla de promedios - EXACTO como PromedioVentasActivity.kt */}
                     <div className="bg-white rounded-lg p-4" style={{minHeight: 'calc(100vh - 200px)'}}>
+                        {/* Indicador de período */}
+                        <div 
+                            className="text-center p-2 mb-2"
+                            style={{color: '#7C3AED', fontSize: '18px', fontWeight: 'bold'}}
+                        >
+                            PROMEDIO: {periodoActual}
+                        </div>
+
                         {/* Indicador de local - EXACTO como línea 273-280 */}
                         <div 
                             className="text-center p-2 mb-4"
@@ -6505,6 +7027,12 @@
         actualizarTextoFecha();
       };
     }
+    
+    // Configurar input de cantidad para seleccionar todo el texto al hacer focus
+    const cantInput = colLeft.querySelector('#vl-cant');
+    if (cantInput) {
+      cantInput.onfocus = function() { this.select(); };
+    }
     colLeft.querySelector('#vl-add').onclick = async () => {
       const codigo = colLeft.querySelector('#vl-prod').value;
       const fecha = fechaVencimientoSeleccionada;
@@ -7973,9 +8501,19 @@
       overlayHora.appendChild(modalHora);
       document.body.appendChild(overlayHora);
       
+      // Configurar selección automática de texto al hacer focus en inputs de hora
+      const inputHora = document.getElementById('hora-picker-h');
+      const inputMinuto = document.getElementById('hora-picker-m');
+      if (inputHora) {
+        inputHora.onfocus = function() { this.select(); };
+      }
+      if (inputMinuto) {
+        inputMinuto.onfocus = function() { this.select(); };
+      }
+      
       document.getElementById('hora-ok').onclick = () => {
-        const hora = String(document.getElementById('hora-picker-h').value).padStart(2, '0');
-        const minuto = String(document.getElementById('hora-picker-m').value).padStart(2, '0');
+        const hora = String(inputHora.value).padStart(2, '0');
+        const minuto = String(inputMinuto.value).padStart(2, '0');
         editHora.value = hora + ':' + minuto;
         overlayHora.remove();
       };

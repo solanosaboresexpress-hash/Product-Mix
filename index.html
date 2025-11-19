@@ -3534,7 +3534,7 @@
                         'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                         'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                         'BATATA - Batata', 'MEMBRIL - Membrillo',
-                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
+                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                     ];
                     
                     // Leer valores directamente de los inputs del DOM
@@ -3876,7 +3876,7 @@
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
+                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -4206,7 +4206,7 @@
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
+                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -5076,29 +5076,57 @@
             const [vistaActual, setVistaActual] = useState('login');
 
             useEffect(() => {
-                // Verificar si hay usuario guardado
-                const usuarioGuardado = localStorage.getItem('usuario');
-                const regionIdActual = localStorage.getItem('region_id');
-                
-                if (usuarioGuardado) {
-                    try {
-                        const usuarioData = JSON.parse(usuarioGuardado);
-                        // Verificar que la región del usuario coincida con la región actual
-                        if (usuarioData.regionId && regionIdActual && usuarioData.regionId === regionIdActual) {
-                            setUsuario(usuarioData);
-                            setVistaActual('main');
-                        } else {
-                            // Si la región cambió, limpiar el usuario guardado
-                            console.log('⚠️ Región cambió, limpiando usuario guardado');
+                // Función asíncrona para inicializar región y usuario
+                async function inicializarUsuarioYRegion() {
+                    const usuarioGuardado = localStorage.getItem('usuario');
+                    const regionIdActual = localStorage.getItem('region_id');
+                    
+                    if (usuarioGuardado) {
+                        try {
+                            const usuarioData = JSON.parse(usuarioGuardado);
+                            // Verificar que la región del usuario coincida con la región actual
+                            if (usuarioData.regionId && regionIdActual && usuarioData.regionId === regionIdActual) {
+                                // Asegurar que las regiones estén cargadas
+                                if (!REGIONES_CONFIG_CACHE || REGIONES_CONFIG_CACHE.length === 0) {
+                                    console.log('Cargando regiones para inicializar Firebase...');
+                                    const response = await fetch('regiones.json');
+                                    const regionesData = await response.json();
+                                    REGIONES_CONFIG_CACHE = regionesData.filter(r => r.activo);
+                                }
+                                
+                                // Inicializar Firebase con la región del usuario si no está inicializado
+                                try {
+                                    FirebaseRegionManager.getFirestore();
+                                    console.log('✅ Firebase ya estaba inicializado');
+                                } catch (e) {
+                                    // Firebase no está inicializado, inicializarlo con la región del usuario
+                                    console.log('Firebase no inicializado, inicializando con región del usuario:', usuarioData.regionId);
+                                    const regionUsuario = REGIONES_CONFIG_CACHE.find(r => r.id === usuarioData.regionId);
+                                    if (regionUsuario) {
+                                        FirebaseRegionManager.initializeFirebase(regionUsuario);
+                                        console.log('✅ Firebase inicializado con región:', regionUsuario.nombre);
+                                    } else {
+                                        console.error('❌ No se encontró la región:', usuarioData.regionId);
+                                    }
+                                }
+                                
+                                setUsuario(usuarioData);
+                                setVistaActual('main');
+                            } else {
+                                // Si la región cambió, limpiar el usuario guardado
+                                console.log('⚠️ Región cambió, limpiando usuario guardado');
+                                localStorage.removeItem('usuario');
+                                localStorage.removeItem('loginData');
+                            }
+                        } catch (error) {
+                            console.error('Error parseando usuario guardado:', error);
                             localStorage.removeItem('usuario');
-                            localStorage.removeItem('loginData');
                         }
-                    } catch (error) {
-                        console.error('Error parseando usuario guardado:', error);
-                        localStorage.removeItem('usuario');
                     }
+                    setLoading(false);
                 }
-                setLoading(false);
+                
+                inicializarUsuarioYRegion();
             }, []);
 
             // Manejar navegación por hash
@@ -5655,6 +5683,39 @@
       alert('Error: No se encontró el local');
       return;
     }
+    
+    // Verificar e inicializar Firebase con la región del usuario si no está inicializado
+    try {
+      FirebaseRegionManager.getFirestore();
+    } catch (e) {
+      // Firebase no está inicializado, intentar inicializarlo con la región del usuario
+      const regionIdUsuario = usuario.regionId || localStorage.getItem('region_id');
+      if (regionIdUsuario) {
+        try {
+          // Cargar regiones si no están en cache
+          if (!REGIONES_CONFIG_CACHE || REGIONES_CONFIG_CACHE.length === 0) {
+            const response = await fetch('regiones.json');
+            const regionesData = await response.json();
+            REGIONES_CONFIG_CACHE = regionesData.filter(r => r.activo);
+          }
+          
+          const regionUsuario = REGIONES_CONFIG_CACHE.find(r => r.id === regionIdUsuario);
+          if (regionUsuario) {
+            console.log('Inicializando Firebase para región del usuario:', regionUsuario.nombre);
+            FirebaseRegionManager.initializeFirebase(regionUsuario);
+          } else {
+            throw new Error('No se encontró la región del usuario');
+          }
+        } catch (initError) {
+          console.error('Error inicializando Firebase:', initError);
+          alert('Error: No se pudo inicializar Firebase. Por favor, vuelve al login y selecciona una región.');
+          return;
+        }
+      } else {
+        alert('Error: No se encontró la región. Por favor, vuelve al login y selecciona una región.');
+        return;
+      }
+    }
 
     const productos = {
       'JQ': 'JQ - Jamón y Queso',
@@ -5718,10 +5779,10 @@
       '<button id="vl-prod-next" style="padding:6px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;font-size:16px;line-height:1">▼</button>' +
       '</div></div>' +
       '<div><label style="font-size:13px;color:#374151;display:block;margin-bottom:4px">Fecha de Vencimiento</label>' +
-      '<div style="display:flex;gap:4px;align-items:center"><button id="vl-fecha-prev" style="padding:6px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px">◀</button>' +
-      '<button id="vl-fecha-btn" style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:6px;background:#fff;text-align:center;font-size:14px">📅 Seleccionar Fecha</button>' +
-      '<button id="vl-fecha-next" style="padding:6px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px">▶</button></div>' +
-      '<input type="date" id="vl-fecha" style="display:none"/></div>' +
+      '<div style="display:flex;gap:4px;align-items:center"><button id="vl-fecha-prev" style="padding:6px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;min-width:40px">◀</button>' +
+      '<input type="date" id="vl-fecha" style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;cursor:pointer;min-height:38px;box-sizing:border-box"/>' +
+      '<button id="vl-fecha-next" style="padding:6px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;min-width:40px">▶</button></div>' +
+      '<div id="vl-fecha-display" style="margin-top:4px;text-align:center;font-size:12px;color:#6b7280"></div></div>' +
       '<div><label style="font-size:13px;color:#374151;display:block;margin-bottom:4px">Cantidad</label>' +
       '<input type="number" min="1" id="vl-cant" placeholder="0" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"/></div>' +
       '<button id="vl-add" style="padding:10px;background:#10b981;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:14px">Agregar Lote</button>' +
@@ -5734,20 +5795,68 @@
         const [y, m, d] = fechaVencimientoSeleccionada.split('-').map(Number);
         const fechaObj = new Date(y, m - 1, d);
         const fechaDisplay = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        colLeft.querySelector('#vl-fecha-btn').textContent = '📅 Vence: ' + fechaDisplay;
-        colLeft.querySelector('#vl-fecha').value = fechaVencimientoSeleccionada;
+        const fechaDisplayEl = colLeft.querySelector('#vl-fecha-display');
+        if (fechaDisplayEl) {
+          fechaDisplayEl.textContent = '📅 Vence: ' + fechaDisplay;
+        }
+        const fechaInput = colLeft.querySelector('#vl-fecha');
+        if (fechaInput) {
+          fechaInput.value = fechaVencimientoSeleccionada;
+        }
       } catch (e) {
-        colLeft.querySelector('#vl-fecha-btn').textContent = '📅 Seleccionar Fecha';
+        const fechaDisplayEl = colLeft.querySelector('#vl-fecha-display');
+        if (fechaDisplayEl) {
+          fechaDisplayEl.textContent = '📅 Seleccionar Fecha';
+        }
       }
     }
 
     function cambiarFecha(dias) {
       try {
-        const [y, m, d] = fechaVencimientoSeleccionada.split('-').map(Number);
-        const fechaObj = new Date(y, m - 1, d);
-        fechaObj.setDate(fechaObj.getDate() + dias);
-        fechaVencimientoSeleccionada = fechaISO(fechaObj);
+        // Leer el valor actual del input date (siempre la fuente de verdad)
+        const fechaInput = colLeft.querySelector('#vl-fecha');
+        let fechaActual = fechaVencimientoSeleccionada;
+        
+        if (fechaInput && fechaInput.value) {
+          fechaActual = fechaInput.value;
+        } else if (!fechaActual) {
+          // Si no hay fecha, inicializar con mañana
+          console.warn('No hay fecha seleccionada, inicializando...');
+          const hoy = getFechaArgentina();
+          hoy.setDate(hoy.getDate() + 1);
+          fechaActual = fechaISO(hoy);
+        }
+        
+        console.log('Fecha actual antes de cambiar:', fechaActual, 'dias a sumar:', dias);
+        
+        // Calcular nueva fecha - usar método directo sin conversiones de zona horaria
+        const [y, m, d] = fechaActual.split('-').map(Number);
+        console.log('Componentes de fecha:', { año: y, mes: m, dia: d });
+        
+        // Crear fecha en UTC para evitar problemas de zona horaria
+        const fechaObj = new Date(Date.UTC(y, m - 1, d));
+        console.log('Fecha objeto creada:', fechaObj.toISOString(), 'día local:', fechaObj.getUTCDate());
+        
+        // Sumar/restar días directamente en UTC
+        fechaObj.setUTCDate(fechaObj.getUTCDate() + dias);
+        console.log('Después de setUTCDate:', fechaObj.toISOString(), 'día local:', fechaObj.getUTCDate());
+        
+        // Formatear manualmente para evitar problemas con fechaISO
+        const nuevoAño = fechaObj.getUTCFullYear();
+        const nuevoMes = String(fechaObj.getUTCMonth() + 1).padStart(2, '0');
+        const nuevoDia = String(fechaObj.getUTCDate()).padStart(2, '0');
+        fechaVencimientoSeleccionada = `${nuevoAño}-${nuevoMes}-${nuevoDia}`;
+        
+        console.log('Nueva fecha calculada:', fechaVencimientoSeleccionada);
+        
+        // Actualizar el input date visible
+        if (fechaInput) {
+          fechaInput.value = fechaVencimientoSeleccionada;
+          console.log('Input date actualizado a:', fechaInput.value);
+        }
+        
         actualizarTextoFecha();
+        console.log('Fecha cambiada a:', fechaVencimientoSeleccionada, '(dias:', dias, ')');
       } catch (e) {
         console.error('Error cambiando fecha:', e);
       }
@@ -6361,13 +6470,41 @@
     colLeft.querySelector('#vl-prod-prev').onclick = () => cambiarProducto(-1);
     colLeft.querySelector('#vl-prod-next').onclick = () => cambiarProducto(1);
     colLeft.querySelector('#vl-prod').onchange = () => actualizarCantidadFaltante();
-    colLeft.querySelector('#vl-fecha-prev').onclick = () => cambiarFecha(-1);
-    colLeft.querySelector('#vl-fecha-next').onclick = () => cambiarFecha(1);
-    colLeft.querySelector('#vl-fecha-btn').onclick = () => colLeft.querySelector('#vl-fecha').showPicker();
-    colLeft.querySelector('#vl-fecha').onchange = (e) => {
-      fechaVencimientoSeleccionada = e.target.value;
-      actualizarTextoFecha();
-    };
+    
+    // Asignar eventos de navegación de fecha con validación
+    const btnFechaPrev = colLeft.querySelector('#vl-fecha-prev');
+    const btnFechaNext = colLeft.querySelector('#vl-fecha-next');
+    const fechaInput = colLeft.querySelector('#vl-fecha');
+    
+    if (btnFechaPrev) {
+      btnFechaPrev.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        cambiarFecha(-1);
+      };
+    }
+    
+    if (btnFechaNext) {
+      btnFechaNext.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Botón siguiente clickeado, cambiando fecha +1');
+        cambiarFecha(1);
+        return false;
+      };
+    }
+    
+    // Configurar input date
+    if (fechaInput) {
+      // Inicializar el valor del input date
+      fechaInput.value = fechaVencimientoSeleccionada;
+      
+      // Actualizar cuando el usuario cambie la fecha manualmente en el input
+      fechaInput.onchange = (e) => {
+        fechaVencimientoSeleccionada = e.target.value;
+        actualizarTextoFecha();
+      };
+    }
     colLeft.querySelector('#vl-add').onclick = async () => {
       const codigo = colLeft.querySelector('#vl-prod').value;
       const fecha = fechaVencimientoSeleccionada;
@@ -8356,13 +8493,13 @@
             const nombreProducto = p.nombre || p.codigo || '';
             const codigo = obtenerCodigoProducto(nombreProducto);
             
+            // Debug: log para ver qué productos se están procesando
+            if (nombreProducto.toUpperCase().includes('DULCES') || codigo === 'MEDIALUNA_MANTECA') {
+              console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo, '| Es panificadora?', ordenProductosPanificadora.includes(codigo));
+            }
+            
             // Solo procesar productos de panificadora
             if (!ordenProductosPanificadora.includes(codigo)) return;
-            
-            // Debug: log para ver qué productos se están procesando
-            if (nombreProducto.includes('DULCES') || nombreProducto.includes('Dulces')) {
-              console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo);
-            }
             
             // Buscar en ingreso y stock anterior usando el mapeo de códigos
             // Necesitamos buscar por el nombre original del producto en la BD
@@ -8431,15 +8568,18 @@
       
       // Normalizar nombre (trim)
       const nombreNormalizado = nombre.trim();
+      const nombreUpper = nombreNormalizado.toUpperCase();
       
-      // Casos especiales primero (formato "CODIGO - Nombre")
-      if (nombreNormalizado.startsWith('DULCES')) {
+      // Casos especiales primero (formato "CODIGO - Nombre" o solo "CODIGO")
+      // Buscar por coincidencia al inicio (case-insensitive)
+      if (nombreUpper.startsWith('DULCES')) {
+        console.log('🔍 [obtenerCodigoProducto] Mapeando:', nombreNormalizado, '→ MEDIALUNA_MANTECA');
         return 'MEDIALUNA_MANTECA';
       }
-      if (nombreNormalizado.startsWith('CHIPA')) {
+      if (nombreUpper.startsWith('CHIPA')) {
         return 'CHIPA';
       }
-      if (nombreNormalizado.startsWith('CRIOLLITO')) {
+      if (nombreUpper.startsWith('CRIOLLITO')) {
         return 'CRIOLLITO';
       }
       
@@ -8475,21 +8615,29 @@
         'criollitos': 'CRIOLLITO'
       };
       
-      // Buscar coincidencia exacta primero
-      if (mapeoNombres[nombreNormalizado]) {
-        return mapeoNombres[nombreNormalizado];
+      // Buscar coincidencia exacta primero (case-insensitive)
+      for (const [key, value] of Object.entries(mapeoNombres)) {
+        if (nombreUpper === key.toUpperCase()) {
+          if (value === 'MEDIALUNA_MANTECA') {
+            console.log('🔍 [obtenerCodigoProducto] Coincidencia exacta:', nombreNormalizado, '→', value);
+          }
+          return value;
+        }
       }
       
       // Buscar por coincidencia parcial (case-insensitive)
-      const nombreUpper = nombreNormalizado.toUpperCase();
       for (const [key, value] of Object.entries(mapeoNombres)) {
         const keyUpper = key.toUpperCase();
         if (nombreUpper.includes(keyUpper) || keyUpper.includes(nombreUpper)) {
+          if (value === 'MEDIALUNA_MANTECA') {
+            console.log('🔍 [obtenerCodigoProducto] Coincidencia parcial:', nombreNormalizado, '→', value, '(key:', key, ')');
+          }
           return value;
         }
       }
       
       // Si no encuentra, retornar el nombre original
+      console.warn('⚠️ [obtenerCodigoProducto] No se encontró mapeo para:', nombreNormalizado);
       return nombreNormalizado;
     }
 
@@ -8511,49 +8659,32 @@
         
         const stockMap = {};
         
-        // PRIMERO: Verificar si existe Stock Final de HOY
-        const stockHoy = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', hoy).where('tipo', '==', 'Stock Final').get();
+        // Calcular: Stock Final de ayer + Ingreso de hoy
+        const stockAyer = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
+        stockAyer.forEach(d => {
+          const productos = d.data().productos || [];
+          productos.forEach(p => {
+            const nombreProducto = p.nombre || p.codigo || '';
+            const codigo = obtenerCodigoProducto(nombreProducto);
+            if (ordenProductosPanificadora.includes(codigo)) {
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            }
+          });
+        });
         
-        if (!stockHoy.empty) {
-          stockHoy.forEach(d => {
-            const productos = d.data().productos || [];
-            productos.forEach(p => {
-              const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
-              if (ordenProductosPanificadora.includes(codigo)) {
-                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-              }
-            });
+        const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
+        ingresoHoy.forEach(d => {
+          const productos = d.data().productos || [];
+          productos.forEach(p => {
+            const nombreProducto = p.nombre || p.codigo || '';
+            const codigo = obtenerCodigoProducto(nombreProducto);
+            if (ordenProductosPanificadora.includes(codigo)) {
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            }
           });
-        } else {
-          // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
-          const stockAyer = await db.collection('locales').doc(localId).collection('registros')
-            .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
-          stockAyer.forEach(d => {
-            const productos = d.data().productos || [];
-            productos.forEach(p => {
-              const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
-              if (ordenProductosPanificadora.includes(codigo)) {
-                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-              }
-            });
-          });
-          
-          const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
-            .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
-          ingresoHoy.forEach(d => {
-            const productos = d.data().productos || [];
-            productos.forEach(p => {
-              const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
-              if (ordenProductosPanificadora.includes(codigo)) {
-                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-              }
-            });
-          });
-        }
+        });
         
         return stockMap;
       } catch (e) {

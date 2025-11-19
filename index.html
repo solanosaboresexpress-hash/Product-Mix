@@ -5372,24 +5372,43 @@
       const stockMap = {};
       try {
         const db = FirebaseRegionManager.getFirestore();
-        const stockAyer = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
-        stockAyer.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const codigo = normalizar(p.nombre || p.codigo || '');
-            stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+        
+        // PRIMERO: Verificar si existe Stock Final de HOY (si existe, usarlo directamente)
+        const stockHoy = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', hoy).where('tipo', '==', 'Stock Final').get();
+        
+        if (!stockHoy.empty) {
+          // Si existe Stock Final de hoy, usarlo directamente (igual que en gestión de locales)
+          console.log('📊 Usando Stock Final de HOY (existe)');
+          stockHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const codigo = normalizar(p.nombre || p.codigo || '');
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            });
           });
-        });
-        const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
-        ingresoHoy.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const codigo = normalizar(p.nombre || p.codigo || '');
-            stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+        } else {
+          // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
+          console.log('📊 Calculando stock: Stock Final ayer + Ingreso hoy');
+          const stockAyer = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
+          stockAyer.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const codigo = normalizar(p.nombre || p.codigo || '');
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            });
           });
-        });
+          const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
+          ingresoHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const codigo = normalizar(p.nombre || p.codigo || '');
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            });
+          });
+        }
       } catch (e) {
         console.warn('Error calculando stock:', e);
       }
@@ -5741,28 +5760,36 @@
       const stockMap = {};
       try {
         const db = FirebaseRegionManager.getFirestore();
-        const stockAyer = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
-        stockAyer.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
-            stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-          });
-        });
-        const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
-          .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
-        ingresoHoy.forEach(d => {
-          const productos = d.data().productos || [];
-          productos.forEach(p => {
-            const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
-            stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
-          });
-        });
+        
+        // PRIMERO: Verificar si existe Stock Final de HOY (si existe, usarlo directamente)
         const stockHoy = await db.collection('locales').doc(localId).collection('registros')
           .where('fecha', '==', hoy).where('tipo', '==', 'Stock Final').get();
-        if (stockAyer.empty && stockHoy.size > 0) {
+        
+        if (!stockHoy.empty) {
+          // Si existe Stock Final de hoy, usarlo directamente (igual que en gestión de locales)
+          console.log('📊 [VencLocalModal] Usando Stock Final de HOY (existe)');
           stockHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            });
+          });
+        } else {
+          // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
+          console.log('📊 [VencLocalModal] Calculando stock: Stock Final ayer + Ingreso hoy');
+          const stockAyer = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
+          stockAyer.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
+              stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+            });
+          });
+          const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
+          ingresoHoy.forEach(d => {
             const productos = d.data().productos || [];
             productos.forEach(p => {
               const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');

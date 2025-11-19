@@ -5862,9 +5862,91 @@
         } else {
           campoCantidad.value = '';
         }
+        
+        return { faltante, stockActual, cantidadLoteada };
       } catch (e) {
         console.warn('Error calculando cantidad faltante:', e);
+        return { faltante: 0, stockActual: 0, cantidadLoteada: 0 };
       }
+    }
+
+    async function buscarSiguienteProductoSinLotes() {
+      const sel = colLeft.querySelector('#vl-prod');
+      const opciones = Array.from(sel.options);
+      const indiceActual = sel.selectedIndex;
+      
+      // Empezar a buscar desde el siguiente producto
+      for (let i = indiceActual + 1; i < opciones.length; i++) {
+        const codigo = opciones[i].value;
+        if (!codigo) continue;
+        
+        try {
+          const stockMap = await calcularStockActual();
+          const codigoNorm = normalizar(codigo);
+          const stockActual = stockMap[codigoNorm] || 0;
+          
+          // Si no hay stock, saltar este producto
+          if (stockActual <= 0) continue;
+          
+          // Calcular cuánto ya está lotado
+          const db = FirebaseRegionManager.getFirestore();
+          const lotesSnap = await db.collection('locales').doc(localId).collection('vencimientos_activos').get();
+          let cantidadLoteada = 0;
+          lotesSnap.forEach(d => {
+            const data = d.data();
+            const codigoLote = normalizar(data.productoCodigo || data.codigo || '');
+            if (codigoLote === codigoNorm) {
+              cantidadLoteada += Number(data.cantidad) || 0;
+            }
+          });
+          
+          // Si falta lotear algo, este es el siguiente producto
+          const faltante = Math.max(0, stockActual - cantidadLoteada);
+          if (faltante > 0) {
+            sel.selectedIndex = i;
+            await actualizarCantidadFaltante();
+            return true;
+          }
+        } catch (e) {
+          console.warn('Error verificando producto:', e);
+        }
+      }
+      
+      // Si no encontró ninguno después del actual, buscar desde el inicio
+      for (let i = 0; i < indiceActual; i++) {
+        const codigo = opciones[i].value;
+        if (!codigo) continue;
+        
+        try {
+          const stockMap = await calcularStockActual();
+          const codigoNorm = normalizar(codigo);
+          const stockActual = stockMap[codigoNorm] || 0;
+          
+          if (stockActual <= 0) continue;
+          
+          const db = FirebaseRegionManager.getFirestore();
+          const lotesSnap = await db.collection('locales').doc(localId).collection('vencimientos_activos').get();
+          let cantidadLoteada = 0;
+          lotesSnap.forEach(d => {
+            const data = d.data();
+            const codigoLote = normalizar(data.productoCodigo || data.codigo || '');
+            if (codigoLote === codigoNorm) {
+              cantidadLoteada += Number(data.cantidad) || 0;
+            }
+          });
+          
+          const faltante = Math.max(0, stockActual - cantidadLoteada);
+          if (faltante > 0) {
+            sel.selectedIndex = i;
+            await actualizarCantidadFaltante();
+            return true;
+          }
+        } catch (e) {
+          console.warn('Error verificando producto:', e);
+        }
+      }
+      
+      return false; // No se encontró ningún producto sin lotes completos
     }
 
     async function renderLotes() {
@@ -6293,8 +6375,28 @@
         msg.style.color = '#059669';
         msg.textContent = 'Lote agregado exitosamente';
         await renderLotes();
+        
         // Actualizar cantidad faltante después de agregar el lote
-        await actualizarCantidadFaltante();
+        const infoFaltante = await actualizarCantidadFaltante();
+        
+        // Si el producto actual ya está completamente lotado (faltante === 0), pasar al siguiente
+        if (infoFaltante && infoFaltante.faltante === 0 && infoFaltante.stockActual > 0) {
+          // Esperar un momento para que el usuario vea el mensaje de éxito
+          setTimeout(async () => {
+            const encontrado = await buscarSiguienteProductoSinLotes();
+            if (encontrado) {
+              msg.style.color = '#0ea5e9';
+              msg.textContent = 'Producto completo. Cambiando al siguiente producto sin lotes...';
+              // Limpiar el mensaje después de 2 segundos
+              setTimeout(() => {
+                msg.textContent = '';
+              }, 2000);
+            } else {
+              msg.style.color = '#059669';
+              msg.textContent = '¡Todos los productos con stock ya tienen lotes cargados!';
+            }
+          }, 500);
+        }
       } catch (e) {
         msg.style.color = '#dc2626';
         msg.textContent = 'Error: ' + e.message;

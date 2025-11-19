@@ -5706,7 +5706,7 @@
       '<button id="vl-add" style="padding:10px;background:#10b981;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:14px">Agregar Lote</button>' +
       '<div id="vl-msg" style="font-size:12px;min-height:20px"></div></div>';
 
-    colRight.innerHTML = '<div style="font-weight:600;margin-bottom:12px;font-size:16px">Lotes Cargados</div><div id="vl-list"></div>';
+    colRight.innerHTML = '<div style="font-weight:600;margin-bottom:12px;font-size:16px">Lotes Cargados</div><div id="vl-list"></div><div id="vl-whatsapp-container" style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb"></div>';
 
     function actualizarTextoFecha() {
       try {
@@ -6055,6 +6055,9 @@
           list.appendChild(empty);
         }
 
+        // Actualizar botón de WhatsApp después de renderizar lotes
+        actualizarBotonWhatsApp(lotes);
+
         list.querySelectorAll('[data-lote-id]').forEach(btn => {
           btn.onclick = async () => {
             if (!confirm('¿Eliminar este lote?')) return;
@@ -6073,6 +6076,182 @@
         console.error('Error renderizando lotes:', e);
         list.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">Error cargando lotes: ' + e.message + '</div>';
       }
+    }
+
+    function actualizarBotonWhatsApp(lotes) {
+      const container = colRight.querySelector('#vl-whatsapp-container');
+      container.innerHTML = '';
+      
+      if (!lotes || lotes.length === 0) {
+        return;
+      }
+
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px';
+      btn.innerHTML = '📱 Enviar Informe por WhatsApp';
+      btn.onclick = () => generarInformeWhatsApp(lotes);
+      container.appendChild(btn);
+    }
+
+    function generarInformeWhatsApp(lotes) {
+      const hoy = getFechaActualArgentina();
+      const fechaHoy = new Date(hoy + 'T00:00:00');
+      const fechaManana = new Date(fechaHoy);
+      fechaManana.setDate(fechaManana.getDate() + 1);
+      
+      const hoyStr = fechaISO(fechaHoy);
+      const mananaStr = fechaISO(fechaManana);
+      
+      const vencimientosHoy = [];
+      const vencimientosManana = [];
+      const vencimientosProximos = [];
+      
+      lotes.forEach(lote => {
+        if (!lote.fechaVencimiento) return;
+        
+        const fechaVenc = new Date(lote.fechaVencimiento + 'T00:00:00');
+        const fechaVencStr = fechaISO(fechaVenc);
+        const diasHasta = Math.floor((fechaVenc - fechaHoy) / (1000 * 60 * 60 * 24));
+        
+        const item = {
+          nombre: lote.productoNombre || productos[lote.codigo] || lote.codigo || 'Producto',
+          cantidad: lote.cantidad,
+          fecha: lote.fechaVencimiento.split('-').reverse().slice(0, 2).join('/'),
+          dias: diasHasta
+        };
+        
+        if (fechaVencStr === hoyStr) {
+          vencimientosHoy.push(item);
+        } else if (fechaVencStr === mananaStr) {
+          vencimientosManana.push(item);
+        } else if (diasHasta > 1 && diasHasta <= 7) {
+          vencimientosProximos.push(item);
+        }
+      });
+      
+      // Ordenar próximos por fecha
+      vencimientosProximos.sort((a, b) => a.dias - b.dias);
+      
+      // Calcular totales
+      const totalHoy = vencimientosHoy.reduce((sum, v) => sum + v.cantidad, 0);
+      const totalManana = vencimientosManana.reduce((sum, v) => sum + v.cantidad, 0);
+      
+      // Construir mensaje usando símbolos ASCII que siempre funcionan
+      let mensaje = '*INFORME DE VENCIMIENTOS*\n';
+      mensaje += 'Local: ' + (localNombre || 'Local') + '\n';
+      mensaje += 'Fecha: ' + fechaHoy.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + '\n\n';
+      
+      if (vencimientosHoy.length > 0) {
+        mensaje += '>>> *VENCEN HOY (URGENTE):*\n';
+        vencimientosHoy.forEach(v => {
+          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds\n';
+        });
+        mensaje += '\n';
+      }
+      
+      if (vencimientosManana.length > 0) {
+        mensaje += '>>> *VENCEN MAÑANA (ATENCION):*\n';
+        vencimientosManana.forEach(v => {
+          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds\n';
+        });
+        mensaje += '\n';
+      }
+      
+      if (vencimientosProximos.length > 0) {
+        mensaje += '>>> *PROXIMOS VENCIMIENTOS (7 dias):*\n';
+        vencimientosProximos.forEach(v => {
+          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds (vence ' + v.fecha + ')\n';
+        });
+        mensaje += '\n';
+      }
+      
+      if (vencimientosHoy.length === 0 && vencimientosManana.length === 0 && vencimientosProximos.length === 0) {
+        mensaje += 'OK - No hay vencimientos proximos en los proximos 7 dias.\n\n';
+      }
+      
+      mensaje += '================================\n';
+      if (totalHoy > 0) mensaje += 'TOTAL vencen hoy: ' + totalHoy + ' uds\n';
+      if (totalManana > 0) mensaje += 'TOTAL vencen manana: ' + totalManana + ' uds\n';
+      
+      // Función para escapar HTML
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      // Mostrar modal de vista previa
+      const previewOverlay = document.createElement('div');
+      previewOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:10000';
+      const previewModal = document.createElement('div');
+      previewModal.style.cssText = 'background:#fff;width:90%;max-width:500px;border-radius:8px;padding:20px;max-height:80vh;overflow:auto';
+      
+      const previewTitle = document.createElement('div');
+      previewTitle.style.cssText = 'font-weight:700;font-size:18px;margin-bottom:16px';
+      previewTitle.textContent = 'Vista Previa del Mensaje';
+      
+      const previewContent = document.createElement('div');
+      previewContent.style.cssText = 'background:#f9fafb;padding:16px;border-radius:6px;font-family:monospace;white-space:pre-wrap;font-size:14px;line-height:1.6;border:1px solid #e5e7eb;word-wrap:break-word';
+      previewContent.textContent = mensaje;
+      
+      const previewButtons = document.createElement('div');
+      previewButtons.style.cssText = 'display:flex;gap:8px;margin-top:16px';
+      
+      const btnCopy = document.createElement('button');
+      btnCopy.id = 'preview-copy';
+      btnCopy.style.cssText = 'flex:1;padding:10px;background:#10b981;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer';
+      btnCopy.textContent = 'Copiar y Abrir WhatsApp';
+      
+      const btnCancel = document.createElement('button');
+      btnCancel.id = 'preview-cancel';
+      btnCancel.style.cssText = 'padding:10px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer';
+      btnCancel.textContent = 'Cancelar';
+      
+      previewButtons.appendChild(btnCopy);
+      previewButtons.appendChild(btnCancel);
+      
+      previewModal.appendChild(previewTitle);
+      previewModal.appendChild(previewContent);
+      previewModal.appendChild(previewButtons);
+      previewOverlay.appendChild(previewModal);
+      document.body.appendChild(previewOverlay);
+      
+      previewOverlay.querySelector('#preview-cancel').onclick = () => previewOverlay.remove();
+      previewOverlay.querySelector('#preview-copy').onclick = () => {
+        // Copiar mensaje al portapapeles
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(mensaje).then(() => {
+            const mensajeCodificado = encodeURIComponent(mensaje);
+            window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
+            previewOverlay.remove();
+          }).catch(() => {
+            alert('Error copiando al portapapeles. Abriendo WhatsApp...');
+            const mensajeCodificado = encodeURIComponent(mensaje);
+            window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
+            previewOverlay.remove();
+          });
+        } else {
+          // Fallback
+          const textarea = document.createElement('textarea');
+          textarea.value = mensaje;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            const mensajeCodificado = encodeURIComponent(mensaje);
+            window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
+            previewOverlay.remove();
+          } catch (e) {
+            alert('Error copiando. Abriendo WhatsApp...');
+            const mensajeCodificado = encodeURIComponent(mensaje);
+            window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
+            previewOverlay.remove();
+          }
+          document.body.removeChild(textarea);
+        }
+      };
     }
 
     header.querySelector('#vloc-close').onclick = () => overlay.remove();

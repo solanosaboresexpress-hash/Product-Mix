@@ -249,17 +249,34 @@
 
             async cargarRegionActual() {
                 try {
+                    // Intentar primero con firebase_region_prefs (formato nuevo)
+                    let regionId = null;
                     const regionData = localStorage.getItem('firebase_region_prefs');
                     if (regionData) {
-                        const parsed = JSON.parse(regionData);
-                        const regionId = parsed.regionId;
-                        
+                        try {
+                            const parsed = JSON.parse(regionData);
+                            regionId = parsed.regionId;
+                        } catch (e) {
+                            console.warn('Error parseando firebase_region_prefs:', e);
+                        }
+                    }
+                    
+                    // Si no está en firebase_region_prefs, buscar en region_id (formato antiguo)
+                    if (!regionId) {
+                        regionId = localStorage.getItem('region_id');
+                    }
+                    
+                    if (regionId) {
                         // Asegurar que las regiones estén cargadas
                         if (!REGIONES_CONFIG_CACHE) {
                             await this.cargarRegiones();
                         }
                         
-                        return REGIONES_CONFIG_CACHE.find(function(r) { return r.id === regionId; });
+                        const region = REGIONES_CONFIG_CACHE.find(function(r) { return r.id === regionId; });
+                        if (region) {
+                            console.log('✅ Región guardada encontrada:', region.nombre);
+                            return region;
+                        }
                     }
                 } catch (error) {
                     console.error('Error cargando region guardada:', error);
@@ -282,15 +299,32 @@
                 try {
                     console.log('Inicializando Firebase para region:', region.nombre);
                     
+                    // Limpiar estado anterior completamente antes de crear nuevo
                     if (this.currentApp) {
                         try {
+                            // Limpiar referencias primero
+                            this.currentDb = null;
+                            this.currentAuth = null;
+                            this.currentRegion = null;
+                            
+                            // Luego cerrar la app
                             this.currentApp.delete();
                             console.log('Firebase anterior cerrado');
                         } catch (e) {
                             console.warn('No se pudo cerrar Firebase anterior:', e.message);
+                            // Asegurar que las referencias estén limpias incluso si falla el delete
+                            this.currentDb = null;
+                            this.currentAuth = null;
                         }
+                    } else {
+                        // Asegurar que todo esté limpio
+                        this.currentDb = null;
+                        this.currentAuth = null;
+                        this.currentRegion = null;
                     }
 
+                    // Pequeño delay para asegurar que el cliente anterior se haya cerrado completamente
+                    // Nota: esto es síncrono, pero ayuda a dar tiempo al garbage collector
                     this.currentApp = firebase.initializeApp(region.firebaseConfig, 'firebase_' + region.id);
                     this.currentDb = firebase.firestore(this.currentApp);
                     this.currentAuth = firebase.auth(this.currentApp);
@@ -302,15 +336,63 @@
                     return true;
                 } catch (error) {
                     console.error('Error inicializando Firebase:', error);
+                    // Limpiar estado en caso de error
+                    this.currentApp = null;
+                    this.currentDb = null;
+                    this.currentAuth = null;
+                    this.currentRegion = null;
                     return false;
                 }
             },
 
             getFirestore() {
-                if (!this.currentDb) {
+                if (!this.currentDb || !this.currentApp) {
                     throw new Error('Firebase no esta inicializado. Selecciona una region primero.');
                 }
-                return this.currentDb;
+                // Verificar que la app no haya sido eliminada
+                try {
+                    // Intentar acceder a una propiedad de la app para verificar que esté activa
+                    // Si la app fue eliminada, esto lanzará un error
+                    const appName = this.currentApp.name;
+                    const projectId = this.currentApp.options?.projectId;
+                    
+                    if (!projectId) {
+                        // La app no tiene projectId, probablemente fue eliminada
+                        this.currentDb = null;
+                        this.currentApp = null;
+                        this.currentAuth = null;
+                        this.currentRegion = null;
+                        throw new Error('Firebase app fue eliminada. Necesita reinicialización.');
+                    }
+                    
+                    // La app parece estar activa, retornar el db
+                    return this.currentDb;
+                } catch (error) {
+                    // Si hay algún problema, limpiar estado y lanzar error
+                    if (error.message && (
+                        error.message.includes('terminated') || 
+                        error.message.includes('already been') ||
+                        error.message.includes('already deleted') ||
+                        error.message.includes('app-deleted')
+                    )) {
+                        // Limpiar estado completamente
+                        this.currentDb = null;
+                        this.currentApp = null;
+                        this.currentAuth = null;
+                        this.currentRegion = null;
+                        throw new Error('The client has already been terminated.');
+                    }
+                    // Si es otro error relacionado con la app eliminada
+                    if (error.message && error.message.includes('eliminada')) {
+                        throw error;
+                    }
+                    // Cualquier otro error, limpiar estado por seguridad
+                    this.currentDb = null;
+                    this.currentApp = null;
+                    this.currentAuth = null;
+                    this.currentRegion = null;
+                    throw error;
+                }
             },
 
             getAuth() {
@@ -353,32 +435,46 @@
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
-            const [cargandoLocales, setCargandoLocales] = useState(true);
+            const [cargandoLocales, setCargandoLocales] = useState(false); // Cambiar a false inicialmente
             const [cargandoRegiones, setCargandoRegiones] = useState(true);
             const [recordarDatos, setRecordarDatos] = useState(false);
+            const [regionCargada, setRegionCargada] = useState(false); // Flag para saber si ya se cargó la región inicial
 
             useEffect(() => {
-                // Resetear estados al montar el componente
+                // Resetear estados al montar el componente (pero NO limpiar regionSeleccionada todavía)
                 setCargandoRegiones(true);
                 setCargandoLocales(false);
                 setError('');
-                setLocales([]);
+                // NO limpiar locales ni regionSeleccionada aquí, esperar a cargarRegiones()
                 setLocalSeleccionado('');
                 setPassword('');
+                setRegionCargada(false);
                 cargarRegiones();
             }, []);
 
             useEffect(() => {
+                // Solo ejecutar si regionSeleccionada cambió Y ya se cargó la región inicial
+                // Esto evita que se ejecute cuando regionSeleccionada es null al inicio
+                if (!regionCargada) {
+                    return; // Esperar a que se cargue la región inicial
+                }
+                
                 if (regionSeleccionada) {
                     console.log('Region seleccionada cambiada, cargando locales para:', regionSeleccionada.nombre);
-                    cargarLocales();
-                    cargarDatosGuardados();
+                    // Delay largo para asegurar que Firebase esté completamente inicializado y el cliente anterior esté cerrado
+                    const timer = setTimeout(() => {
+                        cargarLocales();
+                        cargarDatosGuardados();
+                    }, 1000); // 1 segundo de delay para dar tiempo a que Firebase se inicialice completamente
+                    return () => clearTimeout(timer);
                 } else {
-                    console.log('No hay región seleccionada, limpiando locales');
+                    // Solo limpiar locales si el usuario cambió manualmente la región a null
+                    // (esto no debería pasar normalmente, pero por si acaso)
+                    console.log('Region seleccionada es null después de cargar región inicial');
                     setLocales([]);
                     setCargandoLocales(false);
                 }
-            }, [regionSeleccionada]);
+            }, [regionSeleccionada, regionCargada]);
 
             const cargarRegiones = async () => {
                 try {
@@ -426,15 +522,18 @@
                     
                     setNombresMaestros(nombres);
 
+                    // Cargar región guardada o usar Región 1 por defecto
                     const regionGuardada = await FirebaseRegionManager.cargarRegionActual();
-                    const regionInicial = regionGuardada || regionesDisponibles[0];
+                    // Buscar región 1 por ID o usar la primera disponible
+                    const region1 = regionesDisponibles.find(r => r.id === 'region_1' || r.id === 'region_1' || r.nombre === 'Región 1');
+                    const regionInicial = regionGuardada || region1 || regionesDisponibles[0];
                     
                     if (regionInicial) {
-                        seleccionarRegion(regionInicial).catch(err => {
-                            console.error('Error en seleccionarRegion:', err);
-                            setCargandoRegiones(false);
-                        });
+                        console.log('Cargando región:', regionInicial.nombre, regionGuardada ? '(guardada)' : '(por defecto)');
+                        await seleccionarRegion(regionInicial, true); // true = es carga inicial
+                        setRegionCargada(true); // Marcar que ya se cargó la región inicial
                     } else {
+                        console.warn('No se encontró región inicial');
                         setCargandoRegiones(false);
                     }
                 } catch (error) {
@@ -444,13 +543,17 @@
                 }
             };
 
-            const seleccionarRegion = async (region) => {
+            const seleccionarRegion = async (region, esCargaInicial = false) => {
                 try {
-                    console.log('Cambiando a region:', region.nombre);
+                    console.log('Cambiando a region:', region.nombre, esCargaInicial ? '(carga inicial)' : '(cambio manual)');
                     
-                    setLocales([]);
-                    setLocalSeleccionado('');
-                    setPassword('');
+                    // Limpiar estados primero (pero solo si NO es la carga inicial)
+                    if (!esCargaInicial) {
+                        setLocales([]);
+                        setLocalSeleccionado('');
+                        setPassword('');
+                    }
+                    setCargandoLocales(false);
                     
                     const usuarioData = localStorage.getItem('usuario');
                     if (usuarioData) {
@@ -467,12 +570,22 @@
                         }
                     }
                     
+                    // Inicializar Firebase
                     const exito = FirebaseRegionManager.initializeFirebase(region);
                     
                     if (exito) {
-                        setRegionSeleccionada(region);
+                        // Guardar región en ambos lugares para compatibilidad
                         localStorage.setItem('region_id', region.id);
+                        FirebaseRegionManager.guardarRegionActual(region);
+                        
+                        // Esperar más tiempo para que Firebase se inicialice completamente y el cliente anterior se cierre
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                        
+                        // Ahora establecer la región seleccionada, lo que disparará el useEffect que carga locales
+                        // El useEffect tiene un delay adicional de 1000ms, así que en total son ~1.8 segundos
+                        setRegionSeleccionada(region);
                         console.log('Region seleccionada:', region.nombre);
+                        
                         // Asegurar que se termine de cargar regiones cuando se selecciona una región
                         setCargandoRegiones(false);
                     } else {
@@ -512,9 +625,82 @@
                     setCargandoLocales(true);
                     setError('');
                     
+                    // Función auxiliar para obtener Firestore con reintentos
+                    const obtenerFirestoreConReintento = async (maxIntentos = 5) => {
+                        // Guardar el ID de la región al inicio para comparar durante los reintentos
+                        const regionIdInicial = regionSeleccionada?.id;
+                        
+                        for (let intento = 0; intento < maxIntentos; intento++) {
+                            try {
+                                // Solo verificar cambio de región al inicio (intento 0), no durante reintentos
+                                if (intento === 0) {
+                                    if (!regionSeleccionada || regionSeleccionada.id !== FirebaseRegionManager.currentRegion?.id) {
+                                        throw new Error('La región cambió durante la carga');
+                                    }
+                                } else {
+                                    // Durante reintentos, verificar que la región seleccionada no haya cambiado
+                                    if (!regionSeleccionada || regionSeleccionada.id !== regionIdInicial) {
+                                        throw new Error('La región cambió durante la carga');
+                                    }
+                                }
+                                
+                                const db = FirebaseRegionManager.getFirestore();
+                                if (db) {
+                                    return db;
+                                }
+                            } catch (error) {
+                                if (error.message && (
+                                    error.message.includes('terminated') || 
+                                    error.message.includes('already been') ||
+                                    error.message.includes('already deleted') ||
+                                    error.message.includes('app-deleted') ||
+                                    error.message.includes('no esta inicializado')
+                                )) {
+                                    if (intento < maxIntentos - 1) {
+                                        console.log(`Cliente Firebase terminado/eliminado/no inicializado, limpiando estado y reintentando... (intento ${intento + 1}/${maxIntentos})`);
+                                        
+                                        // Guardar la región completa antes de limpiar (NO limpiar currentRegion todavía)
+                                        const regionParaReinicializar = FirebaseRegionManager.currentRegion || regionSeleccionada;
+                                        
+                                        // Limpiar solo las referencias de Firebase (db, app, auth), pero NO currentRegion
+                                        FirebaseRegionManager.currentDb = null;
+                                        FirebaseRegionManager.currentApp = null;
+                                        FirebaseRegionManager.currentAuth = null;
+                                        
+                                        // Esperar más tiempo en cada intento (progresivo: 800ms, 1000ms, 1200ms, etc.)
+                                        const delay = 800 + (intento * 200);
+                                        await new Promise(resolve => setTimeout(resolve, delay));
+                                        
+                                        // Si tenemos una región válida, reinicializar Firebase
+                                        if (regionParaReinicializar && regionSeleccionada && regionSeleccionada.id === regionParaReinicializar.id) {
+                                            console.log('Reinicializando Firebase para la misma región:', regionParaReinicializar.nombre);
+                                            const exito = FirebaseRegionManager.initializeFirebase(regionParaReinicializar);
+                                            if (exito) {
+                                                await new Promise(resolve => setTimeout(resolve, 500));
+                                            } else {
+                                                console.warn('No se pudo reinicializar Firebase, reintentando...');
+                                            }
+                                        } else {
+                                            console.warn('No se puede reinicializar: región no coincide o no disponible');
+                                        }
+                                        continue;
+                                    } else {
+                                        throw error;
+                                    }
+                                } else if (error.message && error.message.includes('La región cambió')) {
+                                    // Si la región cambió, no reintentar
+                                    throw error;
+                                } else {
+                                    throw error;
+                                }
+                            }
+                        }
+                        throw new Error('No se pudo obtener Firestore después de varios intentos');
+                    };
+                    
                     let db;
                     try {
-                        db = FirebaseRegionManager.getFirestore();
+                        db = await obtenerFirestoreConReintento();
                     } catch (firebaseError) {
                         console.error('Error obteniendo Firestore:', firebaseError);
                         setError('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
@@ -524,7 +710,7 @@
                     
                     // Timeout de seguridad para evitar que se quede cargando indefinidamente
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Timeout cargando locales')), 10000);
+                        setTimeout(() => reject(new Error('Timeout cargando locales')), 15000); // Aumentado a 15 segundos
                     });
                     
                     const snapshotPromise = db.collection('locales').get();
@@ -547,8 +733,17 @@
                     setLocales(localesData);
                 } catch (error) {
                     console.error('Error cargando locales:', error);
-                    setError('Error cargando locales: ' + error.message);
-                    setLocales([]); // Asegurar que locales esté vacío si hay error
+                    // Si el error es que el cliente fue terminado o timeout, no mostrar error al usuario si es durante reinicialización
+                    if (error.message && (error.message.includes('terminated') || error.message.includes('already been'))) {
+                        console.log('Cliente Firebase terminado durante la carga, esto es normal al cambiar de región');
+                        setLocales([]);
+                    } else if (error.message && error.message.includes('Timeout')) {
+                        console.log('Timeout cargando locales, puede ser que Firebase aún se esté inicializando');
+                        setLocales([]);
+                    } else {
+                        setError('Error cargando locales: ' + error.message);
+                        setLocales([]);
+                    }
                 } finally {
                     setCargandoLocales(false);
                 }
@@ -1045,7 +1240,7 @@
                                     const regionId = e.target.value;
                                     const region = regiones.find(r => r.id === regionId);
                                     if (region) {
-                                        seleccionarRegion(region);
+                                        seleccionarRegion(region, false); // false = cambio manual del usuario
                                     }
                                 }}
                             >

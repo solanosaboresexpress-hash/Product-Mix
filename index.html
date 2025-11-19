@@ -3476,7 +3476,7 @@
                     'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                     'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                     'BATATA - Batata', 'MEMBRIL - Membrillo',
-                    'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                    'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
                 ];
                 
                 // Crear mensaje de previsualización - EXACTO como APK
@@ -3534,7 +3534,7 @@
                         'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
                         'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
                         'BATATA - Batata', 'MEMBRIL - Membrillo',
-                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
                     ];
                     
                     // Leer valores directamente de los inputs del DOM
@@ -3876,7 +3876,7 @@
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -4206,7 +4206,7 @@
                                 
                                 <div className="p-2" style={{backgroundColor: '#F8F9FA'}}>
                                     {[
-                                        'DULCES - Dulces', 'CHIPA - Chipa', 'CRIOLLITO - Criollito'
+                                        'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
                                     ].map((producto, index) => {
                                         const [codigo, nombre] = producto.split(' - ');
                                         return (
@@ -4459,6 +4459,27 @@
                             }}
                         >
                             🏭 Pedido a Fábrica
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                if (window.openPedidoPanificadora) {
+                                    window.openPedidoPanificadora();
+                                } else {
+                                    alert('Función de pedido a panificadora no disponible');
+                                }
+                            }}
+                            className="w-full font-bold text-base"
+                            style={{
+                                backgroundColor: '#D97706',
+                                color: '#FFFFFF',
+                                height: '56px',
+                                borderRadius: '12px',
+                                border: '1px solid #B45309',
+                                marginBottom: '10px'
+                            }}
+                        >
+                            🥖 Pedido a Panificadora
                         </button>
 
                         <button
@@ -6433,24 +6454,35 @@
     'JAMON': { codigo: 'JAMON', nombre: 'Pizza Jamón', categoria: 'PIZZAS' },
     'PEPPERO': { codigo: 'PEPPERO', nombre: 'Pizza Pepperoni', categoria: 'PIZZAS' },
     'BATATA': { codigo: 'BATATA', nombre: 'Pastelito Batata', categoria: 'PASTELITOS' },
-    'MEMBRIL': { codigo: 'MEMBRIL', nombre: 'Pastelito Membrillo', categoria: 'PASTELITOS' },
-    'DULCES': { codigo: 'DULCES', nombre: 'Medialuna Dulce', categoria: 'OTROS' },
-    'CHIPA': { codigo: 'CHIPA', nombre: 'Medialuna Chipa', categoria: 'OTROS' },
-    'CRIOLLITO': { codigo: 'CRIOLLITO', nombre: 'Criollito', categoria: 'OTROS' }
+    'MEMBRIL': { codigo: 'MEMBRIL', nombre: 'Pastelito Membrillo', categoria: 'PASTELITOS' }
   };
 
   const ordenProductos = [
     'JQ', 'PB', 'CS', 'PO', 'CP', 'HU', 'ES', 'CQ', 'RJ', 'QC', 'CB', 'CH',
     'MUZZARE', 'JAMON', 'PEPPERO',
-    'BATATA', 'MEMBRIL',
-    'DULCES', 'CHIPA', 'CRIOLLITO'
+    'BATATA', 'MEMBRIL'
   ];
 
   const categorias = {
     'EMPANADAS': ['JQ', 'PB', 'CS', 'PO', 'CP', 'HU', 'ES', 'CQ', 'RJ', 'QC', 'CB', 'CH'],
     'PIZZAS': ['MUZZARE', 'JAMON', 'PEPPERO'],
-    'PASTELITOS': ['BATATA', 'MEMBRIL'],
-    'OTROS': ['DULCES', 'CHIPA', 'CRIOLLITO']
+    'PASTELITOS': ['BATATA', 'MEMBRIL']
+  };
+
+  // Productos de Panificadora (movidos desde Pedido a Fábrica)
+  const productosPanificadora = {
+    'MEDIALUNA_MANTECA': { codigo: 'MEDIALUNA_MANTECA', nombre: 'Medialunas de Manteca', categoria: 'PANIFICADORA' },
+    'MEDIALUNA_GRASA': { codigo: 'MEDIALUNA_GRASA', nombre: 'Medialunas de Grasa', categoria: 'PANIFICADORA' },
+    'CHIPA': { codigo: 'CHIPA', nombre: 'Chipa', categoria: 'PANIFICADORA' },
+    'CRIOLLITO': { codigo: 'CRIOLLITO', nombre: 'Criollitos', categoria: 'PANIFICADORA' }
+  };
+
+  const ordenProductosPanificadora = [
+    'MEDIALUNA_MANTECA', 'MEDIALUNA_GRASA', 'CHIPA', 'CRIOLLITO'
+  ];
+
+  const categoriasPanificadora = {
+    'PANIFICADORA': ['MEDIALUNA_MANTECA', 'MEDIALUNA_GRASA', 'CHIPA', 'CRIOLLITO']
   };
 
   // Función principal para abrir el modal de Pedido a Fábrica
@@ -7047,30 +7079,6 @@
         return Math.ceil(sugerencia / multiplo) * multiplo;
       }
       
-      // Medialunas: redondear a múltiplo de 180
-      if (codigo === 'DULCES') {
-        const multiplo = 180;
-        const umbral = multiplo * porcentajeMultiplo;
-        if (sugerencia < umbral) return 0;
-        return Math.ceil(sugerencia / multiplo) * multiplo;
-      }
-      
-      // Chipa: redondear a múltiplo de 120
-      if (codigo === 'CHIPA') {
-        const multiplo = 120;
-        const umbral = multiplo * porcentajeMultiplo;
-        if (sugerencia < umbral) return 0;
-        return Math.ceil(sugerencia / multiplo) * multiplo;
-      }
-      
-      // Criollito: redondear a múltiplo de 120
-      if (codigo === 'CRIOLLITO') {
-        const multiplo = 120;
-        const umbral = multiplo * porcentajeMultiplo;
-        if (sugerencia < umbral) return 0;
-        return Math.ceil(sugerencia / multiplo) * multiplo;
-      }
-      
       // Por defecto: redondear normalmente
       return Math.round(sugerencia);
     }
@@ -7270,8 +7278,7 @@
       const coloresHeader = {
         'EMPANADAS': '#8b4513',
         'PIZZAS': '#ff6b6b',
-        'PASTELITOS': '#ffd93d',
-        'OTROS': '#6c757d'
+        'PASTELITOS': '#ffd93d'
       };
       headerDiv.style.cssText = 'background:' + (coloresHeader[categoria] || '#6c757d') + ';color:#fff;padding:12px;display:flex;align-items:center;gap:12px;font-weight:700';
       
@@ -7289,8 +7296,7 @@
       const ordenEspecifico = {
         'EMPANADAS': ['JQ', 'PB', 'CS', 'PO', 'CP', 'HU', 'ES', 'CQ', 'RJ', 'QC', 'CB', 'CH'],
         'PIZZAS': ['MUZZARE', 'JAMON', 'PEPPERO'],
-        'PASTELITOS': ['BATATA', 'MEMBRIL'],
-        'OTROS': ['DULCES', 'CHIPA', 'CRIOLLITO']
+        'PASTELITOS': ['BATATA', 'MEMBRIL']
       };
       const orden = ordenEspecifico[categoria] || [];
       const productosOrdenados = orden.map(codigo => productosCategoria.find(p => p.codigo === codigo)).filter(p => p);
@@ -7595,7 +7601,6 @@
       let contadorEmpanadas = 0;
       let contadorPizzas = 0;
       let contadorPastelitos = 0;
-      let contadorOtros = 0;
       
       pedido.push('📋 PEDIDO FÁBRICA - ' + fechaSeleccionada + '\n\n');
       
@@ -7623,11 +7628,6 @@
             pedido.push('\n');
           }
           contadorPastelitos++;
-        } else if (categorias.OTROS.includes(codigo)) {
-          if (contadorOtros === 0) {
-            pedido.push('\n');
-          }
-          contadorOtros++;
         }
         
         // Formatear según tipo de producto (igual que la APK)
@@ -7639,18 +7639,6 @@
           // Pastelitos: mostrar literal
           if (categorias.PASTELITOS.includes(codigo)) {
             return pedidoFinal > 0 ? `${codigo.toLowerCase()} ${stock}-${pedidoFinal}` : `${codigo.toLowerCase()} ${stock}-0`;
-          }
-          // Medialunas
-          if (codigo === 'DULCES') {
-            return pedidoFinal > 0 ? `mdl dulce ${stock}-${pedidoFinal}` : `mdl dulce ${stock}-no pido`;
-          }
-          // Chipa
-          if (codigo === 'CHIPA') {
-            return pedidoFinal > 0 ? `chipa ${stock}-${pedidoFinal}` : `chipa ${stock}-0`;
-          }
-          // Criollito
-          if (codigo === 'CRIOLLITO') {
-            return pedidoFinal > 0 ? `criollito ${stock}-${pedidoFinal}` : `criollito ${stock}-0`;
           }
           // Empanadas: usar pedido final directamente
           return pedidoFinal > 0 ? `${codigo.toLowerCase()} ${stock}-${pedidoFinal}` : `${codigo.toLowerCase()} ${stock}-no pido`;
@@ -8043,6 +8031,898 @@
     await cargarDatos();
   }
 
+  // ============================================
+  // SISTEMA DE PEDIDO A PANIFICADORA
+  // ============================================
+
+  // Función principal para abrir el modal de Pedido a Panificadora
+  async function openPedidoPanificadoraModal() {
+    const u = localStorage.getItem('usuario');
+    if (!u) {
+      alert('Inicie sesión primero.');
+      return;
+    }
+    const usuario = JSON.parse(u);
+    const localId = usuario.localId || '';
+    const localNombre = usuario.localNombre || 'Local';
+    
+    if (!localId) {
+      alert('Error: No se encontró el local');
+      return;
+    }
+    
+    // Verificar que Firebase esté inicializado
+    try {
+      FirebaseRegionManager.getFirestore();
+    } catch (e) {
+      const regionIdGuardada = localStorage.getItem('region_id');
+      if (regionIdGuardada && usuario.regionId) {
+        try {
+          const regiones = await FirebaseRegionManager.cargarRegiones();
+          const regionGuardada = regiones.find(r => r.id === regionIdGuardada || r.id === usuario.regionId);
+          if (regionGuardada) {
+            FirebaseRegionManager.initializeFirebase(regionGuardada);
+            console.log('Firebase inicializado para Pedido a Panificadora con región:', regionGuardada.nombre);
+          } else {
+            throw new Error('No se encontró la región guardada');
+          }
+        } catch (error) {
+          console.error('Error inicializando Firebase:', error);
+          alert('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
+          return;
+        }
+      } else {
+        alert('Error: No se encontró la región. Por favor, selecciona una región primero.');
+        return;
+      }
+    }
+
+    // Obtener fecha actual (Argentina UTC-3)
+    const hoy = new Date();
+    const offsetArgentina = -3 * 60;
+    const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
+    let fechaSeleccionada = fechaISO(fechaArgentina);
+    let modoSoloLectura = false;
+    let modoAdmin = false;
+
+    // Crear overlay y modal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+    const modal = document.createElement('div');
+    modal.style.cssText = 'background:#fff;width:95%;max-width:1200px;max-height:92vh;border-radius:8px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);display:flex;flex-direction:column';
+    overlay.appendChild(modal);
+
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;position:relative';
+    header.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex:1">' +
+      '<button id="pp-volver" style="padding:8px 12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-size:18px;font-weight:700">←</button>' +
+      '<button id="pp-config" style="padding:8px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:16px">⚙️</button>' +
+      '</div>' +
+      '<div style="position:absolute;left:50%;transform:translateX(-50%);font-weight:700;font-size:18px;text-align:center">🥖 Pedido Panificadora</div>' +
+      '<button id="pp-close" style="padding:6px 12px;background:#6b7280;color:#fff;border:none;border-radius:6px;margin-left:auto">Cerrar</button>';
+    modal.appendChild(header);
+
+    // Navegación de fechas
+    const navFecha = document.createElement('div');
+    navFecha.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;padding:8px;background:#f3f4f6;border-bottom:1px solid #e5e7eb';
+    navFecha.innerHTML = '<button id="pp-fecha-prev" style="padding:6px 10px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-weight:700">←</button>' +
+      '<div id="pp-fecha-actual" style="padding:8px 16px;font-weight:700;font-size:14px">' + fechaSeleccionada + '</div>' +
+      '<button id="pp-fecha-next" style="padding:6px 10px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-weight:700">→</button>';
+    modal.appendChild(navFecha);
+
+    // Información del día
+    const infoDia = document.createElement('div');
+    infoDia.style.cssText = 'background:#f3f4f6;padding:6px;border-bottom:1px solid #e5e7eb';
+    
+    const fila1 = document.createElement('div');
+    fila1.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:12px';
+    fila1.innerHTML = '<div id="pp-dia-actual" style="font-weight:700;flex:1">Día: LUNES</div>' +
+      '<div id="pp-porcentaje" style="font-weight:700;flex:1;text-align:right">% Extra: 30%</div>';
+    infoDia.appendChild(fila1);
+    
+    const fila2 = document.createElement('div');
+    fila2.id = 'pp-dias-extra';
+    fila2.style.cssText = 'font-size:10px;color:#6b7280;font-style:italic;text-align:center;margin-top:2px;display:none';
+    fila2.textContent = '📅 Pedido para: Mañana';
+    infoDia.appendChild(fila2);
+    
+    const fila3 = document.createElement('div');
+    fila3.id = 'pp-hora-alerta';
+    fila3.style.cssText = 'font-size:10px;color:#6b7280;font-style:italic;text-align:center;margin-top:4px';
+    fila3.textContent = '🔔 Alerta: 15:30';
+    infoDia.appendChild(fila3);
+    
+    modal.appendChild(infoDia);
+
+    // Contenido principal
+    const body = document.createElement('div');
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:16px';
+    body.id = 'pp-body';
+    modal.appendChild(body);
+
+    // Variables de estado
+    let configuracion = { porcentajeExtra: 30, horaAlerta: '15:30', activarAlerta: true };
+    let diasEntrega = { lunes: 'Mañana', martes: 'Mañana', miercoles: 'Mañana', jueves: 'Mañana', viernes: 'Sábado + Domingo', sabado: 'Domingo', domingo: 'Mañana' };
+    let productos = [];
+    let promediosVenta = {};
+
+    // Función helper para obtener Firestore
+    function obtenerFirestore() {
+      try {
+        return FirebaseRegionManager.getFirestore();
+      } catch (e) {
+        console.error('Error obteniendo Firestore:', e);
+        throw new Error('Firebase no está inicializado. Por favor, selecciona una región primero.');
+      }
+    }
+
+    // Función para obtener día de la semana
+    function obtenerDiaSemana(fecha) {
+      const [y, m, d] = fecha.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+      return dias[date.getDay()];
+    }
+
+    // Función para cargar configuración desde Firebase
+    async function cargarConfiguracion() {
+      try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarConfiguracion, usando valores por defecto');
+          actualizarUI();
+          return;
+        }
+        const configDoc = await db.collection('locales').doc(localId).collection('configuracion_pedido_panificadora').doc('config').get();
+        if (configDoc.exists) {
+          const data = configDoc.data();
+          configuracion = {
+            porcentajeExtra: data.porcentajeExtra || 30,
+            horaAlerta: data.horaAlerta || '15:30',
+            activarAlerta: data.activarAlerta !== false
+          };
+        }
+        const diasDoc = await db.collection('locales').doc(localId).collection('configuracion_dias_entrega').doc('config').get();
+        if (diasDoc.exists) {
+          const data = diasDoc.data();
+          diasEntrega = {
+            lunes: data.lunes !== false,
+            martes: data.martes !== false,
+            miercoles: data.miercoles !== false,
+            jueves: data.jueves !== false,
+            viernes: data.viernes !== false,
+            sabado: data.sabado !== false,
+            domingo: data.domingo !== false
+          };
+        } else {
+          diasEntrega = {
+            lunes: true,
+            martes: true,
+            miercoles: true,
+            jueves: true,
+            viernes: true,
+            sabado: true,
+            domingo: true
+          };
+        }
+        actualizarUI();
+      } catch (e) {
+        console.warn('Error cargando configuración:', e);
+      }
+    }
+
+    // Función para actualizar UI con configuración
+    function actualizarUI() {
+      const porcentajeEl = document.getElementById('pp-porcentaje');
+      const horaAlertaEl = document.getElementById('pp-hora-alerta');
+      const diaActualEl = document.getElementById('pp-dia-actual');
+      
+      if (porcentajeEl) porcentajeEl.textContent = '% Extra: ' + configuracion.porcentajeExtra + '%';
+      if (horaAlertaEl) horaAlertaEl.textContent = '🔔 Alerta: ' + configuracion.horaAlerta;
+      
+      const diaActual = obtenerDiaSemana(fechaSeleccionada);
+      if (diaActualEl) diaActualEl.textContent = 'Día: ' + diaActual;
+      
+      actualizarInformacionDiasExtra();
+    }
+
+    // Función para actualizar información de días extra
+    function actualizarInformacionDiasExtra() {
+      const diasExtra = obtenerDiasExtraSegunTexto();
+      const diasExtraEl = document.getElementById('pp-dias-extra');
+      if (diasExtraEl && diasExtra.length > 0) {
+        const textoDias = diasExtra.join(', ');
+        diasExtraEl.textContent = '📅 Pedido para: ' + textoDias;
+        diasExtraEl.style.display = 'block';
+      } else if (diasExtraEl) {
+        diasExtraEl.style.display = 'none';
+      }
+    }
+
+    // Función para obtener días extra según texto
+    function obtenerDiasExtraSegunTexto() {
+      const diaActual = obtenerDiaSemana(fechaSeleccionada);
+      const diasExtra = [];
+      
+      const proximosDias = {
+        'LUNES': [['MARTES', diasEntrega.martes], ['MIERCOLES', diasEntrega.miercoles], ['JUEVES', diasEntrega.jueves], ['VIERNES', diasEntrega.viernes]],
+        'MARTES': [['MIERCOLES', diasEntrega.miercoles], ['JUEVES', diasEntrega.jueves], ['VIERNES', diasEntrega.viernes], ['SABADO', diasEntrega.sabado]],
+        'MIERCOLES': [['JUEVES', diasEntrega.jueves], ['VIERNES', diasEntrega.viernes], ['SABADO', diasEntrega.sabado], ['DOMINGO', diasEntrega.domingo]],
+        'JUEVES': [['VIERNES', diasEntrega.viernes], ['SABADO', diasEntrega.sabado], ['DOMINGO', diasEntrega.domingo], ['LUNES', diasEntrega.lunes]],
+        'VIERNES': [['SABADO', diasEntrega.sabado], ['DOMINGO', diasEntrega.domingo], ['LUNES', diasEntrega.lunes], ['MARTES', diasEntrega.martes]],
+        'SABADO': [['DOMINGO', diasEntrega.domingo], ['LUNES', diasEntrega.lunes], ['MARTES', diasEntrega.martes], ['MIERCOLES', diasEntrega.miercoles]],
+        'DOMINGO': [['LUNES', diasEntrega.lunes], ['MARTES', diasEntrega.martes], ['MIERCOLES', diasEntrega.miercoles], ['JUEVES', diasEntrega.jueves]]
+      };
+      
+      const lista = proximosDias[diaActual] || [];
+      if (lista.length === 0) return diasExtra;
+      
+      const [primerDia, tieneEntregaPrimerDia] = lista[0];
+      if (!tieneEntregaPrimerDia) {
+        return diasExtra;
+      }
+      
+      for (let i = 1; i < lista.length; i++) {
+        const [nombreDia, tieneEntrega] = lista[i];
+        if (!tieneEntrega) {
+          diasExtra.push(nombreDia);
+        } else {
+          break;
+        }
+      }
+      
+      return diasExtra;
+    }
+
+    // Función para redondear sugerencia según tipo de producto (PANIFICADORA)
+    function redondearSugerencia(sugerencia, codigo) {
+      if (sugerencia <= 0) return 0;
+      
+      const porcentajeMultiplo = 1.0;
+      
+      // Medialunas de Manteca/Grasa: redondear a múltiplo de 180
+      if (codigo === 'MEDIALUNA_MANTECA' || codigo === 'MEDIALUNA_GRASA') {
+        const multiplo = 180;
+        const umbral = multiplo * porcentajeMultiplo;
+        if (sugerencia < umbral) return 0;
+        return Math.ceil(sugerencia / multiplo) * multiplo;
+      }
+      
+      // Chipa: redondear a múltiplo de 120
+      if (codigo === 'CHIPA') {
+        const multiplo = 120;
+        const umbral = multiplo * porcentajeMultiplo;
+        if (sugerencia < umbral) return 0;
+        return Math.ceil(sugerencia / multiplo) * multiplo;
+      }
+      
+      // Criollito: redondear a múltiplo de 120
+      if (codigo === 'CRIOLLITO') {
+        const multiplo = 120;
+        const umbral = multiplo * porcentajeMultiplo;
+        if (sugerencia < umbral) return 0;
+        return Math.ceil(sugerencia / multiplo) * multiplo;
+      }
+      
+      return Math.round(sugerencia);
+    }
+
+    // Función para cargar promedios de ventas (similar a Pedido a Fábrica)
+    async function cargarPromediosVenta() {
+      try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarPromediosVenta');
+          return;
+        }
+        const registrosSnap = await db.collection('locales').doc(localId).collection('registros').orderBy('fecha', 'desc').limit(100).get();
+        const registros = [];
+        registrosSnap.forEach(d => {
+          const data = d.data();
+          registros.push({ 
+            fecha: data.fecha, 
+            tipo: data.tipo, 
+            productos: data.productos || [] 
+          });
+        });
+
+        const ventasPorDia = { LUNES: {}, MARTES: {}, MIERCOLES: {}, JUEVES: {}, VIERNES: {}, SABADO: {}, DOMINGO: {} };
+        
+        const fechasProcesadas = new Set();
+        registros.forEach(registro => {
+          if (fechasProcesadas.has(registro.fecha)) return;
+          fechasProcesadas.add(registro.fecha);
+          
+          const dia = obtenerDiaSemana(registro.fecha);
+          if (!(dia in ventasPorDia)) return;
+          
+          const ingreso = registros.find(r => r.fecha === registro.fecha && r.tipo === 'Ingreso de Mercadería');
+          const stockFinal = registros.find(r => r.fecha === registro.fecha && r.tipo === 'Stock Final');
+          
+          if (!stockFinal || !stockFinal.productos) return;
+          
+          const [y, m, d] = registro.fecha.split('-').map(Number);
+          const fechaAnterior = new Date(y, m - 1, d);
+          fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+          const fechaAnteriorStr = fechaISO(fechaAnterior);
+          const stockAnterior = registros.find(r => r.fecha === fechaAnteriorStr && r.tipo === 'Stock Final');
+          
+          stockFinal.productos.forEach(p => {
+            const nombreProducto = p.nombre || p.codigo || '';
+            const codigo = obtenerCodigoProducto(nombreProducto);
+            
+            // Solo procesar productos de panificadora
+            if (!ordenProductosPanificadora.includes(codigo)) return;
+            
+            // Debug: log para ver qué productos se están procesando
+            if (nombreProducto.includes('DULCES') || nombreProducto.includes('Dulces')) {
+              console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo);
+            }
+            
+            // Buscar en ingreso y stock anterior usando el mapeo de códigos
+            // Necesitamos buscar por el nombre original del producto en la BD
+            const ingresoCant = (ingreso?.productos || []).find(ip => {
+              const nombreIngreso = ip.nombre || ip.codigo || '';
+              const codigoIngreso = obtenerCodigoProducto(nombreIngreso);
+              return codigoIngreso === codigo;
+            })?.cantidad || 0;
+            
+            const stockAntCant = (stockAnterior?.productos || []).find(sp => {
+              const nombreStock = sp.nombre || sp.codigo || '';
+              const codigoStock = obtenerCodigoProducto(nombreStock);
+              return codigoStock === codigo;
+            })?.cantidad || 0;
+            
+            const venta = stockAntCant + ingresoCant - p.cantidad;
+            
+            if (venta > 0) {
+              if (!ventasPorDia[dia][codigo]) {
+                ventasPorDia[dia][codigo] = [];
+              }
+              ventasPorDia[dia][codigo].push(venta);
+              
+              // Debug: log para ver ventas calculadas
+              if (codigo === 'MEDIALUNA_MANTECA') {
+                console.log('📊 [Panificadora] Venta calculada para', codigo, 'en', dia, ':', venta, '(stockAnt:', stockAntCant, '+ ingreso:', ingresoCant, '- stockFinal:', p.cantidad, ')');
+              }
+            }
+          });
+        });
+
+        // Calcular promedios
+        ordenProductosPanificadora.forEach(codigo => {
+          if (!promediosVenta[codigo]) {
+            promediosVenta[codigo] = {};
+          }
+          ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].forEach(dia => {
+            const ventasDelDia = ventasPorDia[dia][codigo] || [];
+            if (ventasDelDia.length > 0) {
+              const suma = ventasDelDia.reduce((a, b) => a + b, 0);
+              const promedio = suma / ventasDelDia.length;
+              promediosVenta[codigo][dia] = Math.round(promedio);
+              
+              // Debug: log para ver promedios calculados
+              if (codigo === 'MEDIALUNA_MANTECA') {
+                console.log('✅ [Panificadora] Promedio calculado para', codigo, 'en', dia, ':', Math.round(promedio), '(de', ventasDelDia.length, 'ventas)');
+              }
+            } else {
+              promediosVenta[codigo][dia] = 0;
+            }
+          });
+        });
+        
+        // Debug: mostrar resumen de promedios para MEDIALUNA_MANTECA
+        if (promediosVenta['MEDIALUNA_MANTECA']) {
+          console.log('📈 [Panificadora] Resumen promedios MEDIALUNA_MANTECA:', promediosVenta['MEDIALUNA_MANTECA']);
+        }
+      } catch (e) {
+        console.warn('Error cargando promedios:', e);
+      }
+    }
+
+    // Función helper para obtener código de producto desde nombre
+    function obtenerCodigoProducto(nombre) {
+      if (!nombre) return nombre;
+      
+      // Normalizar nombre (trim)
+      const nombreNormalizado = nombre.trim();
+      
+      // Casos especiales primero (formato "CODIGO - Nombre")
+      if (nombreNormalizado.startsWith('DULCES')) {
+        return 'MEDIALUNA_MANTECA';
+      }
+      if (nombreNormalizado.startsWith('CHIPA')) {
+        return 'CHIPA';
+      }
+      if (nombreNormalizado.startsWith('CRIOLLITO')) {
+        return 'CRIOLLITO';
+      }
+      
+      // Mapeo completo de nombres de la base de datos a códigos de panificadora
+      const mapeoNombres = {
+        // Formatos de Medialunas de Manteca
+        'MEDIALUNA_MANTECA': 'MEDIALUNA_MANTECA',
+        'Medialunas de Manteca': 'MEDIALUNA_MANTECA',
+        'Medialuna de Manteca': 'MEDIALUNA_MANTECA',
+        'DULCES - Dulces': 'MEDIALUNA_MANTECA',
+        'DULCES': 'MEDIALUNA_MANTECA',
+        'Dulces': 'MEDIALUNA_MANTECA',
+        'dulces': 'MEDIALUNA_MANTECA',
+        
+        // Formatos de Medialunas de Grasa
+        'MEDIALUNA_GRASA': 'MEDIALUNA_GRASA',
+        'Medialunas de Grasa': 'MEDIALUNA_GRASA',
+        'Medialuna de Grasa': 'MEDIALUNA_GRASA',
+        
+        // Formatos de Chipa
+        'CHIPA': 'CHIPA',
+        'CHIPA - Chipa': 'CHIPA',
+        'Chipa': 'CHIPA',
+        'chipa': 'CHIPA',
+        
+        // Formatos de Criollito
+        'CRIOLLITO': 'CRIOLLITO',
+        'CRIOLLITO - Criollito': 'CRIOLLITO',
+        'CRIOLLITO - Criollitos': 'CRIOLLITO',
+        'Criollito': 'CRIOLLITO',
+        'Criollitos': 'CRIOLLITO',
+        'criollito': 'CRIOLLITO',
+        'criollitos': 'CRIOLLITO'
+      };
+      
+      // Buscar coincidencia exacta primero
+      if (mapeoNombres[nombreNormalizado]) {
+        return mapeoNombres[nombreNormalizado];
+      }
+      
+      // Buscar por coincidencia parcial (case-insensitive)
+      const nombreUpper = nombreNormalizado.toUpperCase();
+      for (const [key, value] of Object.entries(mapeoNombres)) {
+        const keyUpper = key.toUpperCase();
+        if (nombreUpper.includes(keyUpper) || keyUpper.includes(nombreUpper)) {
+          return value;
+        }
+      }
+      
+      // Si no encuentra, retornar el nombre original
+      return nombreNormalizado;
+    }
+
+    // Función para cargar stock actual desde registros
+    async function cargarStockActualDesdeRegistros() {
+      try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarStockActualDesdeRegistros');
+          return {};
+        }
+        
+        const hoy = getFechaActualArgentina();
+        const fechaAyer = getFechaArgentina();
+        fechaAyer.setDate(fechaAyer.getDate() - 1);
+        const ayer = fechaISO(fechaAyer);
+        
+        const stockMap = {};
+        
+        // PRIMERO: Verificar si existe Stock Final de HOY
+        const stockHoy = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', hoy).where('tipo', '==', 'Stock Final').get();
+        
+        if (!stockHoy.empty) {
+          stockHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
+          });
+        } else {
+          // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
+          const stockAyer = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
+          stockAyer.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
+          });
+          
+          const ingresoHoy = await db.collection('locales').doc(localId).collection('registros')
+            .where('fecha', '==', hoy).where('tipo', '==', 'Ingreso de Mercadería').get();
+          ingresoHoy.forEach(d => {
+            const productos = d.data().productos || [];
+            productos.forEach(p => {
+              const nombreProducto = p.nombre || p.codigo || '';
+              const codigo = obtenerCodigoProducto(nombreProducto);
+              if (ordenProductosPanificadora.includes(codigo)) {
+                stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
+              }
+            });
+          });
+        }
+        
+        return stockMap;
+      } catch (e) {
+        console.warn('Error cargando stock actual:', e);
+        return {};
+      }
+    }
+
+    // Función para calcular sugerencia de pedido
+    function calcularSugerencia(codigo, stockActual) {
+      const diaActual = obtenerDiaSemana(fechaSeleccionada);
+      const promedioDiaActual = promediosVenta[codigo]?.[diaActual] || 0;
+      
+      if (!promedioDiaActual || !stockActual) return 0;
+      
+      const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
+      
+      if (diaActual === 'VIERNES') {
+        const promedioSabado = promediosVenta[codigo]?.['SABADO'] || 0;
+        const promedioDomingo = promediosVenta[codigo]?.['DOMINGO'] || 0;
+        
+        const ventaRestanteHoy = promedioDiaActual / 2.0;
+        const ventaSabado = promedioSabado;
+        const ventaDomingo = promedioDomingo * (1 + porcentajeExtra);
+        
+        const totalNecesario = ventaRestanteHoy + ventaSabado + ventaDomingo;
+        const stockDisponible = stockActual - ventaRestanteHoy;
+        
+        const pedido = Math.max(0, totalNecesario - stockDisponible);
+        return redondearSugerencia(pedido, codigo);
+      } else {
+        const ventaEsperada = promedioDiaActual * (1 + porcentajeExtra);
+        const pedido = Math.max(0, ventaEsperada - stockActual);
+        return redondearSugerencia(pedido, codigo);
+      }
+    }
+
+    // Función para inicializar productos
+    async function inicializarProductos() {
+      productos = [];
+      const stockMap = await cargarStockActualDesdeRegistros();
+      
+      ordenProductosPanificadora.forEach(codigo => {
+        const productoInfo = productosPanificadora[codigo];
+        if (!productoInfo) return;
+        
+        productos.push({
+          codigo: codigo,
+          nombre: productoInfo.nombre,
+          categoria: productoInfo.categoria,
+          stockActual: stockMap[codigo] || 0,
+          pedidoFinal: 0,
+          sugerencia: calcularSugerencia(codigo, stockMap[codigo] || 0)
+        });
+      });
+    }
+
+    // Función para mostrar categoría integrada (PANIFICADORA)
+    function mostrarCategoriaIntegrada(categoria, productosCategoria) {
+      const categoriaDiv = document.createElement('div');
+      categoriaDiv.style.cssText = 'margin-bottom:16px';
+
+      const headerDiv = document.createElement('div');
+      headerDiv.style.cssText = 'background:#D97706;color:#fff;padding:12px;display:flex;align-items:center;gap:12px;font-weight:700';
+      
+      headerDiv.innerHTML = '<span style="font-size:24px">🥖</span>' +
+        '<span style="flex:1;font-size:18px">PANIFICADORA</span>';
+      categoriaDiv.appendChild(headerDiv);
+
+      const productosDiv = document.createElement('div');
+      productosDiv.style.cssText = 'background:#fff;padding:8px';
+
+      const orden = ordenProductosPanificadora;
+      const productosOrdenados = orden.map(codigo => productosCategoria.find(p => p.codigo === codigo)).filter(p => p);
+
+      for (const prod of productosOrdenados) {
+        const filaDiv = document.createElement('div');
+        filaDiv.style.cssText = 'display:flex;align-items:center;padding:12px;background:#f9fafb;margin:2px 0;gap:4px';
+        filaDiv.id = 'pp-row-' + prod.codigo;
+
+        // Columna 1: Código y Nombre (similar a Pedido a Fábrica)
+        const codigoDiv = document.createElement('div');
+        codigoDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0';
+        const codigoSpan = document.createElement('span');
+        codigoSpan.id = 'pp-codigo-' + prod.codigo;
+        codigoSpan.style.cssText = 'font-size:13px;font-weight:700;color:#D97706;margin-bottom:2px';
+        codigoSpan.textContent = prod.codigo;
+        codigoDiv.appendChild(codigoSpan);
+        const nombreSpan = document.createElement('span');
+        nombreSpan.style.cssText = 'font-size:11px;color:#6b7280;word-wrap:break-word;overflow-wrap:break-word';
+        nombreSpan.textContent = prod.nombre;
+        codigoDiv.appendChild(nombreSpan);
+        filaDiv.appendChild(codigoDiv);
+
+        // Columna 2: Stock
+        const stockDiv = document.createElement('div');
+        stockDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;margin-right:4px;min-width:70px';
+        const stockLabel = document.createElement('span');
+        stockLabel.style.cssText = 'font-size:9px;font-weight:700;color:#D97706;margin-bottom:2px';
+        stockLabel.textContent = 'Stock';
+        stockDiv.appendChild(stockLabel);
+        const stockInput = document.createElement('input');
+        stockInput.type = 'number';
+        stockInput.id = 'pp-stock-' + prod.codigo;
+        stockInput.value = prod.stockActual || 0;
+        stockInput.style.cssText = 'width:60px;height:35px;padding:4px;border:1px solid #d1d5db;border-radius:4px;text-align:center;font-size:14px;font-weight:700;color:#D97706';
+        if (modoSoloLectura && !modoAdmin) {
+          stockInput.disabled = true;
+          stockInput.style.background = '#d1d5db';
+        } else {
+          stockInput.onfocus = function() { this.select(); };
+        }
+        stockDiv.appendChild(stockInput);
+        filaDiv.appendChild(stockDiv);
+
+        // Columna 3: Sugerencia
+        const sugerenciaDiv = document.createElement('div');
+        sugerenciaDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;margin-right:4px;min-width:70px';
+        const sugerenciaLabel = document.createElement('span');
+        sugerenciaLabel.style.cssText = 'font-size:9px;font-weight:700;color:#059669;margin-bottom:2px';
+        sugerenciaLabel.textContent = 'Sugerencia';
+        sugerenciaDiv.appendChild(sugerenciaLabel);
+        const spanSugerencia = document.createElement('span');
+        spanSugerencia.id = 'pp-sugerencia-' + prod.codigo;
+        spanSugerencia.style.cssText = 'width:60px;height:35px;display:flex;align-items:center;justify-content:center;background:#ecfdf5;border:1px solid #10b981;border-radius:4px;font-size:14px;font-weight:700;color:#059669';
+        spanSugerencia.textContent = prod.sugerencia || 0;
+        sugerenciaDiv.appendChild(spanSugerencia);
+        filaDiv.appendChild(sugerenciaDiv);
+
+        // Columna 4: Pedido Final
+        const pedidoDiv = document.createElement('div');
+        pedidoDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;min-width:70px';
+        const pedidoLabel = document.createElement('span');
+        pedidoLabel.style.cssText = 'font-size:9px;font-weight:700;color:#D97706;margin-bottom:2px';
+        pedidoLabel.textContent = 'Pedido Final';
+        pedidoDiv.appendChild(pedidoLabel);
+        const pedidoInput = document.createElement('input');
+        pedidoInput.type = 'number';
+        pedidoInput.id = 'pp-pedido-' + prod.codigo;
+        pedidoInput.value = prod.pedidoFinal || 0;
+        pedidoInput.style.cssText = 'width:60px;height:35px;padding:4px;border:1px solid #d1d5db;border-radius:4px;text-align:center;font-size:14px;font-weight:700;color:#D97706';
+        if (modoSoloLectura && !modoAdmin) {
+          pedidoInput.disabled = true;
+          pedidoInput.style.background = '#d1d5db';
+        } else {
+          pedidoInput.onfocus = function() { this.select(); };
+        }
+        pedidoDiv.appendChild(pedidoInput);
+        filaDiv.appendChild(pedidoDiv);
+
+        productosDiv.appendChild(filaDiv);
+      }
+
+      categoriaDiv.appendChild(productosDiv);
+      body.appendChild(categoriaDiv);
+    }
+
+    // Función para cargar pedido existente
+    async function cargarPedidoExistente() {
+      try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          console.warn('Firebase no inicializado en cargarPedidoExistente');
+          return;
+        }
+        
+        const pedidoDoc = await db.collection('locales').doc(localId).collection('pedidos_panificadora').doc(fechaSeleccionada).get();
+        if (pedidoDoc.exists) {
+          const data = pedidoDoc.data();
+          const productosGuardados = data.productos || [];
+          
+          productosGuardados.forEach(prod => {
+            const codigo = obtenerCodigoProducto(prod.nombre || prod.codigo || '');
+            const pedidoInput = document.getElementById('pp-pedido-' + codigo);
+            if (pedidoInput) {
+              pedidoInput.value = prod.pedidoFinal || 0;
+            }
+            const stockInput = document.getElementById('pp-stock-' + codigo);
+            if (stockInput) {
+              stockInput.value = prod.stockActual || 0;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error cargando pedido existente:', e);
+      }
+    }
+
+    // Función para guardar pedido
+    async function guardarPedido() {
+      try {
+        let db;
+        try {
+          db = obtenerFirestore();
+        } catch (e) {
+          alert('Error: Firebase no está inicializado');
+          return;
+        }
+        
+        const productosParaGuardar = [];
+        ordenProductosPanificadora.forEach(codigo => {
+          const stockInput = document.getElementById('pp-stock-' + codigo);
+          const pedidoInput = document.getElementById('pp-pedido-' + codigo);
+          if (stockInput && pedidoInput) {
+            productosParaGuardar.push({
+              codigo: codigo,
+              nombre: productosPanificadora[codigo]?.nombre || codigo,
+              stockActual: parseInt(stockInput.value) || 0,
+              pedidoFinal: parseInt(pedidoInput.value) || 0
+            });
+          }
+        });
+        
+        const configuracionParaGuardar = {
+          porcentajeExtra: configuracion.porcentajeExtra,
+          horaAlerta: configuracion.horaAlerta,
+          activarAlerta: configuracion.activarAlerta,
+          diasEntrega: diasEntrega,
+          fechaCreacion: new Date(),
+          paraFecha: obtenerDiasExtraSegunTexto().join(', '),
+          fecha: fechaSeleccionada,
+          localId: localId
+        };
+        
+        const pedidoData = {
+          productos: productosParaGuardar,
+          configuracion: configuracionParaGuardar,
+          fecha: fechaSeleccionada,
+          localId: localId,
+          reconstruido: true
+        };
+        
+        await db.collection('locales').doc(localId).collection('pedidos_panificadora').doc(fechaSeleccionada).set(pedidoData);
+        alert('Pedido guardado exitosamente');
+      } catch (e) {
+        alert('Error guardando pedido: ' + e.message);
+      }
+    }
+
+    // Función para generar texto del pedido
+    function generarTextoPedido() {
+      const pedido = [];
+      
+      pedido.push('📋 PEDIDO PANIFICADORA - ' + fechaSeleccionada + '\n\n');
+      
+      ordenProductosPanificadora.forEach(codigo => {
+        const stockInput = document.getElementById('pp-stock-' + codigo);
+        const pedidoInput = document.getElementById('pp-pedido-' + codigo);
+        if (!stockInput || !pedidoInput) return;
+        
+        const stock = parseInt(stockInput.value) || 0;
+        const pedidoFinal = parseInt(pedidoInput.value) || 0;
+        
+        // Formatear según tipo de producto (igual que la APK)
+        let pedidoFormateado = '';
+        if (codigo === 'MEDIALUNA_MANTECA') {
+          pedidoFormateado = pedidoFinal > 0 ? `mdl manteca ${stock}-${pedidoFinal}` : `mdl manteca ${stock}-no pido`;
+        } else if (codigo === 'MEDIALUNA_GRASA') {
+          pedidoFormateado = pedidoFinal > 0 ? `mdl grasa ${stock}-${pedidoFinal}` : `mdl grasa ${stock}-no pido`;
+        } else if (codigo === 'CHIPA') {
+          pedidoFormateado = pedidoFinal > 0 ? `chipa ${stock}-${pedidoFinal}` : `chipa ${stock}-0`;
+        } else if (codigo === 'CRIOLLITO') {
+          pedidoFormateado = pedidoFinal > 0 ? `criollito ${stock}-${pedidoFinal}` : `criollito ${stock}-0`;
+        }
+        
+        if (pedidoFormateado) {
+          pedido.push(pedidoFormateado + '\n');
+        }
+      });
+      
+      return pedido.join('');
+    }
+
+    // Función para navegar fechas
+    function navegarFecha(dias) {
+      const [y, m, d] = fechaSeleccionada.split('-').map(Number);
+      const fecha = new Date(y, m - 1, d);
+      fecha.setDate(fecha.getDate() + dias);
+      fechaSeleccionada = fechaISO(fecha);
+      document.getElementById('pp-fecha-actual').textContent = fechaSeleccionada;
+      
+      const fechaHoy = getFechaActualArgentina();
+      modoSoloLectura = (fechaSeleccionada !== fechaHoy) && !modoAdmin;
+      
+      actualizarUI();
+      cargarDatos();
+    }
+
+    // Función para cargar todos los datos
+    async function cargarDatos() {
+      body.innerHTML = '<div style="text-align:center;padding:40px">Cargando...</div>';
+      
+      await cargarPromediosVenta();
+      await inicializarProductos();
+      
+      body.innerHTML = '';
+      
+      // Mostrar solo categoría PANIFICADORA
+      const productosPanificadoraList = productos.filter(p => p.categoria === 'PANIFICADORA');
+      if (productosPanificadoraList.length > 0) {
+        mostrarCategoriaIntegrada('PANIFICADORA', productosPanificadoraList);
+      }
+      
+      // Botones de acción
+      const btnContainer = document.createElement('div');
+      btnContainer.style.cssText = 'display:flex;gap:8px;margin-top:16px;padding:16px;border-top:1px solid #e5e7eb';
+      
+      const btnGuardar = document.createElement('button');
+      btnGuardar.style.cssText = 'flex:1;padding:12px;background:#10b981;color:#fff;border:none;border-radius:6px;font-weight:600';
+      btnGuardar.textContent = '💾 Guardar Pedido';
+      btnGuardar.onclick = guardarPedido;
+      btnContainer.appendChild(btnGuardar);
+      
+      const btnCopiar = document.createElement('button');
+      btnCopiar.style.cssText = 'flex:1;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:600';
+      btnCopiar.textContent = '📋 Copiar Pedido';
+      btnCopiar.onclick = () => {
+        const texto = generarTextoPedido();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texto).then(() => {
+            alert('Pedido copiado al portapapeles');
+          });
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = texto;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            alert('Pedido copiado al portapapeles');
+          } catch (e) {
+            alert('Error copiando: ' + e.message);
+          }
+          document.body.removeChild(textarea);
+        }
+      };
+      btnContainer.appendChild(btnCopiar);
+      
+      body.appendChild(btnContainer);
+      
+      await cargarPedidoExistente();
+    }
+
+    // Event listeners
+    header.querySelector('#pp-close').onclick = () => overlay.remove();
+    header.querySelector('#pp-volver').onclick = () => overlay.remove();
+    navFecha.querySelector('#pp-fecha-prev').onclick = () => navegarFecha(-1);
+    navFecha.querySelector('#pp-fecha-next').onclick = () => navegarFecha(1);
+    
+    header.querySelector('#pp-config').onclick = () => {
+      const nuevoPorcentaje = prompt('Porcentaje Extra:', configuracion.porcentajeExtra);
+      if (nuevoPorcentaje !== null) {
+        const porcentaje = parseFloat(nuevoPorcentaje);
+        if (!isNaN(porcentaje) && porcentaje >= 0) {
+          configuracion.porcentajeExtra = porcentaje;
+          actualizarUI();
+        }
+      }
+    };
+
+    document.body.appendChild(overlay);
+    await cargarConfiguracion();
+    await cargarDatos();
+  }
+
   // API global para botones del HTML
   window.openVencimientosHistorial = function (localId, localNombre) {
     return openStockVencimientosModal(localId, localNombre);
@@ -8052,6 +8932,9 @@
   };
   window.openPedidoFabrica = function () {
     return openPedidoFabricaModal();
+  };
+  window.openPedidoPanificadora = function () {
+    return openPedidoPanificadoraModal();
   };
 })();
 </script>

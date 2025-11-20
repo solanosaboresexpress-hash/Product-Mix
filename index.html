@@ -3722,6 +3722,123 @@
                 }
             };
 
+            // 🔥 Funciones para guardar historial de vencimientos (igual que app Android)
+            async function guardarEstadoInicialVencimientos(localId, fecha, db) {
+                try {
+                    console.log('📝 Guardando estado inicial de vencimientos para:', fecha);
+                    
+                    // Obtener todos los lotes activos
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    const lotesActivos = [];
+                    lotesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        lotesActivos.push({
+                            id: doc.id,
+                            localId: data.localId || localId,
+                            productoCodigo: data.productoCodigo || data.codigo || '',
+                            productoNombre: data.productoNombre || data.nombre || '',
+                            cantidad: data.cantidad || 0,
+                            cantidadInicial: data.cantidadInicial || data.cantidad || 0,
+                            fechaVencimiento: data.fechaVencimiento || '',
+                            fechaCarga: data.fechaCarga || '',
+                            timestamp: data.timestamp || Date.now()
+                        });
+                    });
+                    
+                    console.log(`📦 Obtenidos ${lotesActivos.length} lotes activos`);
+                    
+                    // Obtener registro existente o crear uno nuevo
+                    const registroRef = db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_historial_diario')
+                        .doc(fecha);
+                    
+                    const registroDoc = await registroRef.get();
+                    const registroExistente = registroDoc.exists ? registroDoc.data() : null;
+                    
+                    const registro = registroExistente ? {
+                        ...registroExistente,
+                        lotesIniciales: lotesActivos,
+                        timestampInicial: Date.now()
+                    } : {
+                        localId: localId,
+                        fecha: fecha,
+                        id: fecha + '_' + Date.now(),
+                        lotesIniciales: lotesActivos,
+                        lotesFinales: [],
+                        timestampInicial: Date.now(),
+                        timestampFinal: Date.now()
+                    };
+                    
+                    await registroRef.set(registro);
+                    console.log('✅ Estado inicial de vencimientos guardado para', fecha, ':', lotesActivos.length, 'lotes');
+                } catch (e) {
+                    console.error('❌ Error guardando estado inicial de vencimientos:', e);
+                }
+            }
+            
+            async function guardarEstadoFinalVencimientos(localId, fecha, db) {
+                try {
+                    console.log('📝 Guardando estado final de vencimientos para:', fecha);
+                    
+                    // Obtener todos los lotes activos
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    const lotesActivos = [];
+                    lotesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        lotesActivos.push({
+                            id: doc.id,
+                            localId: data.localId || localId,
+                            productoCodigo: data.productoCodigo || data.codigo || '',
+                            productoNombre: data.productoNombre || data.nombre || '',
+                            cantidad: data.cantidad || 0,
+                            cantidadInicial: data.cantidadInicial || data.cantidad || 0,
+                            fechaVencimiento: data.fechaVencimiento || '',
+                            fechaCarga: data.fechaCarga || '',
+                            timestamp: data.timestamp || Date.now()
+                        });
+                    });
+                    
+                    console.log(`📦 Obtenidos ${lotesActivos.length} lotes activos`);
+                    
+                    // Obtener registro existente o crear uno nuevo
+                    const registroRef = db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_historial_diario')
+                        .doc(fecha);
+                    
+                    const registroDoc = await registroRef.get();
+                    const registroExistente = registroDoc.exists ? registroDoc.data() : null;
+                    
+                    const registro = registroExistente ? {
+                        ...registroExistente,
+                        lotesFinales: lotesActivos,
+                        timestampFinal: Date.now()
+                    } : {
+                        localId: localId,
+                        fecha: fecha,
+                        id: fecha + '_' + Date.now(),
+                        lotesIniciales: [],
+                        lotesFinales: lotesActivos,
+                        timestampInicial: Date.now(),
+                        timestampFinal: Date.now()
+                    };
+                    
+                    await registroRef.set(registro);
+                    console.log('✅ Estado final de vencimientos guardado para', fecha, ':', lotesActivos.length, 'lotes');
+                } catch (e) {
+                    console.error('❌ Error guardando estado final de vencimientos:', e);
+                }
+            }
+
             // Función para guardar datos - EXACTO como CargaActivity.kt líneas 487-520
             const guardarDatos = async () => {
                 try {
@@ -3794,6 +3911,16 @@
                         .set(documento);
                     
                     console.log('✅ Datos guardados exitosamente');
+                    
+                    // 🔥 Guardar historial de vencimientos (igual que app Android)
+                    if (tipo === 'Ingreso de Mercadería') {
+                        // Guardar estado inicial de lotes al inicio del día
+                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                    } else if (tipo === 'Stock Final') {
+                        // Guardar estado final de lotes después del stock final
+                        await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
+                    }
+                    
                     alert(`✅ ${tipo} guardado exitosamente para ${fechaString}`);
                     
                     // Actualizar estados de botones
@@ -5986,6 +6113,7 @@
         return { lotesIniciales: [], lotesFinales: [] };
       }
       console.log('🔍 Buscando historial en: locales/' + localId + '/vencimientos_historial_diario/' + fecha);
+      const db = FirebaseRegionManager.getFirestore();
       const doc = await db
         .collection('locales')
         .doc(localId)
@@ -5995,31 +6123,31 @@
       
       if (!doc.exists) {
         console.log('📭 No existe registro para fecha:', fecha);
-        return { lotesIniciales: [], lotesFinales: [] };
+        return null; // Retornar null cuando no existe registro
       }
       
       const data = { id: doc.id, ...doc.data() };
       console.log('✅ Registro encontrado:', data);
       
-      if (data) {
-        data.lotesIniciales = Array.isArray(data.lotesIniciales)
-          ? data.lotesIniciales.map((l) => {
-              const codigoRaw = l.productoCodigo || l.codigo || '';
-              return { ...l, codigo: normalizar(codigoRaw) };
-            })
-          : [];
-        data.lotesFinales = Array.isArray(data.lotesFinales)
-          ? data.lotesFinales.map((l) => {
-              const codigoRaw = l.productoCodigo || l.codigo || '';
-              return { ...l, codigo: normalizar(codigoRaw) };
-            })
-          : [];
-        console.log('📦 Lotes iniciales:', data.lotesIniciales.length, 'Lotes finales:', data.lotesFinales.length);
-      }
-      return data || { lotesIniciales: [], lotesFinales: [] };
+      // Normalizar lotes iniciales y finales
+      data.lotesIniciales = Array.isArray(data.lotesIniciales)
+        ? data.lotesIniciales.map((l) => {
+            const codigoRaw = l.productoCodigo || l.codigo || '';
+            return { ...l, codigo: normalizar(codigoRaw) };
+          })
+        : [];
+      data.lotesFinales = Array.isArray(data.lotesFinales)
+        ? data.lotesFinales.map((l) => {
+            const codigoRaw = l.productoCodigo || l.codigo || '';
+            return { ...l, codigo: normalizar(codigoRaw) };
+          })
+        : [];
+      
+      console.log('📦 Lotes iniciales:', data.lotesIniciales.length, 'Lotes finales:', data.lotesFinales.length);
+      return data;
     } catch (e) {
       console.error('❌ Error obteniendo historial:', e);
-      return { lotesIniciales: [], lotesFinales: [] };
+      return null; // Retornar null en caso de error
     }
   }
 
@@ -6028,8 +6156,11 @@
     lotes.forEach((l) => {
       if (soloHoy) {
         if (!l.fechaVencimiento) return;
-        const f = fechaISO(new Date(l.fechaVencimiento));
-        if (f !== fecha) return;
+        // Comparar directamente las cadenas de fecha sin conversión a Date
+        // para evitar problemas de zona horaria
+        // l.fechaVencimiento ya viene en formato "YYYY-MM-DD" desde Firebase
+        const fechaVencStr = l.fechaVencimiento.split('T')[0]; // Extraer solo la parte de fecha si viene con hora
+        if (fechaVencStr !== fecha) return;
       }
       const key = l.codigo || 'DESCONOCIDO';
       (byProd[key] = byProd[key] || []).push(l);
@@ -6053,34 +6184,80 @@
 
   function renderSection(container, title, groups) {
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'border:1px solid #e5e7eb;border-radius:6px;margin:8px 0;';
+    wrap.style.cssText = 'border:2px solid #e5e7eb;border-radius:12px;margin:16px 0;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;transition:all 0.3s';
     const header = document.createElement('button');
     header.type = 'button';
-    header.textContent = '▶ ' + title;
-    header.style.cssText = 'width:100%;text-align:left;background:#f3f4f6;font-weight:600;padding:8px 12px;border-bottom:1px solid #e5e7eb;cursor:pointer';
+    const isInicio = title.includes('INICIO');
+    const icono = isInicio ? '🌅' : '🌇';
+    const colorBg = isInicio ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+    header.innerHTML = '<span style="font-size:20px;margin-right:8px">' + icono + '</span><span style="font-size:18px;font-weight:700">' + title + '</span><span style="margin-left:auto;font-size:14px;opacity:0.8">(' + groups.length + ' productos)</span>';
+    header.style.cssText = 'width:100%;text-align:left;background:' + colorBg + ';color:#fff;font-weight:600;padding:16px 20px;border:none;cursor:pointer;display:flex;align-items:center;transition:all 0.2s;box-shadow:0 2px 4px rgba(0,0,0,0.1)';
+    header.onmouseover = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; };
+    header.onmouseout = function() { this.style.transform = 'translateY(0)'; this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; };
     wrap.appendChild(header);
     const content = document.createElement('div');
-    content.style.cssText = 'padding:8px;display:none;';
+    content.style.cssText = 'padding:16px;display:none;background:#fff';
     if (groups.length === 0) {
       const empty = document.createElement('div');
-      empty.textContent = 'Sin datos';
-      empty.style.cssText = 'color:#6b7280';
+      empty.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;font-size:15px">📭 Sin datos en esta sección</div>';
       content.appendChild(empty);
     } else {
-      groups.forEach(({ codigo, lotes }) => {
+      groups.forEach(({ codigo, lotes }, index) => {
         const card = document.createElement('div');
-        card.style.cssText = 'border:1px solid #e5e7eb;border-radius:6px;margin:6px 0;';
+        card.style.cssText = 'border:1px solid #e5e7eb;border-radius:10px;margin:12px 0;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:all 0.2s';
+        card.onmouseover = function() { this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; this.style.transform = 'translateY(-2px)'; };
+        card.onmouseout = function() { this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; this.style.transform = 'translateY(0)'; };
         const head = document.createElement('div');
-        head.textContent = codigo;
-        head.style.cssText = 'padding:6px 10px;background:#fafafa;border-bottom:1px solid #e5e7eb;font-weight:500';
+        head.innerHTML = '<span style="font-weight:700;font-size:16px;color:#1f2937">' + codigo + '</span><span style="float:right;font-size:14px;color:#6b7280;font-weight:500">' + lotes.length + ' lote' + (lotes.length !== 1 ? 's' : '') + '</span>';
+        head.style.cssText = 'padding:12px 16px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-bottom:2px solid #e5e7eb;font-weight:600;display:flex;justify-content:space-between;align-items:center';
         card.appendChild(head);
-        lotes.forEach((l) => {
+        const lotesContainer = document.createElement('div');
+        lotes.forEach((l, idx) => {
+          const fechaVenc = l.fechaVencimiento || '-';
+          const fechaDisplay = fechaVenc !== '-' ? fechaVenc.split('-').reverse().slice(0, 2).join('/') : '-';
+          // Calcular días hasta vencimiento para mostrar icono
+          let icono = '🟢';
+          let colorFondo = '#f0fdf4';
+          let colorTexto = '#166534';
+          if (fechaVenc !== '-') {
+            try {
+              const fechaVencDate = new Date(fechaVenc + 'T00:00:00');
+              const hoy = new Date();
+              hoy.setHours(0, 0, 0, 0);
+              const diasHasta = Math.ceil((fechaVencDate - hoy) / 86400000);
+              if (diasHasta <= 0) {
+                icono = '🔴';
+                colorFondo = '#fef2f2';
+                colorTexto = '#991b1b';
+              } else if (diasHasta === 1) {
+                icono = '🟡';
+                colorFondo = '#fefce8';
+                colorTexto = '#854d0e';
+              } else if (diasHasta <= 3) {
+                icono = '🟠';
+                colorFondo = '#fff7ed';
+                colorTexto = '#9a3412';
+              }
+            } catch (e) {}
+          }
           const row = document.createElement('div');
-          row.style.cssText =
-            'display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #f3f4f6;font-size:14px';
-          row.innerHTML = '<span>Vence: ' + (l.fechaVencimiento || '-') + '</span><span style="font-weight:600">' + (l.cantidad || 0) + '</span>';
-          card.appendChild(row);
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:' + (idx < lotes.length - 1 ? '1px solid #f3f4f6' : 'none') + ';font-size:14px;background:' + (idx % 2 === 0 ? '#fff' : '#fafafa') + ';transition:background 0.2s';
+          row.onmouseover = function() { this.style.background = '#f9fafb'; };
+          row.onmouseout = function() { this.style.background = (idx % 2 === 0 ? '#fff' : '#fafafa'); };
+          row.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
+            '<span style="font-size:18px">' + icono + '</span>' +
+            '<div>' +
+            '<div style="font-weight:600;color:#374151">Vence: <span style="color:' + colorTexto + '">' + fechaDisplay + '</span></div>' +
+            '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + fechaVenc + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span style="font-size:20px;font-weight:700;color:#1f2937;background:' + colorFondo + ';padding:6px 12px;border-radius:8px;min-width:60px;text-align:center">' + (l.cantidad || 0) + '</span>' +
+            '<span style="font-size:12px;color:#6b7280">uds</span>' +
+            '</div>';
+          lotesContainer.appendChild(row);
         });
+        card.appendChild(lotesContainer);
         content.appendChild(card);
       });
     }
@@ -6088,7 +6265,7 @@
     header.onclick = () => {
       const visible = content.style.display !== 'none';
       content.style.display = visible ? 'none' : 'block';
-      header.textContent = (visible ? '▶ ' : '▼ ') + title;
+      header.innerHTML = '<span style="font-size:20px;margin-right:8px">' + icono + '</span><span style="font-size:18px;font-weight:700">' + title + '</span><span style="margin-left:auto;font-size:14px;opacity:0.8">(' + groups.length + ' productos)</span><span style="margin-left:12px;font-size:16px">' + (visible ? '▶' : '▼') + '</span>';
     };
     container.appendChild(wrap);
   }
@@ -6319,20 +6496,21 @@
     overlay.appendChild(modal);
     const header = document.createElement('div');
     header.style.cssText =
-      'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e5e7eb';
+      'display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:2px solid #e5e7eb;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     header.innerHTML =
-      '<div style="display:flex;gap:8px;align-items:center;font-weight:600">' +
-      (localNombre ? (localNombre + ' · ') : '') +
-      '<button id="venc-prev" style="padding:4px 8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px">◀</button>' +
-      '<div id="venc-fecha">' + fecha + '</div>' +
-      '<button id="venc-next" style="padding:4px 8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px">▶</button>' +
-      '<label style="margin-left:10px;font-size:14px;display:flex;align-items:center;gap:6px">' +
-      '<input type="checkbox" id="venc-solohoy"/> Mostrar solo los que vencen este día' +
-      '</label></div>' +
-      '<button id="venc-close" style="padding:6px 10px;background:#2563eb;color:#fff;border:none;border-radius:6px">Cerrar</button>';
+      '<div style="display:flex;flex-direction:column;gap:8px;flex:1">' +
+      '<div style="font-size:20px;font-weight:700;color:#fff">📅 Historial de Vencimientos' + (localNombre ? ' - ' + localNombre : '') + '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<button id="venc-prev" style="padding:8px 12px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'rgba(255,255,255,0.3)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.2)\'">◀</button>' +
+      '<div id="venc-fecha" style="padding:8px 16px;background:rgba(255,255,255,0.95);border-radius:8px;font-weight:700;font-size:16px;color:#1f2937;min-width:120px;text-align:center">' + fecha + '</div>' +
+      '<button id="venc-next" style="padding:8px 12px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'rgba(255,255,255,0.3)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.2)\'">▶</button>' +
+      '<label style="margin-left:8px;font-size:14px;display:flex;align-items:center;gap:6px;color:#fff;cursor:pointer;padding:6px 12px;background:rgba(255,255,255,0.15);border-radius:6px">' +
+      '<input type="checkbox" id="venc-solohoy" style="cursor:pointer"/> <span>🔍 Solo vencimientos del día</span>' +
+      '</label></div></div>' +
+      '<button id="venc-close" style="padding:10px 20px;background:#fff;color:#667eea;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-left:12px" onmouseover="this.style.background=\'#f3f4f6\';this.style.transform=\'scale(1.05)\'" onmouseout="this.style.background=\'#fff\';this.style.transform=\'scale(1)\'">✕ Cerrar</button>';
     modal.appendChild(header);
     const body = document.createElement('div');
-    body.style.cssText = 'padding:10px;overflow:auto;max-height:calc(90vh - 54px)';
+    body.style.cssText = 'padding:20px;overflow:auto;max-height:calc(90vh - 120px);background:#f9fafb';
     modal.appendChild(body);
     let orderMap = {};
     function render(registro) {
@@ -6348,10 +6526,29 @@
         orderMap = await getProductosOrder(localId);
       }
       const reg = await getHistorial(localId, fecha);
-      if ((!reg.lotesIniciales || reg.lotesIniciales.length === 0) && 
-          (!reg.lotesFinales || reg.lotesFinales.length === 0)) {
-        body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:16px">📭 No hay datos históricos para el ' + fecha + '</div>';
+      
+      if (!reg) {
+        // No existe registro para esta fecha
+        const fechaDisplay = fecha.split('-').reverse().join('/');
+        body.innerHTML = '<div style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">' +
+          '<div style="font-size:64px;margin-bottom:16px">📭</div>' +
+          '<div style="font-size:20px;font-weight:700;color:#374151;margin-bottom:8px">No hay datos históricos</div>' +
+          '<div style="font-size:16px;color:#6b7280">Fecha: <span style="font-weight:600;color:#667eea">' + fechaDisplay + '</span></div>' +
+          '</div>';
+      } else if ((!reg.lotesIniciales || reg.lotesIniciales.length === 0) && 
+                 (!reg.lotesFinales || reg.lotesFinales.length === 0)) {
+        // Existe registro pero está vacío (sin lotes)
+        const fechaDisplay = fecha.split('-').reverse().join('/');
+        body.innerHTML = '<div style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">' +
+          '<div style="font-size:64px;margin-bottom:16px">📅</div>' +
+          '<div style="font-size:20px;font-weight:700;color:#374151;margin-bottom:8px">' + fechaDisplay + '</div>' +
+          '<div style="font-size:16px;color:#6b7280;margin-bottom:20px">No había lotes registrados en esta fecha</div>' +
+          '<div style="display:flex;gap:20px;justify-content:center;margin-top:24px">' +
+          '<div style="padding:12px 24px;background:#f3f4f6;border-radius:8px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">Lotes Iniciales</div><div style="font-size:24px;font-weight:700;color:#374151">0</div></div>' +
+          '<div style="padding:12px 24px;background:#f3f4f6;border-radius:8px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">Lotes Finales</div><div style="font-size:24px;font-weight:700;color:#374151">0</div></div>' +
+          '</div></div>';
       } else {
+        // Existe registro con datos
         render(reg);
       }
       modal.querySelector('#venc-fecha').textContent = fecha;
@@ -6366,16 +6563,22 @@
     modal.querySelector('#venc-close').onclick = () => overlay.remove();
     modal.querySelector('#venc-prev').onclick = () => {
       const [y, m, d] = fecha.split('-').map(Number);
-      const dObj = new Date(y, m - 1, d);
-      dObj.setDate(dObj.getDate() - 1);
-      fecha = fechaISO(dObj);
+      // Usar UTC para evitar problemas de zona horaria
+      const dObj = new Date(Date.UTC(y, m - 1, d));
+      dObj.setUTCDate(dObj.getUTCDate() - 1);
+      fecha = dObj.getUTCFullYear() + '-' + 
+              String(dObj.getUTCMonth() + 1).padStart(2, '0') + '-' + 
+              String(dObj.getUTCDate()).padStart(2, '0');
       loadAndRender();
     };
     modal.querySelector('#venc-next').onclick = () => {
       const [y, m, d] = fecha.split('-').map(Number);
-      const dObj = new Date(y, m - 1, d);
-      dObj.setDate(dObj.getDate() + 1);
-      fecha = fechaISO(dObj);
+      // Usar UTC para evitar problemas de zona horaria
+      const dObj = new Date(Date.UTC(y, m - 1, d));
+      dObj.setUTCDate(dObj.getUTCDate() + 1);
+      fecha = dObj.getUTCFullYear() + '-' + 
+              String(dObj.getUTCMonth() + 1).padStart(2, '0') + '-' + 
+              String(dObj.getUTCDate()).padStart(2, '0');
       loadAndRender();
     };
     modal.querySelector('#venc-solohoy').onchange = (e) => {

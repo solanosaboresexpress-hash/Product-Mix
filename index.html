@@ -2120,11 +2120,19 @@
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        console.log('Local:', doc.id, data);
-                        localesData.push({ 
-                            id: doc.id, 
-                            ...data
+                        // CRÍTICO: Asegurar que el ID del documento siempre esté presente
+                        // Si data tiene un campo 'id', lo sobrescribimos con doc.id (el ID real del documento)
+                        const localData = { 
+                            ...data,
+                            id: doc.id // SIEMPRE usar el ID del documento de Firebase, nunca el de data
+                        };
+                        console.log('📦 Local cargado:', {
+                            id: localData.id,
+                            nombre: localData.nombre,
+                            tieneId: !!localData.id,
+                            docId: doc.id
                         });
+                        localesData.push(localData);
                     });
                     
                     console.log('Locales cargados:', localesData);
@@ -2161,10 +2169,17 @@
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         if (localesAsignados.includes(doc.id)) {
-                            localesData.push({ 
-                                id: doc.id, 
-                                ...data
+                            // CRÍTICO: Asegurar que el ID del documento siempre esté presente
+                            const localData = {
+                                ...data,
+                                id: doc.id // SIEMPRE usar el ID del documento de Firebase
+                            };
+                            console.log('📦 Local asignado cargado:', {
+                                id: localData.id,
+                                nombre: localData.nombre,
+                                tieneId: !!localData.id
                             });
+                            localesData.push(localData);
                         }
                     });
                     
@@ -3071,7 +3086,29 @@
                     {/* Lista de Locales - EXACTO como APK */}
                     <div style={{minHeight: 'calc(100vh - 200px)'}}>
                         {(localesFiltrados.length > 0 ? localesFiltrados : locales).map((local, index) => {
-                            console.log('Renderizando local', index, local);
+                            console.log('🔍 Renderizando local', index, ':', {
+                                id: local.id,
+                                nombre: local.nombre,
+                                localCompleto: local
+                            });
+                            
+                            // Validar que el local tenga ID antes de renderizar
+                            if (!local.id) {
+                                console.error('❌ ERROR: Local sin ID encontrado:', local);
+                                return (
+                                    <div key={`error-${index}`} style={{
+                                        backgroundColor: '#FFEBEE',
+                                        border: '2px solid #F44336',
+                                        borderRadius: '16px',
+                                        padding: '16px',
+                                        margin: '16px',
+                                        color: '#C62828'
+                                    }}>
+                                        ⚠️ Error: El local "{local.nombre}" no tiene ID. Por favor, recarga la página.
+                                    </div>
+                                );
+                            }
+                            
                             return (
                             <div 
                                 key={local.nombre || `local-${index}`} 
@@ -3181,38 +3218,67 @@
                                 
                                 {/* Botón de acceso directo - EXACTO como APK */}
                                 <button
-                                    onClick={() => {
-                                        // Crear usuario temporal para el local seleccionado
-                                        // Usar el ID del documento de Firebase como localId
-                                        const localId = local.id || local.nombre; // Fallback al nombre si no hay id
-                                        const usuarioTemporal = {
-                                            id: 'temp_' + localId,
-                                            usuario: 'admin_' + local.nombre.toLowerCase(),
-                                            localId: localId, // Usar el ID del documento de Firebase
-                                            localNombre: local.nombre,
-                                            rol: 'admin_local',
-                                            activo: true
-                                        };
-                                        
-                                        // Guardar en localStorage
-                                        localStorage.setItem('usuario', JSON.stringify(usuarioTemporal));
-                                        
-                                        // Navegar al main usando el sistema de React
-                                        console.log('🚀 Ingresando al local:', local.nombre);
-                                        console.log('🔑 LocalId asignado:', localId);
-                                        console.log('👤 Usuario temporal creado:', usuarioTemporal);
-                                        
-                                        // Usar la función onLoginSuccess pasada como prop
-                                        console.log('🔍 onLoginSuccess disponible:', !!onLoginSuccess);
-                                        console.log('🔍 Tipo de onLoginSuccess:', typeof onLoginSuccess);
-                                        
-                                        if (onLoginSuccess) {
-                                            console.log('✅ Llamando onLoginSuccess con:', usuarioTemporal);
-                                            onLoginSuccess(usuarioTemporal);
-                                        } else {
-                                            console.log('❌ onLoginSuccess no disponible, usando fallback');
-                                            // Fallback: recargar la página
-                                            window.location.href = window.location.origin + window.location.pathname;
+                                    onClick={async () => {
+                                        try {
+                                            console.log('🚀 Click en "Ingresar al Local" para:', local.nombre);
+                                            console.log('📋 Local completo recibido:', JSON.stringify(local, null, 2));
+                                            
+                                            // CRÍTICO: Verificar que el local tenga ID
+                                            // Si no tiene id, intentar obtenerlo desde Firebase usando el nombre
+                                            let localId = local.id;
+                                            
+                                            if (!localId) {
+                                                console.warn('⚠️ Local no tiene id, intentando obtenerlo desde Firebase...');
+                                                try {
+                                                    const db = FirebaseRegionManager.getFirestore();
+                                                    const snapshot = await db.collection('locales')
+                                                        .where('nombre', '==', local.nombre)
+                                                        .limit(1)
+                                                        .get();
+                                                    
+                                                    if (!snapshot.empty) {
+                                                        localId = snapshot.docs[0].id;
+                                                        console.log('✅ ID obtenido desde Firebase:', localId);
+                                                    } else {
+                                                        throw new Error('No se encontró el local en Firebase');
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ ERROR: No se pudo obtener el ID del local:', error);
+                                                    alert('Error: No se pudo obtener el ID del local "' + local.nombre + '". Por favor, recarga la página e intenta nuevamente.');
+                                                    return;
+                                                }
+                                            }
+                                            
+                                            console.log('✅ LocalId confirmado:', localId);
+                                            
+                                            // Crear usuario temporal - EXACTO como Android líneas 1955-2001
+                                            const usuarioTemporal = {
+                                                id: 'temp_' + localId,
+                                                usuario: 'admin_' + local.nombre.toLowerCase(),
+                                                localId: localId, // ID del documento de Firebase
+                                                localNombre: local.nombre,
+                                                rol: 'admin_local',
+                                                activo: true
+                                            };
+                                            
+                                            console.log('👤 Usuario temporal creado:', usuarioTemporal);
+                                            
+                                            // Guardar en localStorage ANTES de llamar onLoginSuccess - EXACTO como Android SharedPreferences
+                                            localStorage.setItem('usuario', JSON.stringify(usuarioTemporal));
+                                            console.log('💾 Usuario guardado en localStorage');
+                                            
+                                            // Usar la función onLoginSuccess pasada como prop - EXACTO como Android Intent a MainActivity
+                                            if (onLoginSuccess && typeof onLoginSuccess === 'function') {
+                                                console.log('✅ Llamando onLoginSuccess con:', usuarioTemporal);
+                                                onLoginSuccess(usuarioTemporal);
+                                            } else {
+                                                console.error('❌ onLoginSuccess no disponible o no es función:', onLoginSuccess);
+                                                // Fallback: recargar la página con hash
+                                                window.location.href = window.location.origin + window.location.pathname + '#main';
+                                            }
+                                        } catch (error) {
+                                            console.error('❌ ERROR en onClick del botón:', error);
+                                            alert('Error ingresando al local: ' + error.message);
                                         }
                                     }}
                                     style={{
@@ -4082,12 +4148,22 @@
                 try {
                     console.log('🔍 verificarRegistrosExistentes iniciado');
                     console.log('👤 Usuario actual:', usuario);
+                    console.log('👤 usuario.localId:', usuario?.localId);
+                    console.log('👤 usuario.localNombre:', usuario?.localNombre);
                     console.log('📅 Fecha seleccionada:', fechaSeleccionada);
                     
-                    if (!usuario || !usuario.localId) {
-                        console.log('⚠️ No hay usuario o localId, abortando verificación');
+                    if (!usuario) {
+                        console.error('❌ ERROR: No hay usuario');
                         return;
                     }
+                    
+                    if (!usuario.localId) {
+                        console.error('❌ ERROR: usuario.localId está vacío o undefined');
+                        console.error('   Usuario completo:', JSON.stringify(usuario, null, 2));
+                        return;
+                    }
+                    
+                    console.log('✅ Usuario válido con localId:', usuario.localId);
                     
                     const fechaString = formatearFechaCorta(fechaSeleccionada);
                     console.log('📅 Fecha string:', fechaString);
@@ -4353,12 +4429,18 @@
 
             // Verificar registros cuando cambie la fecha - EXACTO como MainActivity.kt líneas 153-159
             useEffect(() => {
-                console.log('🔄 useEffect ejecutado - usuario:', usuario, 'fechaSeleccionada:', fechaSeleccionada);
+                console.log('🔄 useEffect ejecutado - usuario:', usuario);
+                console.log('🔄 usuario.localId:', usuario?.localId);
+                console.log('🔄 usuario.localNombre:', usuario?.localNombre);
+                console.log('🔄 fechaSeleccionada:', fechaSeleccionada);
+                
                 if (usuario && usuario.localId) {
-                    console.log('📊 Ejecutando verificarRegistrosExistentes para usuario:', usuario.localId);
+                    console.log('✅ Usuario válido, ejecutando verificarRegistrosExistentes para localId:', usuario.localId);
                     verificarRegistrosExistentes();
                 } else {
-                    console.log('⚠️ No se puede verificar registros - usuario o localId faltante');
+                    console.error('❌ ERROR: No se puede verificar registros - usuario o localId faltante');
+                    console.error('   usuario:', usuario);
+                    console.error('   usuario.localId:', usuario?.localId);
                 }
             }, [fechaSeleccionada, usuario]);
 
@@ -4437,39 +4519,14 @@
                         return true; // Hay datos existentes
                     } else {
                         console.log(`📊 No hay datos ${tipo} para la fecha ${fechaString}`);
+                        // EXACTO como Android: Si no hay datos, mostrar campos vacíos (líneas 316-317, 333-334)
                         if (tipo === 'Ingreso de Mercadería') {
                             setDatosIngreso({});
                             setNoRecibioMercaderia(false); // Resetear switch si no hay datos
                         } else if (tipo === 'Stock Final') {
-                            // 🔥 CALCULAR STOCK AUTOMÁTICAMENTE - EXACTO como Android MainActivity.kt líneas 2016-2053
-                            console.log('📊 No hay Stock Final para hoy, calculando automáticamente...');
-                            const stockCalculado = await calcularStockActualDesdeFirebase();
-                            if (Object.keys(stockCalculado).length > 0) {
-                                console.log('✅ Stock calculado automáticamente:', stockCalculado);
-                                // Convertir stock calculado (por código) a datosStock (por nombre)
-                                const datosStockCalculados = {};
-                                const todosProductos = [
-                                    'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
-                                    'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
-                                    'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
-                                    'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
-                                    'BATATA - Batata', 'MEMBRIL - Membrillo',
-                                    'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
-                                ];
-                                
-                                todosProductos.forEach(producto => {
-                                    const [codigo, nombre] = producto.split(' - ');
-                                    const codigoNormalizado = normalizarCodigoProducto(codigo);
-                                    if (stockCalculado[codigoNormalizado] !== undefined) {
-                                        datosStockCalculados[nombre] = stockCalculado[codigoNormalizado];
-                                    }
-                                });
-                                
-                                setDatosStock(datosStockCalculados);
-                                console.log('✅ Datos de stock calculados y cargados:', datosStockCalculados);
-                            } else {
-                                setDatosStock({});
-                            }
+                            // EXACTO como Android: mostrarProductos() con campos vacíos (línea 317)
+                            setDatosStock({});
+                            console.log('📊 No hay Stock Final guardado, mostrando campos vacíos');
                         }
                         return false; // No hay datos
                     }
@@ -7283,11 +7340,25 @@
 
             const handleLoginSuccess = (usuarioData) => {
                 console.log('🚀 handleLoginSuccess llamado con:', usuarioData);
+                console.log('🔍 Verificando usuarioData.localId:', usuarioData?.localId);
+                console.log('🔍 Verificando usuarioData.localNombre:', usuarioData?.localNombre);
+                
+                // Verificar que el usuario tenga localId
+                if (!usuarioData || !usuarioData.localId) {
+                    console.error('❌ ERROR: usuarioData no tiene localId:', usuarioData);
+                    alert('Error: No se pudo obtener el ID del local. Por favor, intenta nuevamente.');
+                    return;
+                }
+                
+                // Guardar también en localStorage para persistencia
+                localStorage.setItem('usuario', JSON.stringify(usuarioData));
+                
                 setUsuario(usuarioData);
                 setVistaActual('main');
                 // Cambiar hash para evitar conflicto con useEffect
                 window.location.hash = '#main';
                 console.log('✅ Vista establecida a main, usuario:', usuarioData);
+                console.log('✅ Usuario guardado en localStorage');
             };
 
             const handleLogout = () => {

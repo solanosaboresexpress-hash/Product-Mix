@@ -94,7 +94,632 @@
     </script>
     
     <style>
-        /* Responsive layout for Promedio de Ventas */
+        /* ============================================
+           PALETA DE COLORES - SABORES EXPRESS (Android App)
+           ============================================ */
+        :root {
+            /* Brand Colors - Dorados (EXACTOS de Android colors.xml) */
+            --brand-gold: #C59B34; /* Dorado principal elegante, NO amarillo brillante */
+            --brand-gold-light: #E6C874;
+            --brand-gold-dark: #967218;
+            
+            /* Brand Neutrals */
+            --brand-black: #1A1A1A;
+            --brand-white: #FFFFFF;
+            --brand-grey-light: #F4F4F4;
+            --brand-grey-medium: #9E9E9E;
+            --brand-grey-dark: #424242;
+            
+            /* Semantic Colors */
+            --status-success: #4CAF50;
+            --status-warning: #FF9800;
+            --status-error: #F44336;
+            
+            /* Background & Surface */
+            --background-color: #F8F9FA;
+            --surface-color: #FFFFFF;
+            --on-background: #1A1A1A;
+            --on-surface: #1A1A1A;
+        }
+        
+        /* ============================================
+           ESTILOS DE BOTONES - Android App Style
+           ============================================ */
+        
+        /* Botón Principal (Dorado) - Estado Pendiente */
+        .btn-primary {
+            background-color: var(--brand-gold) !important;
+            color: var(--brand-black) !important;
+            border: 1px solid var(--brand-gold-dark) !important;
+            border-radius: 12px !important;
+            height: 56px !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            padding: 0 24px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--brand-gold-dark) !important;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Botón Completado (Verde) - Estado con Datos */
+        .btn-completed {
+            background-color: var(--status-success) !important;
+            color: var(--brand-black) !important;
+            border: 1px solid var(--brand-gold-dark) !important;
+            border-radius: 12px !important;
+            height: 56px !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            padding: 0 24px !important;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.3) !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-completed:hover {
+            background-color: #45A049 !important;
+            box-shadow: 0 6px 8px rgba(76, 175, 80, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Botón Secundario */
+        .btn-secondary {
+            background-color: var(--brand-grey-medium) !important;
+            color: var(--brand-white) !important;
+            border: 1px solid var(--brand-grey-dark) !important;
+            border-radius: 12px !important;
+            height: 56px !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            padding: 0 24px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        /* ============================================
+           CARDS - Material Design Style
+           ============================================ */
+        .card {
+            background-color: var(--surface-color) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            padding: 16px !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        /* Card de Selector de Fecha */
+        .card-date-selector {
+            background-color: var(--surface-color) !important;
+            border: 2px solid var(--brand-gold) !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* ============================================
+           ANIMACIONES
+           ============================================ */
+        
+        /* Animación Shake (para errores) */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        
+        .shake {
+            animation: shake 1s ease-in-out;
+        }
+        
+        /* Animación Fade In */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Animación Pulse (para indicadores) */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* ============================================
+           CALENDARIO - Colores de Días
+           ============================================ */
+        .calendar-day-complete {
+            background-color: #4CAF50 !important; /* Verde oscuro */
+            color: var(--brand-white) !important;
+        }
+        
+        .calendar-day-partial {
+            background-color: #FF9800 !important; /* Naranja oscuro */
+            color: var(--brand-white) !important;
+        }
+        
+        .calendar-day-empty {
+            background-color: #424242 !important; /* Gris oscuro */
+            color: var(--brand-white) !important;
+        }
+        
+        /* ============================================
+           BADGES Y INDICADORES
+           ============================================ */
+        .badge-success {
+            background-color: var(--status-success) !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 4px 12px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+        
+        .badge-warning {
+            background-color: var(--status-warning) !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 4px 12px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+        
+        .badge-error {
+            background-color: var(--status-error) !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 4px 12px !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+        
+        /* ============================================
+           INPUTS Y FORMULARIOS
+           ============================================ */
+        .input-field {
+            background-color: var(--surface-color) !important;
+            border: 2px solid var(--brand-gold) !important;
+            border-radius: 12px !important;
+            padding: 12px 16px !important;
+            font-size: 16px !important;
+            color: var(--on-surface) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .input-field:focus {
+            outline: none !important;
+            border-color: var(--brand-gold-dark) !important;
+            box-shadow: 0 0 0 3px rgba(197, 155, 52, 0.1) !important;
+        }
+        
+        /* ============================================
+           LOGIN SCREEN - Estilos Android App (EXACTO)
+           ============================================ */
+        .login-container {
+            background-color: #F0F0F0 !important; /* EXACTO como Android activity_login.xml línea 6 */
+            min-height: 100vh !important;
+            position: relative !important;
+            width: 100% !important;
+            overflow-y: auto !important; /* ScrollView equivalente */
+        }
+        
+        /* Imagen de watermark - EXACTO como Android ImageView líneas 9-15 */
+        .login-watermark {
+            position: fixed !important; /* Fixed para que se mantenga al hacer scroll */
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-image: url('bg_watermark_image.png') !important;
+            background-size: cover !important; /* EXACTO como Android scaleType="fitXY" */
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            opacity: 0.08 !important; /* EXACTO como Android android:alpha="0.08" */
+            z-index: 0 !important;
+            pointer-events: none !important; /* No interfiere con clicks */
+        }
+        
+        /* ScrollView equivalente - EXACTO como Android líneas 18-21 */
+        .login-scrollview {
+            position: relative !important;
+            z-index: 1 !important;
+            width: 100% !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        
+        /* LinearLayout interno - EXACTO como Android líneas 23-28 */
+        .login-content-wrapper {
+            position: relative !important;
+            z-index: 1 !important;
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important; /* EXACTO como Android gravity="center_horizontal" */
+            padding: 24px !important; /* EXACTO como Android padding="24dp" */
+            box-sizing: border-box !important;
+        }
+        
+        .login-card {
+            background-color: var(--surface-color) !important; /* #FFFFFF */
+            border-radius: 16px !important; /* EXACTO como Android cardCornerRadius 16dp */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; /* EXACTO como Android cardElevation 4dp */
+            padding: 16px !important; /* EXACTO como Android contentPadding 16dp (línea 64) */
+            border: none !important; /* MaterialCardView no tiene border visible */
+            width: 100% !important; /* EXACTO como Android layout_width="match_parent" */
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        .login-logo-container {
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-top: 40px !important; /* EXACTO como Android layout_marginTop="40dp" */
+            margin-bottom: 32px !important; /* EXACTO como Android layout_marginBottom="32dp" */
+            margin-left: auto !important;
+            margin-right: auto !important;
+            width: 210px !important; /* EXACTO como Android layout_width="210dp" */
+            height: 210px !important; /* EXACTO como Android layout_height="210dp" */
+        }
+        
+        .login-logo-glow {
+            position: absolute !important;
+            width: 210px !important; /* EXACTO como Android layout_width="210dp" */
+            height: 210px !important; /* EXACTO como Android layout_height="210dp" */
+            /* EXACTO como Android bg_card_surface con backgroundTint y alpha */
+            /* bg_card_surface: solid color=surface_color (#FFFFFF), corners=16dp, stroke=1dp brand_grey_light (#F4F4F4) */
+            /* backgroundTint: brand_gold (#C59B34) con alpha=0.3 */
+            /* Como es un círculo, usamos border-radius 50% */
+            background-color: rgba(197, 155, 52, 0.3) !important; /* brand_gold con alpha 0.3 - EXACTO como Android */
+            border-radius: 50% !important; /* Círculo perfecto */
+            border: 1px solid rgba(244, 244, 244, 0.3) !important; /* brand_grey_light con alpha reducida */
+            z-index: 0 !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            box-shadow: none !important;
+        }
+        
+        .login-logo {
+            position: relative !important;
+            width: 200px !important; /* EXACTO como Android layout_width="200dp" */
+            height: 200px !important; /* EXACTO como Android layout_height="200dp" */
+            z-index: 1 !important;
+            object-fit: contain !important; /* EXACTO como Android scaleType="centerInside" */
+            border: none !important;
+            outline: none !important;
+        }
+        
+        /* Texto "Bienvenido" - EXACTO como Android */
+        .login-welcome-text {
+            font-size: 24px !important; /* EXACTO como Android textSize="24sp" */
+            font-weight: bold !important; /* EXACTO como Android textStyle="bold" */
+            color: var(--brand-black) !important; /* EXACTO como Android textColorPrimary */
+            text-align: center !important; /* EXACTO como Android layout_gravity="center_horizontal" */
+            margin-bottom: 24px !important; /* EXACTO como Android layout_marginBottom="24dp" */
+        }
+        
+        /* TextInputLayout Style - EXACTO como Android Widget.Inventario.TextInputLayout */
+        .login-text-input-wrapper {
+            position: relative !important;
+            margin-bottom: 16px !important; /* EXACTO como Android layout_marginBottom="16dp" */
+        }
+        
+        .login-text-input-label {
+            position: absolute !important;
+            top: -8px !important;
+            left: 12px !important;
+            background-color: var(--surface-color) !important;
+            padding: 0 4px !important;
+            font-size: 12px !important;
+            color: var(--brand-gold-dark) !important; /* EXACTO como Android hintTextColor */
+            font-weight: 500 !important;
+            z-index: 1 !important;
+        }
+        
+        .login-text-input {
+            width: 100% !important;
+            padding: 16px !important; /* EXACTO como Android padding="16dp" */
+            border: 2px solid var(--brand-gold) !important; /* EXACTO como Android boxStrokeColor */
+            border-radius: 12px !important; /* EXACTO como Android boxCornerRadius */
+            font-size: 16px !important;
+            color: var(--brand-black) !important;
+            background-color: transparent !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .login-text-input:focus {
+            outline: none !important;
+            border-color: var(--brand-gold-dark) !important;
+            box-shadow: 0 0 0 2px rgba(197, 155, 52, 0.1) !important;
+        }
+        
+        .login-text-input:disabled {
+            background-color: var(--brand-grey-light) !important;
+            cursor: not-allowed !important;
+        }
+        
+        /* Botón Login - EXACTO como Android Widget.Inventario.Button.Primary */
+        .login-button {
+            width: 100% !important;
+            min-height: 56px !important; /* EXACTO como Android minHeight="56dp" */
+            padding: 0 24px !important; /* EXACTO como Android paddingStart/End="24dp" */
+            background-color: var(--brand-gold) !important;
+            color: var(--brand-black) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            font-size: 16px !important; /* EXACTO como Android textSize="16sp" */
+            font-weight: bold !important; /* EXACTO como Android textStyle="bold" */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; /* EXACTO como Android elevation="4dp" */
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            margin-bottom: 16px !important; /* EXACTO como Android layout_marginBottom="16dp" */
+        }
+        
+        .login-button:hover {
+            background-color: var(--brand-gold-dark) !important;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .login-button:active {
+            transform: translateY(1px) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .login-button:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+        }
+        
+        /* Botón TextButton - EXACTO como Android Widget.MaterialComponents.Button.TextButton (líneas 138-148) */
+        .btn-text-button {
+            background: transparent !important; /* Sin fondo - EXACTO como Android TextButton */
+            border: none !important;
+            color: var(--brand-black) !important; /* #1A1A1A - EXACTO como Android textColorPrimary */
+            font-size: 14px !important; /* EXACTO como Android textSize="14sp" */
+            font-weight: bold !important; /* EXACTO como Android textStyle="bold" */
+            height: 48px !important; /* EXACTO como Android layout_height="48dp" */
+            padding: 0 24px !important; /* EXACTO como Android paddingStart/End="24dp" */
+            cursor: pointer !important;
+            border-radius: 12px !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .btn-text-button:hover {
+            background-color: rgba(0, 0, 0, 0.05) !important; /* Hover sutil */
+        }
+        
+        .btn-text-button:active {
+            background-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Botón Acceder del diálogo - EXACTO como Android Button.Primary (48dp height, 14sp text) */
+        #accessBtn {
+            flex: 1;
+            height: 48px;
+            padding: 0 24px;
+            background-color: #C59B34;
+            color: #1A1A1A;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+        }
+        
+        #accessBtn:hover {
+            background-color: #967218;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        #accessBtn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* ============================================
+           GESTIÓN DE LOCALES - Estilos Android App
+           ============================================ */
+        
+        /* Tabs de Gestión - EXACTO como Android */
+        .tab-container {
+            background-color: var(--brand-gold) !important; /* #C59B34 */
+            border-radius: 8px !important;
+            padding: 4px !important;
+            margin: 16px !important;
+            display: flex !important;
+        }
+        
+        .tab-button {
+            flex: 1 !important;
+            height: 48px !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            border: none !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .tab-button-selected {
+            background-color: var(--surface-color) !important; /* Blanco */
+            color: var(--brand-black) !important;
+        }
+        
+        .tab-button-unselected {
+            background-color: transparent !important;
+            color: var(--brand-white) !important;
+        }
+        
+        .tab-button {
+            background-color: transparent !important;
+            border: none !important;
+            color: var(--brand-black) !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            padding: 12px !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .tab-button-selected {
+            background-color: var(--surface-color) !important;
+            color: var(--brand-black) !important;
+        }
+        
+        .tab-button-unselected {
+            background-color: transparent !important;
+            color: var(--brand-black) !important;
+        }
+        
+        /* Cards de Locales */
+        .card-local {
+            background-color: #E3F2FD !important; /* Azul claro - card_local_background */
+            border: 2px solid #BBDEFB !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
+            margin: 8px 16px 16px 16px !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .card-local:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        /* Botones de Gestión */
+        .btn-gestion-primary {
+            background-color: var(--brand-gold) !important; /* #C59B34 - Dorado elegante */
+            border: 1px solid var(--brand-gold-dark) !important;
+            color: var(--brand-black) !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
+            font-weight: bold !important;
+            font-size: 11px !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-gestion-success {
+            background-color: #4CAF50 !important; /* Verde */
+            border: 2px solid #45A049 !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
+            font-weight: bold !important;
+            font-size: 11px !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-gestion-info {
+            background-color: #2196F3 !important; /* Azul */
+            border: 2px solid #1976D2 !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
+            font-weight: bold !important;
+            font-size: 11px !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-gestion-danger {
+            background-color: #F44336 !important; /* Rojo */
+            border: 2px solid #D32F2F !important;
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 8px 16px !important;
+            font-weight: bold !important;
+            font-size: 11px !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        /* Botones especiales de Gestión */
+        .btn-ingresar-local {
+            background-color: #9C27B0 !important; /* Morado - holo_purple */
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            border: none !important;
+            width: 100% !important;
+            margin: 8px 0 !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        .btn-ver-stock {
+            background-color: #1976D2 !important; /* Azul oscuro - holo_blue_dark */
+            color: var(--brand-white) !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            border: none !important;
+            width: 100% !important;
+            margin: 8px 0 !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+        }
+        
+        /* Hover effects para botones de gestión */
+        .btn-gestion-primary:hover,
+        .btn-gestion-success:hover,
+        .btn-gestion-info:hover,
+        .btn-gestion-danger:hover,
+        .btn-ingresar-local:hover,
+        .btn-ver-stock:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .btn-gestion-primary:active,
+        .btn-gestion-success:active,
+        .btn-gestion-info:active,
+        .btn-gestion-danger:active,
+        .btn-ingresar-local:active,
+        .btn-ver-stock:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* ============================================
+           RESPONSIVE LAYOUT FOR PROMEDIO DE VENTAS
+           ============================================ */
         .ventas-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .ventas-grid { min-width: 980px; }
         .ventas-name { white-space: nowrap; }
@@ -866,7 +1491,7 @@
                                 style="
                                     width: 100%;
                                     padding: 12px 40px 12px 12px;
-                                    border: 2px solid #FFD700;
+                                    border: 2px solid var(--brand-gold);
                                     border-radius: 8px;
                                     font-size: 16px;
                                     box-sizing: border-box;
@@ -874,7 +1499,7 @@
                                     cursor: pointer;
                                 "
                             />
-                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #FFD700; font-size: 18px;">
+                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--brand-gold); font-size: 18px;">
                                 ▼
                             </div>
                         </div>
@@ -911,42 +1536,22 @@
                             <input 
                                 type="checkbox" 
                                 id="rememberPassword"
-                                style="margin-right: 8px; accent-color: #FFD700;"
+                                style="margin-right: 8px; accent-color: var(--brand-gold);"
                             />
                             Recordar contraseña en este dispositivo
                         </label>
                     </div>
                     
-                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
                         <button 
                             id="cancelBtn"
-                            style="
-                                padding: 12px 24px;
-                                border: none;
-                                background: #FFD700;
-                                color: white;
-                                border-radius: 8px;
-                                cursor: pointer;
-                                font-size: 14px;
-                                font-weight: bold;
-                            "
+                            class="btn-text-button"
+                            style="flex: 1; margin-right: 8px;"
                         >
-                            CANCELAR
+                            Cancelar
                         </button>
-                        <button 
-                            id="accessBtn"
-                            style="
-                                padding: 12px 24px;
-                                border: none;
-                                background: #FFD700;
-                                color: white;
-                                border-radius: 8px;
-                                cursor: pointer;
-                                font-size: 14px;
-                                font-weight: bold;
-                            "
-                        >
-                            ACCEDER
+                        <button id="accessBtn">
+                            Acceder
                         </button>
                     </div>
                 `;
@@ -1206,16 +1811,20 @@
             }
 
             return (
-                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0'}}>
-                    {/* Header Amarillo */}
+                <div className="login-container">
+                    {/* Imagen de watermark - EXACTO como Android ImageView líneas 9-15 */}
+                    <div className="login-watermark"></div>
+                    
+                    {/* Header - Color de marca (SOLO título, sin selector de región) */}
                     <div style={{
-                        backgroundColor: '#FFD700',
+                        backgroundColor: 'var(--brand-gold)',
                         padding: '12px 16px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        zIndex: 2
                     }}>
                         <div 
                             className="text-base font-bold"
@@ -1228,80 +1837,80 @@
                         >
                             Sabores Product Mix v2
                         </div>
-                        
-                        {/* Contenedor Selector de Región */}
-                        <div style={{flex: 1, minWidth: 0}}>
-                            <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                style={{maxWidth: '100%'}}
-                                value={regionSeleccionada ? regionSeleccionada.id : ''}
-                                disabled={cargandoRegiones || regiones.length === 0}
-                                onChange={(e) => {
-                                    const regionId = e.target.value;
-                                    const region = regiones.find(r => r.id === regionId);
-                                    if (region) {
-                                        seleccionarRegion(region, false); // false = cambio manual del usuario
-                                    }
-                                }}
-                            >
-                                {cargandoRegiones ? (
-                                    <option value="">Cargando regiones...</option>
-                                ) : regiones.length === 0 ? (
-                                    <option value="">No hay regiones disponibles</option>
-                                ) : (
-                                    <>
-                                        <option value="">Selecciona una región</option>
-                                        {regiones.map((region) => {
-                                            const nombreMaestro = nombresMaestros && nombresMaestros.length > 0 
-                                                ? nombresMaestros.find(n => n.regionId === region.id)
-                                                : null;
-                                            return (
-                                                <option key={region.id} value={region.id}>
-                                                    {nombreMaestro ? nombreMaestro.nombre : (region.maestroNombre || region.nombre)}
-                                                </option>
-                                            );
-                                        })}
-                                    </>
-                                )}
-                            </select>
-                        </div>
                     </div>
 
-                    <div className="flex items-center justify-center p-4" style={{minHeight: 'calc(100vh - 64px)'}}>
-                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-                        <div className="text-center mb-8">
-                            <div className="text-center mb-6">
+                    {/* ScrollView equivalente - EXACTO como Android líneas 18-21 */}
+                    <div className="login-scrollview">
+                        {/* LinearLayout interno - EXACTO como Android líneas 23-28 */}
+                        <div className="login-content-wrapper">
+                            {/* Login Card - EXACTO como Android MaterialCardView líneas 55-165 */}
+                            <div className="login-card max-w-md w-full">
+                        <div className="text-center">
+                            {/* Logo Container - EXACTO como Android */}
+                            <div className="login-logo-container">
+                                <div className="login-logo-glow"></div>
                                 <img 
                                     src="logo_sabores_real.png" 
                                     alt="Sabores Express" 
-                                    className="mx-auto"
-                                    style={{
-                                        maxWidth: '200px',
-                                        maxHeight: '120px',
-                                        objectFit: 'contain'
-                                    }}
+                                    className="login-logo"
                                 />
-                                <div 
-                                    className="text-lg font-bold mt-3"
-                                    style={{
-                                        color: '#FFD700',
-                                        textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-                                    }}
-                                >
-                                    Sabores Express - Product Mix V2 Web
                             </div>
+                            
+                            {/* Texto "Bienvenido" - EXACTO como Android */}
+                            <div className="login-welcome-text">
+                                Bienvenido
                             </div>
                         </div>
 
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <form onSubmit={handleLogin}>
+                            {/* Region Selector - EXACTO como Android líneas 76-94 (DENTRO del card) */}
+                            <div className="login-text-input-wrapper">
+                                <label className="login-text-input-label">
+                                    Región
+                                </label>
+                                <select
+                                    className="login-text-input"
+                                    value={regionSeleccionada ? regionSeleccionada.id : ''}
+                                    disabled={cargandoRegiones || regiones.length === 0}
+                                    onChange={(e) => {
+                                        const regionId = e.target.value;
+                                        const region = regiones.find(r => r.id === regionId);
+                                        if (region) {
+                                            seleccionarRegion(region, false); // false = cambio manual del usuario
+                                        }
+                                    }}
+                                >
+                                    {cargandoRegiones ? (
+                                        <option value="">Cargando regiones...</option>
+                                    ) : regiones.length === 0 ? (
+                                        <option value="">No hay regiones disponibles</option>
+                                    ) : (
+                                        <>
+                                            <option value="">Selecciona una región</option>
+                                            {regiones.map((region) => {
+                                                const nombreMaestro = nombresMaestros && nombresMaestros.length > 0 
+                                                    ? nombresMaestros.find(n => n.regionId === region.id)
+                                                    : null;
+                                                return (
+                                                    <option key={region.id} value={region.id}>
+                                                        {nombreMaestro ? nombreMaestro.nombre : (region.maestroNombre || region.nombre)}
+                                                    </option>
+                                                );
+                                            })}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+
+                            {/* Selector de Local - Estilo TextInputLayout */}
+                            <div className="login-text-input-wrapper">
+                                <label className="login-text-input-label">
                                     Seleccionar Local
                                 </label>
                                 <select 
                                     value={localSeleccionado}
                                     onChange={(e) => setLocalSeleccionado(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    className="login-text-input"
                                     required
                                     disabled={cargandoLocales}
                                 >
@@ -1315,116 +1924,117 @@
                                     ))}
                                 </select>
                                 {!cargandoLocales && locales.length === 0 && regionSeleccionada && (
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm mt-1" style={{color: 'var(--brand-grey-medium)'}}>
                                         No se encontraron locales para esta región. Verifica que la región tenga locales configurados en Firebase.
                                     </p>
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {/* Campo Contraseña - Estilo TextInputLayout */}
+                            <div className="login-text-input-wrapper">
+                                <label className="login-text-input-label">
                                     Contraseña
                                 </label>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                    className="login-text-input"
                                     placeholder="Ingresa tu contraseña"
                                     required
                                 />
                             </div>
 
-                            <div className="flex items-center">
+                            {/* Checkbox Recordar Datos */}
+                            <div className="flex items-center mb-6">
                                 <input
                                     type="checkbox"
                                     id="recordarDatos"
                                     checked={recordarDatos}
                                     onChange={(e) => setRecordarDatos(e.target.checked)}
-                                    className="mr-2 h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                                    className="mr-2 h-4 w-4"
+                                    style={{
+                                        accentColor: 'var(--brand-gold)',
+                                        cursor: 'pointer'
+                                    }}
                                 />
-                                <label htmlFor="recordarDatos" className="text-sm text-gray-700">
+                                <label htmlFor="recordarDatos" className="text-sm" style={{color: 'var(--brand-black)'}}>
                                     Recordar local y contraseña
                                 </label>
                             </div>
 
                             {error && (
-                                <div className="text-red-600 text-sm text-center">
+                                <div className="text-sm text-center mb-4" style={{color: 'var(--status-error)'}}>
                                     {error}
                                 </div>
                             )}
 
+                            {/* Botón Login - EXACTO como Android */}
                             <button 
                                 type="submit"
                                 disabled={loading}
-                                className="w-full text-black font-bold text-base py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                style={{
-                                    backgroundColor: '#FFD700',
-                                    height: '56px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #B8860B'
-                                }}
+                                className="login-button"
                             >
-                                {loading ? 'Verificando...' : 'Iniciar Sesión'}
+                                {loading ? 'Verificando...' : 'INICIAR SESIÓN'}
                             </button>
                         </form>
 
-                        {locales.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => mostrarDialogoContraseñaGestion()}
-                                className="w-full text-black font-bold text-sm py-3 rounded-lg transition-colors mt-3"
-                                style={{
-                                    backgroundColor: '#FFD700',
-                                    height: '48px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #B8860B',
-                                    fontSize: '14px',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                GESTIONAR LOCALES
-                            </button>
-                        )}
+                            {/* Botón Gestión de Locales - EXACTO como Android líneas 144-151 (DENTRO del card, después del botón login) */}
+                            {locales.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => mostrarDialogoContraseñaGestion()}
+                                    className="login-button"
+                                    style={{
+                                        marginTop: '0',
+                                        marginBottom: '16px'
+                                    }}
+                                >
+                                    GESTIÓN DE LOCALES
+                                </button>
+                            )}
 
-                        {/* Enlace de descarga de la app Android */}
-                        <div className="mt-6 text-center">
-                            <a
-                                href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
-                                style={{
-                                    backgroundColor: '#4CAF50',
-                                    border: '1px solid #388E3C',
-                                    borderRadius: '8px',
-                                    fontSize: '14px',
-                                    textDecoration: 'none'
-                                }}
-                            >
-                                📱 Descargar App Android
-                            </a>
-                        </div>
+                            {/* Enlace de descarga de la app Android */}
+                            <div className="mt-6 text-center">
+                                <a
+                                    href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                                    style={{
+                                        backgroundColor: '#4CAF50',
+                                        border: '1px solid #388E3C',
+                                        borderRadius: '8px',
+                                        fontSize: '14px',
+                                        textDecoration: 'none'
+                                    }}
+                                >
+                                    📱 Descargar App Android
+                                </a>
+                            </div>
 
-                        {/* Botón de Administración */}
-                        <div className="mt-4 text-center">
-                            <a
-                                href="https://administracion-se.netlify.app/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
-                                style={{
-                                    backgroundColor: '#2196F3',
-                                    border: '1px solid #1976D2',
-                                    borderRadius: '8px',
-                                    fontSize: '14px',
-                                    textDecoration: 'none'
-                                }}
-                            >
-                                🔧 Ir a Administración
-                            </a>
+                            {/* Botón de Administración */}
+                            <div className="mt-4 text-center">
+                                <a
+                                    href="https://administracion-se.netlify.app/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
+                                    style={{
+                                        backgroundColor: '#2196F3',
+                                        border: '1px solid #1976D2',
+                                        borderRadius: '8px',
+                                        fontSize: '14px',
+                                        textDecoration: 'none'
+                                    }}
+                                >
+                                    🔧 Ir a Administración
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                        {/* Cierre LinearLayout - login-content-wrapper */}
+                        </div>
+                    {/* Cierre ScrollView - login-scrollview */}
                     </div>
                 </div>
             );
@@ -2391,47 +3001,30 @@
 
                     {/* Pestañas - EXACTO como APK */}
                     {esUsuarioMaestro && (
-                        <div style={{
-                            display: 'flex',
-                            backgroundColor: '#FFD700',
-                            padding: '4px',
+                        <div className="tab-container" style={{
                             marginLeft: 'max(8px, calc((100% - 400px) / 2))',
                             marginRight: 'max(8px, calc((100% - 400px) / 2))',
-                            marginBottom: '16px',
-                            borderRadius: '8px',
                             maxWidth: 'calc(100% - 16px)',
                             boxSizing: 'border-box'
                         }}>
                             <button
                                 onClick={() => setPestanaActiva('locales')}
+                                className={pestanaActiva === 'locales' ? 'tab-button tab-button-selected' : 'tab-button tab-button-unselected'}
                                 style={{
                                     flex: 1,
                                     height: '48px',
-                                    fontSize: '14px',
-                                    fontWeight: 'bold',
-                                    backgroundColor: pestanaActiva === 'locales' ? '#FFD700' : 'transparent',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    marginRight: '2px',
-                                    cursor: 'pointer'
+                                    marginRight: '2px'
                                 }}
                             >
                                 🏪 LOCALES
                             </button>
                             <button
                                 onClick={() => setPestanaActiva('supervisores')}
+                                className={pestanaActiva === 'supervisores' ? 'tab-button tab-button-selected' : 'tab-button tab-button-unselected'}
                                 style={{
                                     flex: 1,
                                     height: '48px',
-                                    fontSize: '14px',
-                                    fontWeight: 'bold',
-                                    backgroundColor: pestanaActiva === 'supervisores' ? '#FFD700' : 'transparent',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    marginLeft: '2px',
-                                    cursor: 'pointer'
+                                    marginLeft: '2px'
                                 }}
                             >
                                 👥 SUPERVISORES
@@ -2446,19 +3039,12 @@
                             {esUsuarioMaestro && (
                     <button
                         onClick={() => setMostrarFormulario(true)}
+                        className="btn-gestion-primary"
                         style={{
                             width: '100%',
-                            fontWeight: 'bold',
                             marginBottom: '16px',
-                            backgroundColor: '#FFD700',
                             fontSize: 'clamp(14px, 4vw, 16px)',
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: '2px solid #FFA500',
-                            color: '#000000',
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
-                            textAlign: 'center'
+                            padding: '16px'
                         }}
                     >
                         ➕ AGREGAR NUEVO LOCAL
@@ -2794,19 +3380,12 @@
                             {/* Botón Agregar Supervisor - EXACTO como APK */}
                             <button
                                 onClick={() => setMostrarFormularioSupervisor(true)}
+                                className="btn-gestion-primary"
                                 style={{
                                     width: '100%',
-                                    fontWeight: 'bold',
                                     marginBottom: '16px',
-                                    backgroundColor: '#FFD700',
                                     fontSize: 'clamp(14px, 4vw, 16px)',
-                                    padding: '16px',
-                                    borderRadius: '12px',
-                                    border: '2px solid #FFA500',
-                                    color: '#000000',
-                                    cursor: 'pointer',
-                                    boxSizing: 'border-box',
-                                    textAlign: 'center'
+                                    padding: '16px'
                                 }}
                             >
                                 ➕ AGREGAR NUEVO SUPERVISOR
@@ -3263,16 +3842,16 @@
                     const esHoy = fechaString === formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
                     const esFechaSeleccionada = fechaString === formatearFechaCorta(fechaSeleccionada);
                     
-                    // Determinar color según datos - EXACTO como líneas 576-589
+                    // Determinar color según datos - EXACTO como MainActivity.kt (Android App)
                     let colorFondo, colorTexto, borde;
                     if (fechasCompletas.has(fechaString)) {
-                        colorFondo = '#4CAF50'; // Verde
+                        colorFondo = '#4CAF50'; // Verde oscuro (holo_green_dark) - Completo
                         colorTexto = '#FFFFFF';
                     } else if (fechasParciales.has(fechaString)) {
-                        colorFondo = '#FF9800'; // Naranja
+                        colorFondo = '#FF9800'; // Naranja oscuro (holo_orange_dark) - Parcial
                         colorTexto = '#FFFFFF';
                     } else {
-                        colorFondo = '#757575'; // Gris
+                        colorFondo = '#424242'; // Gris oscuro (darker_gray) - Sin datos (igual que Android)
                         colorTexto = '#FFFFFF';
                     }
 
@@ -3342,11 +3921,16 @@
                             </div>
                         </div>
 
-                        {/* Navegación de mes - EXACTO como líneas 346-405 */}
+                        {/* Navegación de mes - EXACTO como MainActivity.kt (Android App) */}
                         <div className="flex items-center justify-between mb-4">
                             <button
                                 onClick={() => cambiarMes(-1)}
-                                className="w-14 h-12 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-14 h-12 font-bold rounded-lg transition-colors fade-in"
+                                style={{
+                                    backgroundColor: '#1976D2', // Azul oscuro (holo_blue_dark) - igual que Android
+                                    color: '#FFFFFF',
+                                    border: 'none'
+                                }}
                             >
                                 ◀
                             </button>
@@ -3359,7 +3943,12 @@
                             
                             <button
                                 onClick={() => cambiarMes(1)}
-                                className="w-14 h-12 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-14 h-12 font-bold rounded-lg transition-colors fade-in"
+                                style={{
+                                    backgroundColor: '#1976D2', // Azul oscuro (holo_blue_dark) - igual que Android
+                                    color: '#FFFFFF',
+                                    border: 'none'
+                                }}
                             >
                                 ▶
                             </button>
@@ -3396,6 +3985,7 @@
             // Estados para controlar colores de botones - EXACTO como MainActivity.kt líneas 66-70
             const [tieneIngreso, setTieneIngreso] = useState(false);
             const [tieneStock, setTieneStock] = useState(false);
+            const [tieneVencimientosCoincidentes, setTieneVencimientosCoincidentes] = useState(false);
             const [ultimoEstadoIngreso, setUltimoEstadoIngreso] = useState(null);
             const [ultimoEstadoStock, setUltimoEstadoStock] = useState(null);
 
@@ -3535,8 +4125,227 @@
                     
                     console.log(`📊 Fecha ${fechaString}: Ingreso=${tieneIngresoData}, Stock=${tieneStockData}`);
                     
+                    // Verificar vencimientos coincidentes
+                    verificarVencimientosCoinciden();
+                    
                 } catch (error) {
                     console.error('❌ Error verificando registros existentes:', error);
+                }
+            };
+            
+            // Función para calcular stock actual desde Firebase - EXACTO como Android MainActivity.kt líneas 1970-2058
+            const calcularStockActualDesdeFirebase = async () => {
+                try {
+                    if (!usuario || !usuario.localId) return {};
+                    
+                    const fechaHoy = formatearFechaCorta(fechaSeleccionada);
+                    const fechaAyer = new Date(fechaSeleccionada);
+                    fechaAyer.setDate(fechaAyer.getDate() - 1);
+                    const fechaAyerString = formatearFechaCorta(fechaAyer);
+                    
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        return {};
+                    }
+                    
+                    // Obtener registros de ayer y hoy
+                    const [snapshotAyer, snapshotHoy] = await Promise.all([
+                        db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('registros')
+                            .where('fecha', '==', fechaAyerString)
+                            .get(),
+                        db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('registros')
+                            .where('fecha', '==', fechaHoy)
+                            .get()
+                    ]);
+                    
+                    const registrosAyer = [];
+                    snapshotAyer.forEach(doc => {
+                        registrosAyer.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    const registrosHoy = [];
+                    snapshotHoy.forEach(doc => {
+                        registrosHoy.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // PRIORIDAD 1: Stock Final de HOY (si existe)
+                    const stockFinalHoy = registrosHoy
+                        .filter(registro => registro.tipo === 'Stock Final')
+                        .flatMap(registro => registro.productos || []);
+                    
+                    if (stockFinalHoy.length > 0) {
+                        const stockMap = {};
+                        stockFinalHoy.forEach(producto => {
+                            const codigo = obtenerCodigoProducto(producto.nombre);
+                            stockMap[codigo] = producto.cantidad || 0;
+                        });
+                        console.log('✅ Usando Stock Final de HOY:', stockMap);
+                        return stockMap;
+                    }
+                    
+                    // PRIORIDAD 2: Stock Final Ayer + Ingreso Hoy
+                    const stockAyer = registrosAyer
+                        .filter(registro => registro.tipo === 'Stock Final')
+                        .flatMap(registro => registro.productos || []);
+                    
+                    const stockMap = {};
+                    stockAyer.forEach(producto => {
+                        const codigo = obtenerCodigoProducto(producto.nombre);
+                        stockMap[codigo] = producto.cantidad || 0;
+                    });
+                    
+                    const ingresoHoy = registrosHoy
+                        .filter(registro => registro.tipo === 'Ingreso de Mercadería')
+                        .flatMap(registro => registro.productos || []);
+                    
+                    ingresoHoy.forEach(producto => {
+                        const codigo = obtenerCodigoProducto(producto.nombre);
+                        const cantidadAnterior = stockMap[codigo] || 0;
+                        stockMap[codigo] = cantidadAnterior + (producto.cantidad || 0);
+                    });
+                    
+                    console.log('✅ Stock calculado (Ayer + Ingreso Hoy):', stockMap);
+                    return stockMap;
+                    
+                } catch (error) {
+                    console.error('❌ Error calculando stock desde Firebase:', error);
+                    return {};
+                }
+            };
+            
+            // Función auxiliar para obtener código del producto
+            const obtenerCodigoProducto = (nombre) => {
+                if (nombre.includes(' - ')) {
+                    return nombre.split(' - ')[0].trim();
+                }
+                // Casos especiales
+                if (nombre.startsWith('Pizza ')) {
+                    if (nombre.includes('Muzzarella')) return 'MUZZA';
+                    if (nombre.includes('Jamón')) return 'JAMON';
+                    if (nombre.includes('Pepperoni')) return 'PEPPER';
+                    return nombre;
+                }
+                if (nombre.startsWith('Pastelito ')) {
+                    if (nombre.includes('Batata')) return 'BATATA';
+                    if (nombre.includes('Membrillo')) return 'MEMBRIL';
+                    return nombre;
+                }
+                return nombre;
+            };
+            
+            // Función auxiliar para normalizar código del producto
+            const normalizarCodigoProducto = (codigo) => {
+                const codigoUpper = codigo.toUpperCase();
+                if (codigoUpper === 'PEPPERO') return 'PEPPER';
+                if (codigoUpper === 'MUZZARE') return 'MUZZA';
+                return codigoUpper;
+            };
+            
+            // Función para verificar si stock total coincide con lotes activos
+            const verificarVencimientosCoinciden = async () => {
+                try {
+                    if (!usuario || !usuario.localId) return;
+                    
+                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        return;
+                    }
+                    
+                    // Obtener stock final de hoy o ayer
+                    const snapshotStock = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fechaString)
+                        .where('tipo', '==', 'Stock Final')
+                        .limit(1)
+                        .get();
+                    
+                    let stockActual = {};
+                    if (!snapshotStock.empty) {
+                        const stockDoc = snapshotStock.docs[0].data();
+                        stockActual = stockDoc.datos || {};
+                    } else {
+                        // Si no hay stock de hoy, usar stock de ayer + ingreso de hoy
+                        const fechaAyer = new Date(fechaSeleccionada);
+                        fechaAyer.setDate(fechaAyer.getDate() - 1);
+                        const fechaAyerString = formatearFechaCorta(fechaAyer);
+                        
+                        const snapshotStockAyer = await db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('registros')
+                            .where('fecha', '==', fechaAyerString)
+                            .where('tipo', '==', 'Stock Final')
+                            .limit(1)
+                            .get();
+                        
+                        const snapshotIngresoHoy = await db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('registros')
+                            .where('fecha', '==', fechaString)
+                            .where('tipo', '==', 'Ingreso de Mercadería')
+                            .limit(1)
+                            .get();
+                        
+                        if (!snapshotStockAyer.empty) {
+                            const stockAyer = snapshotStockAyer.docs[0].data().datos || {};
+                            const ingresoHoy = snapshotIngresoHoy.empty ? {} : snapshotIngresoHoy.docs[0].data().datos || {};
+                            
+                            Object.keys(stockAyer).forEach(nombre => {
+                                stockActual[nombre] = (stockAyer[nombre] || 0) + (ingresoHoy[nombre] || 0);
+                            });
+                            Object.keys(ingresoHoy).forEach(nombre => {
+                                if (!stockActual[nombre]) stockActual[nombre] = ingresoHoy[nombre] || 0;
+                            });
+                        }
+                    }
+                    
+                    // Obtener lotes activos
+                    const snapshotLotes = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('vencimientos')
+                        .where('activo', '==', true)
+                        .get();
+                    
+                    const lotesActivos = {};
+                    snapshotLotes.forEach(doc => {
+                        const lote = doc.data();
+                        const codigo = (lote.codigo || '').toLowerCase();
+                        if (!lotesActivos[codigo]) lotesActivos[codigo] = 0;
+                        lotesActivos[codigo] += (lote.cantidad || 0);
+                    });
+                    
+                    // Verificar coincidencia para productos bajo control de vencimientos
+                    const codigosVencimientos = ['jq', 'pb', 'cs', 'po', 'cp', 'hu', 'es', 'cq', 'rj', 'qc', 'cb', 'ch'];
+                    let coinciden = true;
+                    
+                    codigosVencimientos.forEach(codigo => {
+                        const stockProducto = stockActual[Object.keys(stockActual).find(n => {
+                            const codigoProducto = n.split(' - ')[0].toLowerCase();
+                            return codigoProducto === codigo;
+                        })] || 0;
+                        const lotesProducto = lotesActivos[codigo] || 0;
+                        
+                        if (stockProducto !== lotesProducto) {
+                            coinciden = false;
+                        }
+                    });
+                    
+                    setTieneVencimientosCoincidentes(coinciden);
+                    
+                } catch (error) {
+                    console.error('❌ Error verificando vencimientos coincidentes:', error);
+                    setTieneVencimientosCoincidentes(false);
                 }
             };
 
@@ -3632,7 +4441,35 @@
                             setDatosIngreso({});
                             setNoRecibioMercaderia(false); // Resetear switch si no hay datos
                         } else if (tipo === 'Stock Final') {
-                            setDatosStock({});
+                            // 🔥 CALCULAR STOCK AUTOMÁTICAMENTE - EXACTO como Android MainActivity.kt líneas 2016-2053
+                            console.log('📊 No hay Stock Final para hoy, calculando automáticamente...');
+                            const stockCalculado = await calcularStockActualDesdeFirebase();
+                            if (Object.keys(stockCalculado).length > 0) {
+                                console.log('✅ Stock calculado automáticamente:', stockCalculado);
+                                // Convertir stock calculado (por código) a datosStock (por nombre)
+                                const datosStockCalculados = {};
+                                const todosProductos = [
+                                    'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
+                                    'CP - Carne Picante', 'HU - Humita', 'ES - Espinaca', 'CQ - Calabaza y Queso',
+                                    'RJ - Roquefort y Jamón', 'QC - Queso y Cebolla', 'CB - Cerdo y Barbacoa', 'CH - Cheeseburger',
+                                    'MUZZARE - Muzzarella', 'JAMON - Jamón', 'PEPPERO - Pepperoni',
+                                    'BATATA - Batata', 'MEMBRIL - Membrillo',
+                                    'MEDIALUNA_MANTECA - Medialunas de Manteca', 'MEDIALUNA_GRASA - Medialunas de Grasa', 'CHIPA - Chipa', 'CRIOLLITO - Criollitos'
+                                ];
+                                
+                                todosProductos.forEach(producto => {
+                                    const [codigo, nombre] = producto.split(' - ');
+                                    const codigoNormalizado = normalizarCodigoProducto(codigo);
+                                    if (stockCalculado[codigoNormalizado] !== undefined) {
+                                        datosStockCalculados[nombre] = stockCalculado[codigoNormalizado];
+                                    }
+                                });
+                                
+                                setDatosStock(datosStockCalculados);
+                                console.log('✅ Datos de stock calculados y cargados:', datosStockCalculados);
+                            } else {
+                                setDatosStock({});
+                            }
                         }
                         return false; // No hay datos
                     }
@@ -3839,7 +4676,294 @@
                 }
             }
 
-            // Función para guardar datos - EXACTO como CargaActivity.kt líneas 487-520
+            // Función para verificar si debe procesar descuentos - EXACTO como Android CargaActivity.kt líneas 1143-1191
+            const verificarSiDebeProcesarDescuentos = async (fecha, nuevosProductos, db) => {
+                try {
+                    // 🔥 FIX: NO procesar descuentos si la fecha es anterior a hoy
+                    const fechaHoy = formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
+                    if (fecha < fechaHoy) {
+                        console.log(`⏭️ Stock Final para ${fecha}: FECHA ANTERIOR (${fecha} < ${fechaHoy}) - NO procesará descuentos`);
+                        return { debeProcesar: false, esPrimeraVez: false };
+                    }
+                    
+                    // Buscar Stock Final existente
+                    const snapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fecha)
+                        .where('tipo', '==', 'Stock Final')
+                        .limit(1)
+                        .get();
+                    
+                    if (snapshot.empty) {
+                        // No existe, es primera vez
+                        console.log(`🔍 Stock Final para ${fecha}: NO EXISTE (primera vez)`);
+                        return { debeProcesar: true, esPrimeraVez: true };
+                    } else {
+                        // Existe, comparar datos
+                        const docExistente = snapshot.docs[0];
+                        const productosExistentes = docExistente.data().productos || [];
+                        const datosSonDiferentes = compararDatosStockFinal(productosExistentes, nuevosProductos);
+                        
+                        if (datosSonDiferentes) {
+                            console.log(`🔍 Stock Final para ${fecha}: EXISTE pero DATOS CAMBIARON (modificación)`);
+                            return { debeProcesar: true, esPrimeraVez: false };
+                        } else {
+                            console.log(`🔍 Stock Final para ${fecha}: EXISTE con MISMOS DATOS (recarga)`);
+                            return { debeProcesar: false, esPrimeraVez: false };
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error verificando Stock Final:', error);
+                    // Si hay error, verificar si es fecha pasada antes de asumir que debe procesar
+                    try {
+                        const fechaHoy = formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
+                        if (fecha < fechaHoy) {
+                            console.log(`⏭️ Error pero fecha es anterior - NO procesará descuentos`);
+                            return { debeProcesar: false, esPrimeraVez: false };
+                        }
+                    } catch (e2) {
+                        // Si no se puede verificar fecha, asumir que debe procesar (por seguridad)
+                    }
+                    return { debeProcesar: true, esPrimeraVez: true };
+                }
+            };
+            
+            // Función para comparar datos de Stock Final - EXACTO como Android CargaActivity.kt líneas 1197-1239
+            const compararDatosStockFinal = (productosExistentes, productosNuevos) => {
+                // Si tienen diferente cantidad de productos, son diferentes
+                if (productosExistentes.length !== productosNuevos.length) {
+                    console.log(`📊 Diferente cantidad de productos: ${productosExistentes.length} vs ${productosNuevos.length}`);
+                    return true;
+                }
+                
+                // Crear mapas por nombre para comparar
+                const mapaExistente = {};
+                productosExistentes.forEach(p => {
+                    mapaExistente[p.nombre] = p;
+                });
+                
+                const mapaNuevo = {};
+                productosNuevos.forEach(p => {
+                    mapaNuevo[p.nombre] = p;
+                });
+                
+                // Verificar si todos los productos coinciden
+                for (const nombre in mapaNuevo) {
+                    const productoNuevo = mapaNuevo[nombre];
+                    const productoExistente = mapaExistente[nombre];
+                    
+                    if (!productoExistente) {
+                        // Producto nuevo que no estaba antes
+                        console.log(`📊 Producto nuevo encontrado: ${nombre}`);
+                        return true;
+                    }
+                    
+                    if (productoExistente.cantidad !== productoNuevo.cantidad) {
+                        // Cantidad diferente
+                        console.log(`📊 Cantidad diferente para ${nombre}: ${productoExistente.cantidad} vs ${productoNuevo.cantidad}`);
+                        return true;
+                    }
+                }
+                
+                // Verificar si hay productos que se eliminaron
+                for (const nombre in mapaExistente) {
+                    if (!mapaNuevo[nombre]) {
+                        console.log(`📊 Producto eliminado: ${nombre}`);
+                        return true;
+                    }
+                }
+                
+                // Todos los datos son iguales
+                console.log(`✅ Todos los datos son iguales`);
+                return false;
+            };
+            
+            // Función para calcular ventas por producto - EXACTO como Android CargaActivity.kt líneas 1358-1404
+            const calcularVentasPorProducto = async (fecha, stockFinalProductos, db) => {
+                try {
+                    const fechaAnterior = obtenerFechaAnterior(fecha);
+                    
+                    // Stock Final de ayer
+                    const snapshotStockAyer = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fechaAnterior)
+                        .where('tipo', '==', 'Stock Final')
+                        .limit(1)
+                        .get();
+                    
+                    const stockAnterior = snapshotStockAyer.empty ? [] : (snapshotStockAyer.docs[0].data().productos || []);
+                    
+                    // Ingreso de hoy
+                    const snapshotIngresoHoy = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .where('fecha', '==', fecha)
+                        .where('tipo', '==', 'Ingreso de Mercadería')
+                        .limit(1)
+                        .get();
+                    
+                    const ingresoHoy = snapshotIngresoHoy.empty ? [] : (snapshotIngresoHoy.docs[0].data().productos || []);
+                    
+                    const ventasMap = {};
+                    
+                    // Calcular venta para cada producto
+                    stockFinalProductos.forEach(productoFinal => {
+                        const codigo = productoFinal.nombre.split(' - ')[0] || productoFinal.nombre;
+                        const codigoNormalizado = normalizarCodigoProducto(codigo);
+                        
+                        const stockAnt = stockAnterior.find(p => p.nombre === productoFinal.nombre)?.cantidad || 0;
+                        const ingreso = ingresoHoy.find(p => p.nombre === productoFinal.nombre)?.cantidad || 0;
+                        const stockFin = productoFinal.cantidad;
+                        
+                        const venta = stockAnt + ingreso - stockFin;
+                        
+                        if (venta > 0) {
+                            ventasMap[codigoNormalizado] = venta;
+                            console.log(`   ${codigoNormalizado} (original: ${codigo}): ${stockAnt} + ${ingreso} - ${stockFin} = ${venta} vendido`);
+                        }
+                    });
+                    
+                    return ventasMap;
+                } catch (error) {
+                    console.error('❌ Error calculando ventas:', error);
+                    return {};
+                }
+            };
+            
+            // Función para obtener fecha anterior
+            const obtenerFechaAnterior = (fecha) => {
+                try {
+                    const fechaObj = new Date(fecha + 'T00:00:00');
+                    fechaObj.setDate(fechaObj.getDate() - 1);
+                    const año = fechaObj.getFullYear();
+                    const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                    const dia = String(fechaObj.getDate()).padStart(2, '0');
+                    return `${año}-${mes}-${dia}`;
+                } catch (e) {
+                    return fecha;
+                }
+            };
+            
+            // Función para procesar descuentos FIFO - EXACTO como Android VencimientoManager.kt líneas 22-118
+            const procesarDescuentosFIFO = async (localId, fecha, ventasPorProducto, db) => {
+                try {
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('🔥 INICIANDO DESCUENTO FIFO');
+                    console.log('📅 Fecha:', fecha);
+                    console.log('🏪 Local:', localId);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    
+                    for (const [productoCodigo, cantidadVendida] of Object.entries(ventasPorProducto)) {
+                        if (cantidadVendida <= 0) {
+                            console.log(`⏭️ Saltando ${productoCodigo} (sin venta)`);
+                            continue;
+                        }
+                        
+                        console.log(`\n🔍 Procesando: ${productoCodigo}`);
+                        console.log(`   Vendido: ${cantidadVendida} uds`);
+                        
+                        await descontarVencimientosFIFO(localId, productoCodigo, cantidadVendida, fecha, db);
+                    }
+                    
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('✅ DESCUENTO FIFO COMPLETADO');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                } catch (error) {
+                    console.error('❌ Error procesando descuentos FIFO:', error);
+                }
+            };
+            
+            // Función para descontar vencimientos FIFO - EXACTO como Android VencimientoManager.kt líneas 53-118
+            const descontarVencimientosFIFO = async (localId, productoCodigo, cantidadVendida, fecha, db) => {
+                try {
+                    // 1. Obtener lotes ordenados por fecha de vencimiento (más viejo primero)
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_activos')
+                        .where('codigo', '==', productoCodigo.toLowerCase())
+                        .where('activo', '==', true)
+                        .get();
+                    
+                    const lotes = [];
+                    lotesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        lotes.push({
+                            id: doc.id,
+                            cantidad: data.cantidad || 0,
+                            fechaVencimiento: data.fechaVencimiento || '',
+                            productoNombre: data.nombre || ''
+                        });
+                    });
+                    
+                    // Ordenar por fecha de vencimiento (más viejo primero)
+                    lotes.sort((a, b) => {
+                        if (!a.fechaVencimiento) return 1;
+                        if (!b.fechaVencimiento) return -1;
+                        return a.fechaVencimiento.localeCompare(b.fechaVencimiento);
+                    });
+                    
+                    if (lotes.length === 0) {
+                        console.warn(`⚠️ No hay lotes activos para ${productoCodigo}`);
+                        return;
+                    }
+                    
+                    console.log(`   📦 Lotes disponibles: ${lotes.length}`);
+                    lotes.forEach((lote, index) => {
+                        console.log(`      ${index + 1}. ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
+                    });
+                    
+                    let pendienteDescontar = cantidadVendida;
+                    
+                    // 2. Descontar de cada lote (empezando por el más viejo)
+                    for (const lote of lotes) {
+                        if (pendienteDescontar <= 0) break;
+                        
+                        const descontar = Math.min(lote.cantidad, pendienteDescontar);
+                        const cantidadRestante = lote.cantidad - descontar;
+                        
+                        console.log(`   🔄 Descontando de lote:`);
+                        console.log(`      Vencimiento: ${lote.fechaVencimiento}`);
+                        console.log(`      Había: ${lote.cantidad} uds`);
+                        console.log(`      Descontar: ${descontar} uds`);
+                        console.log(`      Quedan: ${cantidadRestante} uds`);
+                        
+                        // Actualizar o eliminar el lote
+                        if (cantidadRestante <= 0) {
+                            // Lote agotado, eliminarlo
+                            await db.collection('locales')
+                                .doc(localId)
+                                .collection('vencimientos_activos')
+                                .doc(lote.id)
+                                .delete();
+                            console.log(`      🗑️ Lote eliminado (agotado)`);
+                        } else {
+                            // Actualizar cantidad
+                            await db.collection('locales')
+                                .doc(localId)
+                                .collection('vencimientos_activos')
+                                .doc(lote.id)
+                                .update({
+                                    cantidad: cantidadRestante
+                                });
+                            console.log(`      ✅ Lote actualizado`);
+                        }
+                        
+                        pendienteDescontar -= descontar;
+                    }
+                    
+                    // 3. Verificar si quedó pendiente por descontar
+                    if (pendienteDescontar > 0) {
+                        console.warn(`⚠️ ADVERTENCIA: Quedan ${pendienteDescontar} uds sin descontar de vencimientos`);
+                        console.warn(`   Posible causa: Venta registrada mayor a lotes disponibles`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error descontando vencimientos FIFO para ${productoCodigo}:`, error);
+                }
+            };
+            
+            // Función para guardar datos - EXACTO como CargaActivity.kt líneas 659-822
             const guardarDatos = async () => {
                 try {
                     console.log('💾 Guardando datos...');
@@ -3875,6 +4999,31 @@
                         });
                     });
                     
+                    // Guardar en Firebase con ID descriptivo usando la región actual
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        alert('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
+                        return;
+                    }
+                    
+                    // 🔥 Si es Stock Final, verificar ANTES de guardar si ya existe y si los datos cambiaron
+                    // para procesar descuentos SOLO si es PRIMERA VEZ (NO si es modificación)
+                    let resultadoVerificacion = null;
+                    if (tipo === 'Stock Final') {
+                        resultadoVerificacion = await verificarSiDebeProcesarDescuentos(fechaString, productos, db);
+                        if (resultadoVerificacion.debeProcesar) {
+                            if (resultadoVerificacion.esPrimeraVez) {
+                                console.log('📝 Primera vez guardando Stock Final para ' + fechaString + ' - Procesará descuentos FIFO');
+                            } else {
+                                console.log('📝 Stock Final modificado para ' + fechaString + ' - NO procesará descuentos (ya se aplicaron la primera vez)');
+                            }
+                        } else {
+                            console.log('⏭️ Stock Final ya existía para ' + fechaString + ' con los mismos datos - NO procesará descuentos (recarga)');
+                        }
+                    }
+                    
                     // Crear documento para Firebase - MISMO FORMATO QUE APK
                     const documento = {
                         fecha: fechaString,
@@ -3896,14 +5045,7 @@
                     const idDocumento = `${fechaString}_${tipo.replace(/\s+/g, '_')}`;
                     console.log('🆔 ID del documento:', idDocumento);
                     
-                    // Guardar en Firebase con ID descriptivo usando la región actual
-                    let db;
-                    try {
-                        db = FirebaseRegionManager.getFirestore();
-                    } catch (e) {
-                        alert('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
-                        return;
-                    }
+                    // Guardar en Firebase
                     await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
@@ -3912,12 +5054,38 @@
                     
                     console.log('✅ Datos guardados exitosamente');
                     
-                    // 🔥 Guardar historial de vencimientos (igual que app Android)
-                    if (tipo === 'Ingreso de Mercadería') {
-                        // Guardar estado inicial de lotes al inicio del día
+                    // 🚀 OPTIMIZACIÓN: Si es Stock Final, actualizar promedio general acumulado
+                    // (Nota: La actualización de promedios se puede hacer en background, no bloquea)
+                    if (tipo === 'Stock Final') {
+                        // TODO: Implementar actualizarPromedioGeneral cuando sea necesario
+                        console.log('📊 Promedio general: Se actualizará en background');
+                    }
+                    
+                    // 🔥 Si es Stock Final y es la PRIMERA VEZ, procesar descuentos FIFO de vencimientos
+                    // ⚠️ NO procesar descuentos si es MODIFICACIÓN (ya se procesaron la primera vez)
+                    if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar && resultadoVerificacion.esPrimeraVez) {
+                        // Solo procesar descuentos si es PRIMERA VEZ
+                        console.log('✅ Primera vez guardando Stock Final - Procesará descuentos FIFO');
+                        
+                        // Guardar estado inicial ANTES de procesar descuentos
+                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                        
+                        // Calcular ventas por producto
+                        const ventasPorProducto = await calcularVentasPorProducto(fechaString, productos, db);
+                        
+                        // Procesar descuentos FIFO
+                        await procesarDescuentosFIFO(usuario.localId, fechaString, ventasPorProducto, db);
+                        
+                        // Validar consistencia después del descuento
+                        await validarConsistenciaLotes(usuario.localId, fechaString, productos, db);
+                        
+                        // Guardar estado final DESPUÉS de procesar descuentos
+                        await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
+                    } else if (tipo === 'Ingreso de Mercadería') {
+                        // Guardar estado inicial cuando se carga el ingreso (inicio del día)
                         await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
                     } else if (tipo === 'Stock Final') {
-                        // Guardar estado final de lotes después del stock final
+                        // Si es modificación o recarga, solo guardar estado final
                         await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
                     }
                     
@@ -3936,6 +5104,65 @@
                 } catch (error) {
                     console.error('❌ Error guardando datos:', error);
                     alert(`❌ Error guardando datos: ${error.message}`);
+                }
+            };
+            
+            // Función para validar consistencia de lotes después del descuento - EXACTO como Android CargaActivity.kt líneas 1298-1323
+            const validarConsistenciaLotes = async (localId, fecha, stockFinalProductos, db) => {
+                try {
+                    // Preparar mapa de stock final normalizado
+                    const stockFinalPorProducto = {};
+                    stockFinalProductos.forEach(producto => {
+                        const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
+                        const codigoNormalizado = normalizarCodigoProducto(codigo);
+                        stockFinalPorProducto[codigoNormalizado] = producto.cantidad;
+                    });
+                    
+                    // Validar cada producto
+                    for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                        const lotesSnapshot = await db.collection('locales')
+                            .doc(localId)
+                            .collection('vencimientos_activos')
+                            .where('codigo', '==', productoCodigo.toLowerCase())
+                            .where('activo', '==', true)
+                            .get();
+                        
+                        const lotes = [];
+                        lotesSnapshot.forEach(doc => {
+                            const data = doc.data();
+                            lotes.push({
+                                id: doc.id,
+                                cantidad: data.cantidad || 0
+                            });
+                        });
+                        
+                        const sumaLotes = lotes.reduce((sum, lote) => sum + lote.cantidad, 0);
+                        
+                        // Caso especial: stock final = 0 → eliminar todos los lotes
+                        if (stockFinal === 0 && lotes.length > 0) {
+                            console.log(`🗑️ Stock Final = 0 para ${productoCodigo} → Eliminando TODOS los lotes`);
+                            for (const lote of lotes) {
+                                await db.collection('locales')
+                                    .doc(localId)
+                                    .collection('vencimientos_activos')
+                                    .doc(lote.id)
+                                    .delete();
+                            }
+                        }
+                        // Validar consistencia (solo loguear, no ajustar automáticamente)
+                        else if (sumaLotes !== stockFinal) {
+                            const diferencia = stockFinal - sumaLotes;
+                            console.warn(`⚠️ INCONSISTENCIA en ${productoCodigo} después del descuento:`);
+                            console.warn(`   Stock Final: ${stockFinal}`);
+                            console.warn(`   Suma Lotes: ${sumaLotes}`);
+                            console.warn(`   Diferencia: ${diferencia}`);
+                            console.warn(`   (No se ajusta automáticamente - revisar datos manualmente)`);
+                        } else {
+                            console.log(`✅ ${productoCodigo}: Lotes coinciden con stock final (${stockFinal})`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error validando consistencia de lotes:', error);
                 }
             };
 
@@ -4267,16 +5494,10 @@
                         {/* Botón guardar */}
                                     <button
                             onClick={mostrarPrevisualizacion}
-                            className="w-full text-black font-bold text-base py-3 rounded-lg"
-                            style={{
-                                backgroundColor: '#FFD700',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #B8860B'
-                            }}
+                            className="w-full text-black font-bold text-base btn-primary fade-in"
                         >
                             👁️ Previsualizar y Guardar
-                                    </button>
+                        </button>
                                 </div>
                 );
             }
@@ -4639,16 +5860,10 @@
                         {/* Botón guardar */}
                                     <button
                             onClick={mostrarPrevisualizacion}
-                            className="w-full text-black font-bold text-base py-3 rounded-lg"
-                            style={{
-                                backgroundColor: '#FFD700',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #B8860B'
-                            }}
+                            className="w-full text-black font-bold text-base btn-primary fade-in"
                         >
                             👁️ Previsualizar y Guardar
-                                    </button>
+                        </button>
                                 </div>
                 );
             }
@@ -4689,11 +5904,13 @@
 
                     {/* Header del Local */}
                     <div 
-                        className="w-full mb-5 text-center text-lg font-bold text-white"
+                        className="w-full mb-5 text-center text-lg font-bold"
                         style={{
-                            backgroundColor: '#FFD700',
+                            backgroundColor: 'var(--brand-gold)',
+                            color: 'var(--brand-black)',
                             padding: '16px',
-                            borderRadius: '12px'
+                            borderRadius: '12px',
+                            border: '1px solid var(--brand-gold-dark)'
                         }}
                     >
                         🏪 {usuario.localNombre}
@@ -4701,15 +5918,17 @@
 
                     {/* Selector de Fecha */}
                     <div 
-                        className="w-full mb-8 flex items-center justify-between"
-                        style={{
-                            backgroundColor: '#F5F5F5',
-                            padding: '16px',
-                            borderRadius: '12px'
-                        }}
+                        className="w-full mb-8 flex items-center justify-between card-date-selector fade-in"
                     >
                         <button 
-                            className="text-2xl font-bold text-black px-3 py-3"
+                            className="text-2xl font-bold px-3 py-3 rounded-lg transition-colors fade-in"
+                            style={{
+                                backgroundColor: '#1976D2', // Azul oscuro (holo_blue_dark) - igual que Android
+                                color: '#FFFFFF',
+                                border: 'none',
+                                minWidth: '48px',
+                                minHeight: '48px'
+                            }}
                             onClick={() => {
                                 const nuevaFecha = new Date(fechaSeleccionada);
                                 nuevaFecha.setDate(nuevaFecha.getDate() - 1);
@@ -4732,7 +5951,14 @@
                                         </div>
                         
                         <button 
-                            className="text-2xl font-bold text-black px-3 py-3"
+                            className="text-2xl font-bold px-3 py-3 rounded-lg transition-colors fade-in"
+                            style={{
+                                backgroundColor: '#1976D2', // Azul oscuro (holo_blue_dark) - igual que Android
+                                color: '#FFFFFF',
+                                border: 'none',
+                                minWidth: '48px',
+                                minHeight: '48px'
+                            }}
                             onClick={() => {
                                 const nuevaFecha = new Date(fechaSeleccionada);
                                 nuevaFecha.setDate(nuevaFecha.getDate() + 1);
@@ -4747,79 +5973,154 @@
                                             </svg>
                                     </div>
 
-                    {/* Botones */}
-                    <div className="space-y-5">
-                        <button
-                            onClick={() => navegarA('Ingreso de Mercadería')}
-                            className="w-full font-bold text-base"
-                            style={{
-                                backgroundColor: tieneIngreso ? '#4CAF50' : (esFechaActual(fechaSeleccionada) ? '#FFD700' : '#FF9800'),
-                                color: tieneIngreso ? '#FFFFFF' : (esFechaActual(fechaSeleccionada) ? '#000000' : '#FFFFFF'),
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: tieneIngreso ? '1px solid #388E3C' : (esFechaActual(fechaSeleccionada) ? '1px solid #B8860B' : '1px solid #F57C00')
-                            }}
-                        >
-                            {tieneIngreso ? '✅ Ingreso de Mercadería' : 'Ingreso de Mercadería'}
-                        </button>
-
-                                    <button
-                                        onClick={() => navegarA('Stock Final')}
-                            className="w-full font-bold text-base"
-                            style={{
-                                backgroundColor: tieneStock ? '#4CAF50' : (esFechaActual(fechaSeleccionada) ? '#FFD700' : '#FF9800'),
-                                color: tieneStock ? '#FFFFFF' : (esFechaActual(fechaSeleccionada) ? '#000000' : '#FFFFFF'),
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: tieneStock ? '1px solid #388E3C' : (esFechaActual(fechaSeleccionada) ? '1px solid #B8860B' : '1px solid #F57C00')
-                            }}
-                        >
-                            {tieneStock ? '✅ Stock Final' : 'Stock Final'}
-                        </button>
-
-                        {/* Separador visual entre botones principales y extras */}
-                        <div style={{
-                            height: '3px',
-                            backgroundColor: '#FFD700',
-                            margin: '20px 0',
-                            borderRadius: '2px',
-                            position: 'relative',
+                    {/* Botones - Grid 2x3 como Android */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '16px',
+                        marginBottom: '24px'
+                    }}>
+                        {/* Ingreso Mercadería */}
+                        <div className="card" style={{
+                            padding: '16px',
                             display: 'flex',
+                            flexDirection: 'column',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                         }}>
-                            <span style={{
-                                backgroundColor: '#fff',
-                                padding: '0 12px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                color: '#000000',
-                                position: 'absolute'
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
                             }}>
-                                Extras
-                            </span>
+                                ➕
+                            </div>
+                            <button
+                                onClick={() => navegarA('Ingreso de Mercadería')}
+                                className={`w-full font-bold fade-in ${tieneIngreso ? 'btn-completed' : 'btn-primary'}`}
+                                style={{
+                                    height: '72px',
+                                    fontSize: '12px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    padding: '8px'
+                                }}
+                            >
+                                {tieneIngreso ? '✅ Ingreso\nMercadería' : 'Ingreso\nMercadería'}
+                            </button>
                         </div>
 
-                        <button
-                            onClick={() => {
-                                if (window.openVencLocal) {
-                                    window.openVencLocal();
-                                } else {
-                                    alert('Función de vencimientos no disponible');
-                                }
-                            }}
-                            className="w-full font-bold text-base"
-                            style={{
-                                backgroundColor: '#2563eb',
-                                color: '#FFFFFF',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #1e40af'
-                            }}
-                        >
-                            📅 Vencimientos
-                        </button>
+                        {/* Stock Final */}
+                        <div className="card" style={{
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
+                            }}>
+                                📊
+                            </div>
+                            <button
+                                onClick={() => navegarA('Stock Final')}
+                                className={`w-full font-bold fade-in ${tieneStock ? 'btn-completed' : 'btn-primary'}`}
+                                style={{
+                                    height: '72px',
+                                    fontSize: '12px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    padding: '8px'
+                                }}
+                            >
+                                {tieneStock ? '✅ Stock\nFinal' : 'Stock\nFinal'}
+                            </button>
+                        </div>
 
+                        {/* Vencimientos */}
+                        <div className="card" style={{
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
+                            }}>
+                                📅
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (window.openVencLocal) {
+                                        window.openVencLocal();
+                                    } else {
+                                        alert('Función de vencimientos no disponible');
+                                    }
+                                }}
+                                className={`w-full font-bold fade-in ${tieneVencimientosCoincidentes ? 'btn-completed' : 'btn-primary'}`}
+                                style={{
+                                    height: '72px',
+                                    fontSize: '12px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    padding: '8px'
+                                }}
+                            >
+                                {tieneVencimientosCoincidentes ? '✅ Vencimientos' : 'Vencimientos'}
+                            </button>
+                        </div>
+
+                        {/* Promedio Ventas */}
+                        <div className="card" style={{
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
+                            }}>
+                                📈
+                            </div>
+                            <button
+                                onClick={() => navegarA('Promedio de Ventas')}
+                                className="w-full font-bold btn-primary fade-in"
+                                style={{
+                                    height: '72px',
+                                    fontSize: '12px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    padding: '8px'
+                                }}
+                            >
+                                Promedio\nVentas
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Botones adicionales fuera del grid */}
+                    <div className="space-y-3">
                         <button
                             onClick={() => {
                                 if (window.openPedidoFabrica) {
@@ -4834,8 +6135,7 @@
                                 color: '#FFFFFF',
                                 height: '56px',
                                 borderRadius: '12px',
-                                border: '1px solid #047857',
-                                marginBottom: '10px'
+                                border: '1px solid #047857'
                             }}
                         >
                             🏭 Pedido a Fábrica
@@ -4855,26 +6155,12 @@
                                 color: '#FFFFFF',
                                 height: '56px',
                                 borderRadius: '12px',
-                                border: '1px solid #B45309',
-                                marginBottom: '10px'
+                                border: '1px solid #B45309'
                             }}
                         >
                             🥖 Pedido a Panificadora
                         </button>
-
-                        <button
-                            onClick={() => navegarA('Promedio de Ventas')}
-                            className="w-full text-black font-bold text-base"
-                            style={{
-                                backgroundColor: '#FFD700',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #B8860B'
-                            }}
-                        >
-                            Promedio de Ventas
-                                    </button>
-                                </div>
+                    </div>
 
                     {/* Enlace de descarga de la app Android */}
                     <div className="mt-6 text-center">
@@ -7050,7 +8336,8 @@
         let hayProductosConLotes = false;
         Object.keys(categorias).forEach(categoria => {
           const codigosCategoria = categorias[categoria];
-          const lotesCategoria = lotes.filter(l => codigosCategoria.includes(l.codigo));
+          const codigosCategoriaNormalizados = codigosCategoria.map(c => normalizar(c));
+          const lotesCategoria = lotes.filter(l => codigosCategoriaNormalizados.includes(l.codigo));
           if (lotesCategoria.length > 0) {
             hayProductosConLotes = true;
           }
@@ -7127,7 +8414,8 @@
         // TERCERO: Mostrar productos con lotes
         Object.keys(categorias).forEach(categoria => {
           const codigosCategoria = categorias[categoria];
-          const lotesCategoria = lotes.filter(l => codigosCategoria.includes(l.codigo));
+          const codigosCategoriaNormalizados = codigosCategoria.map(c => normalizar(c));
+          const lotesCategoria = lotes.filter(l => codigosCategoriaNormalizados.includes(l.codigo));
           if (lotesCategoria.length > 0) {
             const catDiv = document.createElement('div');
             catDiv.style.cssText = 'margin:16px 0';

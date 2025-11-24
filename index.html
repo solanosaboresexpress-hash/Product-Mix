@@ -1071,8 +1071,7 @@
                 setCargandoLocales(false);
                 setError('');
                 // NO limpiar locales ni regionSeleccionada aquí, esperar a cargarRegiones()
-                setLocalSeleccionado('');
-                setPassword('');
+                // NO limpiar localSeleccionado ni password aquí - se cargarán desde localStorage si existen
                 setRegionCargada(false);
                 cargarRegiones();
             }, []);
@@ -1089,7 +1088,7 @@
                     // Delay largo para asegurar que Firebase esté completamente inicializado y el cliente anterior esté cerrado
                     const timer = setTimeout(() => {
                         cargarLocales();
-                        cargarDatosGuardados();
+                        // NO llamar cargarDatosGuardados aquí - se llamará DESPUÉS de cargar locales (igual que Android)
                     }, 1000); // 1 segundo de delay para dar tiempo a que Firebase se inicialice completamente
                     return () => clearTimeout(timer);
                 } else {
@@ -1100,6 +1099,15 @@
                     setCargandoLocales(false);
                 }
             }, [regionSeleccionada, regionCargada]);
+            
+            // EXACTO como Android: Cargar datos guardados cuando los locales ya están cargados
+            // Esto asegura que al volver al login, se restauren los datos guardados
+            useEffect(() => {
+                if (locales.length > 0 && !cargandoLocales) {
+                    console.log('📋 Locales cargados, intentando cargar datos guardados...');
+                    cargarDatosGuardados(locales);
+                }
+            }, [locales.length, cargandoLocales]);
 
             const cargarRegiones = async () => {
                 try {
@@ -1147,10 +1155,28 @@
                     
                     setNombresMaestros(nombres);
 
-                    // Cargar región guardada o usar Región 1 por defecto
-                    const regionGuardada = await FirebaseRegionManager.cargarRegionActual();
-                    // Buscar región 1 por ID o usar la primera disponible
-                    const region1 = regionesDisponibles.find(r => r.id === 'region_1' || r.id === 'region_1' || r.nombre === 'Región 1');
+                    // Cargar región guardada - EXACTO como Android LoginActivity.kt líneas 88-94
+                    // Prioridad: 1) firebase_region_prefs, 2) region_id, 3) usuario_actual.regionId
+                    let regionGuardada = await FirebaseRegionManager.cargarRegionActual();
+                    
+                    // Si no hay región guardada, intentar obtenerla del usuario_actual (si viene de GestionLocales)
+                    if (!regionGuardada) {
+                        const usuarioActualData = localStorage.getItem('usuario_actual');
+                        if (usuarioActualData) {
+                            try {
+                                const usuarioActual = JSON.parse(usuarioActualData);
+                                if (usuarioActual.regionId) {
+                                    console.log('📍 Usando región del usuario_actual:', usuarioActual.regionId);
+                                    regionGuardada = regionesDisponibles.find(r => r.id === usuarioActual.regionId);
+                                }
+                            } catch (e) {
+                                console.warn('Error parseando usuario_actual:', e);
+                            }
+                        }
+                    }
+                    
+                    // Buscar región 1 por ID o usar la primera disponible como fallback
+                    const region1 = regionesDisponibles.find(r => r.id === 'region_1' || r.nombre === 'Región 1');
                     const regionInicial = regionGuardada || region1 || regionesDisponibles[0];
                     
                     if (regionInicial) {
@@ -1224,19 +1250,38 @@
                 }
             };
 
-            const cargarDatosGuardados = () => {
+            const cargarDatosGuardados = (localesLista = null) => {
                 try {
                     const datosGuardados = localStorage.getItem('loginData');
+                    console.log('🔍 cargarDatosGuardados - datosGuardados en localStorage:', datosGuardados ? 'EXISTE' : 'NO EXISTE');
                     if (datosGuardados) {
-                        const { localId, password: savedPassword, recordar } = JSON.parse(datosGuardados);
-                        if (recordar) {
-                            setLocalSeleccionado(localId);
-                            setPassword(savedPassword);
-                            setRecordarDatos(true);
+                        const parsed = JSON.parse(datosGuardados);
+                        console.log('🔍 Datos parseados:', { localId: parsed.localId, recordar: parsed.recordar, tienePassword: !!parsed.password });
+                        const { localId, password: savedPassword, recordar } = parsed;
+                        if (recordar && localId) {
+                            // EXACTO como Android: Buscar el local en la lista de locales cargados (línea 792 LoginActivity.kt)
+                            // Usar la lista pasada como parámetro o el estado locales
+                            const listaParaBuscar = localesLista || locales;
+                            console.log('🔍 Buscando localId:', localId, 'en lista de', listaParaBuscar.length, 'locales');
+                            const localEncontrado = listaParaBuscar.find(l => l.id === localId);
+                            if (localEncontrado) {
+                                console.log('✅ Local guardado encontrado:', localEncontrado.nombre, '- Restaurando datos...');
+                                setLocalSeleccionado(localId);
+                                setPassword(savedPassword || '');
+                                setRecordarDatos(true);
+                                console.log('✅ Datos restaurados: localId =', localId, 'password =', savedPassword ? '***' : '(vacío)');
+                            } else {
+                                console.log('⚠️ Local guardado no encontrado en la lista de locales:', localId, 'Lista disponible:', listaParaBuscar.length, 'locales');
+                                console.log('⚠️ IDs disponibles:', listaParaBuscar.map(l => l.id).slice(0, 10));
+                            }
+                        } else {
+                            console.log('⚠️ Datos guardados no tienen recordar=true o localId:', { recordar, localId });
                         }
+                    } else {
+                        console.log('⚠️ No hay datos guardados en localStorage');
                     }
                 } catch (error) {
-                    console.error('Error cargando datos guardados:', error);
+                    console.error('❌ Error cargando datos guardados:', error);
                 }
             };
 
@@ -1356,6 +1401,10 @@
                     
                     console.log('Locales cargados para región', regionSeleccionada.nombre, ':', localesData.length, localesData);
                     setLocales(localesData);
+                    
+                    // EXACTO como Android: Cargar credenciales guardadas DESPUÉS de cargar locales (línea 522 LoginActivity.kt)
+                    // Pasar localesData directamente para evitar problemas de timing con el estado
+                    cargarDatosGuardados(localesData);
                 } catch (error) {
                     console.error('Error cargando locales:', error);
                     // Si el error es que el cliente fue terminado o timeout, no mostrar error al usuario si es durante reinicialización
@@ -1419,14 +1468,17 @@
                     
                     // Guardar datos de login si está marcado recordar
                     if (recordarDatos) {
-                        localStorage.setItem('loginData', JSON.stringify({
+                        const loginData = {
                             localId: localSeleccionado,
                             password: password,
                             recordar: true
-                        }));
+                        };
+                        localStorage.setItem('loginData', JSON.stringify(loginData));
+                        console.log('💾 Datos de login guardados:', { localId: loginData.localId, tienePassword: !!loginData.password, recordar: loginData.recordar });
                     } else {
                         // Limpiar datos guardados si no se quiere recordar
                         localStorage.removeItem('loginData');
+                        console.log('🗑️ Datos de login eliminados (recordarDatos = false)');
                     }
                     
                     onLoginSuccess(usuarioData);
@@ -1727,11 +1779,14 @@
                         }
                             
                             // Guardar datos del usuario maestro en localStorage
+                            // EXACTO como Android: incluir regionId para restaurar al volver
+                            const regionIdActual = localStorage.getItem('region_id');
                             localStorage.setItem('usuario_actual', JSON.stringify({
                                 metodoLogin: 'admin123',
                                 rol: 'maestro',
                                 usuarioId: 'maestro',
-                                usuario: 'maestro'
+                                usuario: 'maestro',
+                                regionId: regionIdActual // Guardar región para restaurar
                             }));
                         
                         document.body.removeChild(modal);
@@ -1769,12 +1824,15 @@
                             }
                             
                             // Guardar datos del supervisor en localStorage
+                            // EXACTO como Android: incluir regionId para restaurar al volver
+                            const regionIdSupervisor = localStorage.getItem('region_id');
                             localStorage.setItem('usuario_actual', JSON.stringify({
                                 metodoLogin: 'supervisor',
                                 rol: 'supervisor',
                                 usuarioId: supervisorDoc.id,
                                 usuario: supervisor.usuario,
-                                localesAsignados: supervisor.localesAsignados || []
+                                localesAsignados: supervisor.localesAsignados || [],
+                                regionId: regionIdSupervisor // Guardar región para restaurar
                             }));
                             
                             document.body.removeChild(modal);
@@ -7362,11 +7420,15 @@
             };
 
             const handleLogout = () => {
+                // EXACTO como Android: Solo limpiar usuario, NO limpiar región ni loginData
+                // La región y los datos de login (si se marcó "Recordar") se mantienen guardados
                 localStorage.removeItem('usuario');
-                localStorage.removeItem('loginData');
+                // NO limpiar 'loginData' - se mantiene si el usuario marcó "Recordar local y contraseña"
+                // NO limpiar 'region_id' ni 'firebase_region_prefs' - se mantiene como en Android
                 setUsuario(null);
                 setVistaActual('login');
                 window.location.hash = '';
+                console.log('🚪 Logout realizado - loginData y región se mantienen guardados');
             };
 
             if (loading) {
@@ -7399,7 +7461,9 @@
                 console.log('✅ Renderizando GestionLocales');
                 return <GestionLocales 
                     onVolver={() => {
-                        console.log('🔄 Volviendo al Login');
+                        // EXACTO como Android: Volver al login SIN limpiar región ni usuario_actual
+                        // El usuario_actual se mantiene para poder volver a Gestión de Locales
+                        console.log('🔄 Volviendo al Login (manteniendo región y usuario_actual)');
                         setVistaActual('login');
                         window.location.hash = '';
                     }} 
@@ -10617,7 +10681,8 @@
             activarAlerta: data.activarAlerta !== false
           };
         }
-        const diasDoc = await db.collection('locales').doc(localId).collection('configuracion_dias_entrega').doc('config').get();
+        // EXACTO como Android: cargar desde configuracion_dias_entrega_panificadora (línea 4860 PedidoPanificadoraActivity.kt)
+        const diasDoc = await db.collection('locales').doc(localId).collection('configuracion_dias_entrega_panificadora').doc('config').get();
         if (diasDoc.exists) {
           const data = diasDoc.data();
           diasEntrega = {
@@ -11384,16 +11449,332 @@
     navFecha.querySelector('#pp-fecha-prev').onclick = () => navegarFecha(-1);
     navFecha.querySelector('#pp-fecha-next').onclick = () => navegarFecha(1);
     
+    // EXACTO como Android: Usar función completa de configuración (línea 1662 PedidoPanificadoraActivity.kt)
     header.querySelector('#pp-config').onclick = () => {
-      const nuevoPorcentaje = prompt('Porcentaje Extra:', configuracion.porcentajeExtra);
-      if (nuevoPorcentaje !== null) {
-        const porcentaje = parseFloat(nuevoPorcentaje);
-        if (!isNaN(porcentaje) && porcentaje >= 0) {
-          configuracion.porcentajeExtra = porcentaje;
+      mostrarConfiguracionPedidoPanificadora();
+    };
+    
+    // Función para mostrar configuración completa (igual que Android)
+    function mostrarConfiguracionPedidoPanificadora() {
+      const overlayConfig = document.createElement('div');
+      overlayConfig.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000';
+      const modalConfig = document.createElement('div');
+      modalConfig.style.cssText = 'background:#fff;width:90%;max-width:500px;border-radius:8px;padding:24px;max-height:90vh;overflow-y:auto';
+      
+      // Título
+      const titulo = document.createElement('div');
+      titulo.style.cssText = 'font-size:18px;font-weight:700;color:#000;margin-bottom:24px;text-align:center';
+      titulo.textContent = '⚙️ Configuración';
+      modalConfig.appendChild(titulo);
+      
+      // Porcentaje Extra con SeekBar
+      // EXACTO como Android: Obtener el porcentaje actual de la UI (línea 1669 PedidoPanificadoraActivity.kt)
+      const porcentajeEl = document.getElementById('pp-porcentaje');
+      const porcentajeActual = porcentajeEl 
+        ? parseInt(porcentajeEl.textContent.replace('% Extra: ', '').replace('%', '') || '30')
+        : (configuracion.porcentajeExtra || 30);
+      
+      const porcentajeDiv = document.createElement('div');
+      porcentajeDiv.style.cssText = 'margin-bottom:24px';
+      
+      const txtPorcentaje = document.createElement('div');
+      txtPorcentaje.id = 'pp-config-porcentaje-text';
+      txtPorcentaje.style.cssText = 'font-size:16px;font-weight:600;color:#1976d2;padding:8px 16px;margin-bottom:8px';
+      txtPorcentaje.textContent = 'Porcentaje Extra: ' + porcentajeActual + '%';
+      porcentajeDiv.appendChild(txtPorcentaje);
+      
+      const seekBar = document.createElement('input');
+      seekBar.type = 'range';
+      seekBar.min = '0';
+      seekBar.max = '100';
+      seekBar.value = porcentajeActual;
+      seekBar.style.cssText = 'width:100%;height:8px;margin:16px 0';
+      seekBar.oninput = function() {
+        txtPorcentaje.textContent = 'Porcentaje Extra: ' + this.value + '%';
+        // Actualizar sugerencias en tiempo real
+        if (typeof actualizarSugerenciasEnTiempoReal === 'function') {
+          actualizarSugerenciasEnTiempoReal(parseInt(this.value));
+        }
+      };
+      porcentajeDiv.appendChild(seekBar);
+      modalConfig.appendChild(porcentajeDiv);
+      
+      // Hora de Alerta
+      const horaDiv = document.createElement('div');
+      horaDiv.style.cssText = 'margin-bottom:24px';
+      
+      const txtHora = document.createElement('div');
+      txtHora.style.cssText = 'font-size:16px;padding:8px 16px;margin-bottom:8px';
+      txtHora.textContent = 'Hora de Alerta:';
+      horaDiv.appendChild(txtHora);
+      
+      const editHora = document.createElement('input');
+      editHora.type = 'text';
+      editHora.id = 'pp-config-hora-input';
+      // EXACTO como Android: Usar la hora actual mostrada en la UI (línea 1712 PedidoPanificadoraActivity.kt)
+      const horaAlertaEl = document.getElementById('pp-hora-alerta');
+      const horaActual = horaAlertaEl 
+        ? horaAlertaEl.textContent.replace('🔔 Alerta: ', '') || '15:30'
+        : (configuracion.horaAlerta || '15:30');
+      editHora.value = horaActual;
+      editHora.style.cssText = 'width:100%;padding:16px;border:1px solid #d1d5db;border-radius:4px;font-size:16px;cursor:pointer';
+      editHora.readOnly = true;
+      editHora.onclick = function() {
+        mostrarSelectorHoraPedidoPanificadora(editHora);
+      };
+      horaDiv.appendChild(editHora);
+      modalConfig.appendChild(horaDiv);
+      
+      // Botón para configurar días de entrega
+      const btnDiasEntrega = document.createElement('button');
+      btnDiasEntrega.style.cssText = 'width:100%;padding:16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:700;font-size:16px;margin-bottom:24px;cursor:pointer';
+      btnDiasEntrega.textContent = '📅 Configurar Días de Entrega';
+      btnDiasEntrega.onclick = () => {
+        overlayConfig.remove();
+        mostrarConfiguracionDiasEntregaPedidoPanificadora();
+      };
+      modalConfig.appendChild(btnDiasEntrega);
+      
+      // Botones
+      const botonesDiv = document.createElement('div');
+      botonesDiv.style.cssText = 'display:flex;gap:12px';
+      
+      const btnGuardar = document.createElement('button');
+      btnGuardar.style.cssText = 'flex:1;padding:12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnGuardar.textContent = 'Guardar';
+      btnGuardar.onclick = async () => {
+        const nuevoPorcentaje = parseInt(seekBar.value);
+        const nuevaHora = editHora.value;
+        
+        configuracion.porcentajeExtra = nuevoPorcentaje;
+        configuracion.horaAlerta = nuevaHora;
+        
+        // Guardar en Firebase
+        await guardarConfiguracionEnFirebase();
+        
+        // Actualizar UI
+        if (typeof actualizarUI === 'function') {
           actualizarUI();
         }
+        
+        // Actualizar sugerencias
+        if (typeof actualizarSugerenciasEnTiempoReal === 'function') {
+          actualizarSugerenciasEnTiempoReal(nuevoPorcentaje);
+        }
+        
+        overlayConfig.remove();
+      };
+      
+      const btnCancelar = document.createElement('button');
+      btnCancelar.style.cssText = 'flex:1;padding:12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnCancelar.textContent = 'Cancelar';
+      btnCancelar.onclick = () => overlayConfig.remove();
+      
+      botonesDiv.appendChild(btnGuardar);
+      botonesDiv.appendChild(btnCancelar);
+      modalConfig.appendChild(botonesDiv);
+      
+      overlayConfig.appendChild(modalConfig);
+      document.body.appendChild(overlayConfig);
+    }
+    
+    // Función para mostrar selector de hora
+    function mostrarSelectorHoraPedidoPanificadora(editHora) {
+      const horaActual = editHora.value || '15:30';
+      const [h, m] = horaActual.split(':').map(Number);
+      
+      const overlayHora = document.createElement('div');
+      overlayHora.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10001';
+      const modalHora = document.createElement('div');
+      modalHora.style.cssText = 'background:#fff;padding:24px;border-radius:8px;min-width:300px';
+      
+      modalHora.innerHTML = '<div style="font-size:18px;font-weight:700;margin-bottom:16px;text-align:center">Seleccionar Hora</div>' +
+        '<div style="display:flex;gap:16px;justify-content:center;align-items:center;margin-bottom:24px">' +
+        '<div style="display:flex;flex-direction:column;align-items:center">' +
+        '<label style="font-size:14px;margin-bottom:8px">Hora</label>' +
+        '<input type="number" id="pp-hora-picker-h" min="0" max="23" value="' + h + '" style="width:80px;padding:8px;border:1px solid #d1d5db;border-radius:4px;text-align:center;font-size:18px">' +
+        '</div>' +
+        '<div style="font-size:24px;font-weight:700">:</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center">' +
+        '<label style="font-size:14px;margin-bottom:8px">Minuto</label>' +
+        '<input type="number" id="pp-hora-picker-m" min="0" max="59" value="' + m + '" style="width:80px;padding:8px;border:1px solid #d1d5db;border-radius:4px;text-align:center;font-size:18px">' +
+        '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px">' +
+        '<button id="pp-hora-ok" style="flex:1;padding:12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer">Aceptar</button>' +
+        '<button id="pp-hora-cancel" style="flex:1;padding:12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer">Cancelar</button>' +
+        '</div>';
+      
+      overlayHora.appendChild(modalHora);
+      document.body.appendChild(overlayHora);
+      
+      const inputHora = document.getElementById('pp-hora-picker-h');
+      const inputMinuto = document.getElementById('pp-hora-picker-m');
+      if (inputHora) {
+        inputHora.onfocus = function() { this.select(); };
       }
-    };
+      if (inputMinuto) {
+        inputMinuto.onfocus = function() { this.select(); };
+      }
+      
+      document.getElementById('pp-hora-ok').onclick = () => {
+        const hora = String(inputHora.value).padStart(2, '0');
+        const minuto = String(inputMinuto.value).padStart(2, '0');
+        editHora.value = hora + ':' + minuto;
+        overlayHora.remove();
+      };
+      
+      document.getElementById('pp-hora-cancel').onclick = () => overlayHora.remove();
+    }
+    
+    // Función para mostrar configuración de días de entrega
+    function mostrarConfiguracionDiasEntregaPedidoPanificadora() {
+      const overlayDias = document.createElement('div');
+      overlayDias.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000';
+      const modalDias = document.createElement('div');
+      modalDias.style.cssText = 'background:#fff;width:90%;max-width:500px;border-radius:8px;padding:24px;max-height:90vh;overflow-y:auto';
+      
+      const titulo = document.createElement('div');
+      titulo.style.cssText = 'font-size:18px;font-weight:700;color:#000;margin-bottom:16px;text-align:center';
+      titulo.textContent = '⚙️ Días de Entrega';
+      modalDias.appendChild(titulo);
+      
+      const subtitulo = document.createElement('div');
+      subtitulo.style.cssText = 'font-size:14px;color:#6b7280;margin-bottom:24px;text-align:center';
+      subtitulo.textContent = '📅 Configurar Días de Entrega';
+      modalDias.appendChild(subtitulo);
+      
+      const descripcion = document.createElement('div');
+      descripcion.style.cssText = 'font-size:14px;color:#6b7280;margin-bottom:24px;text-align:center';
+      descripcion.textContent = 'Marca los días en que la fábrica entrega mercadería a tu local. Esto afectará el cálculo de sugerencias de pedido.';
+      modalDias.appendChild(descripcion);
+      
+      const checkboxes = {};
+      const dias = [
+        ['lunes', 'Lunes'],
+        ['martes', 'Martes'],
+        ['miercoles', 'Miércoles'],
+        ['jueves', 'Jueves'],
+        ['viernes', 'Viernes'],
+        ['sabado', 'Sábado'],
+        ['domingo', 'Domingo']
+      ];
+      
+      dias.forEach(([clave, nombre]) => {
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.style.cssText = 'display:flex;align-items:center;padding:8px 16px;margin-bottom:8px';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'pp-dia-' + clave;
+        checkbox.style.cssText = 'width:20px;height:20px;margin-right:12px;cursor:pointer';
+        // Cargar estado actual desde diasEntrega si existe
+        if (typeof diasEntrega !== 'undefined' && diasEntrega[clave] !== undefined) {
+          checkbox.checked = diasEntrega[clave];
+        } else {
+          checkbox.checked = true; // Por defecto todos marcados
+        }
+        checkboxes[clave] = checkbox;
+        
+        const label = document.createElement('label');
+        label.htmlFor = 'pp-dia-' + clave;
+        label.style.cssText = 'font-size:16px;cursor:pointer;flex:1';
+        label.textContent = nombre;
+        
+        checkboxDiv.appendChild(checkbox);
+        checkboxDiv.appendChild(label);
+        modalDias.appendChild(checkboxDiv);
+      });
+      
+      const botonesDiv = document.createElement('div');
+      botonesDiv.style.cssText = 'display:flex;gap:12px;margin-top:24px';
+      
+      const btnGuardar = document.createElement('button');
+      btnGuardar.style.cssText = 'flex:1;padding:12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnGuardar.textContent = 'Guardar';
+      btnGuardar.onclick = async () => {
+        // Actualizar configuración
+        if (typeof diasEntrega === 'undefined') {
+          diasEntrega = {};
+        }
+        diasEntrega.lunes = checkboxes.lunes.checked;
+        diasEntrega.martes = checkboxes.martes.checked;
+        diasEntrega.miercoles = checkboxes.miercoles.checked;
+        diasEntrega.jueves = checkboxes.jueves.checked;
+        diasEntrega.viernes = checkboxes.viernes.checked;
+        diasEntrega.sabado = checkboxes.sabado.checked;
+        diasEntrega.domingo = checkboxes.domingo.checked;
+        
+        // Guardar en Firebase
+        await guardarDiasEntregaEnFirebase();
+        
+        // Actualizar UI
+        if (typeof actualizarInformacionDiasExtra === 'function') {
+          actualizarInformacionDiasExtra();
+        }
+        
+        // Recalcular sugerencias
+        if (typeof recalcularTodasLasSugerencias === 'function') {
+          recalcularTodasLasSugerencias();
+        }
+        if (typeof actualizarSugerenciasEnTiempoReal === 'function') {
+          actualizarSugerenciasEnTiempoReal(configuracion.porcentajeExtra);
+        }
+        
+        overlayDias.remove();
+      };
+      
+      const btnCancelar = document.createElement('button');
+      btnCancelar.style.cssText = 'flex:1;padding:12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnCancelar.textContent = 'Cancelar';
+      btnCancelar.onclick = () => overlayDias.remove();
+      
+      botonesDiv.appendChild(btnGuardar);
+      botonesDiv.appendChild(btnCancelar);
+      modalDias.appendChild(botonesDiv);
+      
+      overlayDias.appendChild(modalDias);
+      document.body.appendChild(overlayDias);
+    }
+    
+    // Función para guardar configuración en Firebase (específica para Panificadora)
+    async function guardarConfiguracionEnFirebase() {
+      try {
+        const db = obtenerFirestore();
+        await db.collection('locales').doc(localId).collection('configuracion_pedido_panificadora').doc('config').set({
+          porcentajeExtra: configuracion.porcentajeExtra,
+          horaAlerta: configuracion.horaAlerta,
+          activarAlerta: configuracion.activarAlerta,
+          timestamp: new Date().toISOString()
+        });
+        console.log('✅ Configuración de Panificadora guardada en Firebase');
+      } catch (e) {
+        console.error('Error guardando configuración:', e);
+        alert('Error guardando configuración: ' + e.message);
+      }
+    }
+
+    // Función para guardar días de entrega en Firebase (específica para Panificadora)
+    // EXACTO como Android: usa configuracion_dias_entrega_panificadora (línea 4548 PedidoPanificadoraActivity.kt)
+    async function guardarDiasEntregaEnFirebase() {
+      try {
+        const db = obtenerFirestore();
+        await db.collection('locales').doc(localId).collection('configuracion_dias_entrega_panificadora').doc('config').set({
+          lunes: diasEntrega.lunes,
+          martes: diasEntrega.martes,
+          miercoles: diasEntrega.miercoles,
+          jueves: diasEntrega.jueves,
+          viernes: diasEntrega.viernes,
+          sabado: diasEntrega.sabado,
+          domingo: diasEntrega.domingo,
+          timestamp: new Date().toISOString()
+        });
+        console.log('✅ Días de entrega de Panificadora guardados en Firebase');
+      } catch (e) {
+        console.error('Error guardando días de entrega:', e);
+        alert('Error guardando días de entrega: ' + e.message);
+      }
+    }
 
     document.body.appendChild(overlay);
     await cargarConfiguracion();

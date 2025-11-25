@@ -95,6 +95,15 @@
     
     <style>
         /* ============================================
+           ESTILOS GLOBALES - Sin restricciones de ancho
+           ============================================ */
+        html, body {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+        }
+        
+        /* ============================================
            PALETA DE COLORES - SABORES EXPRESS (Android App)
            ============================================ */
         :root {
@@ -719,26 +728,98 @@
         
         /* ============================================
            RESPONSIVE LAYOUT FOR PROMEDIO DE VENTAS
+           PC: Tamaños normales, Móvil: Compacto como Android
            ============================================ */
-        .ventas-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .ventas-grid { min-width: 980px; }
-        .ventas-name { white-space: nowrap; }
-        .ventas-cell { white-space: nowrap; }
+        .ventas-scroll { 
+            overflow-x: visible; 
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch; 
+            width: 100%;
+            max-width: 100%;
+        }
+        .ventas-grid { 
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Tamaños para PC (por defecto) - Como estaba originalmente */
+        .ventas-header {
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+        }
+        .ventas-name { 
+            white-space: nowrap; 
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+        }
+        .ventas-cell { 
+            white-space: nowrap; 
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+        }
+        .ventas-row {
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+        }
 
+        /* Tablet - Reducción moderada */
         @media (max-width: 1024px) {
-            .ventas-grid { min-width: 900px; }
+            .ventas-header {
+                font-size: 11px !important;
+                padding: 6px 3px !important;
+            }
+            .ventas-name { 
+                font-size: 11px !important;
+                padding: 6px 3px !important;
+            }
+            .ventas-cell { 
+                font-size: 11px !important;
+                padding: 6px 3px !important;
+            }
+            .ventas-row {
+                font-size: 11px !important;
+                padding: 6px 3px !important;
+            }
         }
 
+        /* Móvil - Compacto como Android */
         @media (max-width: 768px) {
-            .ventas-grid { min-width: 780px; }
-            .ventas-header, .ventas-row { font-size: 12px; }
+            .ventas-header {
+                font-size: 10px !important;
+                padding: 2px 1px !important;
+            }
+            .ventas-name { 
+                font-size: 10px !important;
+                padding: 4px !important;
+            }
+            .ventas-cell { 
+                font-size: 10px !important;
+                padding: 1px 2px !important;
+            }
+            .ventas-row {
+                font-size: 10px !important;
+                padding: 3px 4px !important;
+            }
         }
 
+        /* Móvil pequeño - Muy compacto */
         @media (max-width: 480px) {
-            .ventas-grid { min-width: 720px; }
-            .ventas-header, .ventas-row { font-size: 11px; }
-            .ventas-name { min-width: 140px; }
-            .ventas-cell { min-width: 60px; padding-left: 6px !important; padding-right: 6px !important; }
+            .ventas-header {
+                font-size: 9px !important;
+                padding: 2px 1px !important;
+            }
+            .ventas-name { 
+                font-size: 9px !important;
+                padding: 2px !important;
+            }
+            .ventas-cell { 
+                font-size: 9px !important;
+                padding: 1px !important;
+            }
+            .ventas-row {
+                font-size: 9px !important;
+                padding: 2px !important;
+            }
         }
     </style>
     
@@ -7468,23 +7549,24 @@
             }
 
             return (
-                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '8px'}}>
+                <div className="min-h-screen" style={{backgroundColor: '#E0E0E0', padding: '4px', width: '100%'}}>
                     {/* Header con botón volver */}
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-2" style={{padding: '4px'}}>
                         <button 
                             onClick={onVolver}
-                            className="text-2xl font-bold text-black"
+                            className="text-xl font-bold text-black"
+                            style={{padding: '4px'}}
                         >
                             ← Volver
                         </button>
-                        <h1 className="text-xl font-bold text-black">Venta por Volumen</h1>
+                        <h1 className="text-lg font-bold text-black">Venta por Volumen</h1>
                         <div></div>
                         </div>
 
                     {/* Switch para cambiar vista */}
-                    <div className="bg-white rounded-lg p-4 mb-4">
+                    <div className="bg-white rounded-lg mb-2" style={{padding: '8px'}}>
                         <div className="flex items-center justify-between">
-                            <span className="text-base font-semibold text-black">Vista de Tabla</span>
+                            <span className="text-sm font-semibold text-black">Vista de Tabla</span>
                             <div 
                                 onClick={() => setVistaMenu(!vistaMenu)}
                                 style={{
@@ -7513,46 +7595,46 @@
                     </div>
 
                     {/* Tabla de promedios - EXACTO como PromedioVentasActivity.kt */}
-                    <div className="bg-white rounded-lg p-4" style={{minHeight: 'calc(100vh - 200px)'}}>
+                    <div className="bg-white rounded-lg" style={{minHeight: 'calc(100vh - 150px)', width: '100%', padding: '8px'}}>
                         {/* Indicador de período */}
                         <div 
-                            className="text-center p-2 mb-2"
-                            style={{color: '#7C3AED', fontSize: '18px', fontWeight: 'bold'}}
+                            className="text-center mb-2"
+                            style={{color: '#7C3AED', fontSize: '16px', fontWeight: 'bold', padding: '8px'}}
                         >
                             PROMEDIO: {periodoActual}
                         </div>
 
-                        {/* Indicador de local - EXACTO como línea 273-280 */}
+                        {/* Indicador de local - EXACTO como Android línea 146-154 */}
                         <div 
-                            className="text-center p-2 mb-4"
-                            style={{color: '#2196F3', fontSize: '16px', fontWeight: 'bold'}}
+                            className="text-center mb-2"
+                            style={{color: '#2196F3', fontSize: '14px', fontWeight: 'bold', padding: '4px'}}
                         >
                             LOCAL: {usuario.localNombre}
                                 </div>
                         
-                        {/* Título principal - EXACTO como línea 284-291 */}
+                        {/* Título principal - EXACTO como Android línea 156-163 */}
                         <div 
-                            className="text-center p-4 mb-4"
-                            style={{color: '#4CAF50', fontSize: '24px', fontWeight: 'bold'}}
+                            className="text-center mb-2"
+                            style={{color: '#4CAF50', fontSize: '18px', fontWeight: 'bold', padding: '8px'}}
                         >
                             PROMEDIO DE VENTA POR DÍA
                                 </div>
                             
-                        <div className="ventas-scroll"><div className="ventas-grid">
-                        {/* Header de la tabla - EXACTO como línea 305-331 */}
+                        <div className="ventas-scroll" style={{width: '100%'}}><div className="ventas-grid">
+                        {/* Header de la tabla - Responsive: PC normal, móvil compacto */}
                         <div 
-                            className="flex p-2 text-white text-xs font-bold mb-2 ventas-header"
+                            className="flex text-white font-bold mb-2 ventas-header"
                             style={{
                                 backgroundColor: '#2196F3',
                                 border: '1px solid #1976D2',
                                 borderRadius: '4px 4px 0 0'
                             }}
                         >
-                            <div className="p-1 border-r border-blue-300 ventas-name" style={{flex: '1.2'}}>TIPO</div>
+                            <div className="border-r border-blue-300 ventas-name" style={{flex: '1.2'}}>TIPO</div>
                             {diasSemana.map((dia, index) => (
                                 <div 
                                     key={dia} 
-                                    className={`p-1 text-center ventas-cell ${index < diasSemana.length - 1 ? 'border-r border-blue-300' : ''}`} 
+                                    className={`text-center ventas-cell ${index < diasSemana.length - 1 ? 'border-r border-blue-300' : ''}`} 
                                     style={{flex: '0.8'}}
                                 >
                                     {dia}
@@ -7563,35 +7645,36 @@
                         {/* Productos por categoría con iconos y separaciones */}
                         {Object.entries(productosPorCategoria).map(([categoria, productos]) => (
                             <div key={categoria}>
-                                {/* Header de categoría con icono - EXACTO como Ingreso de Mercadería */}
+                                {/* Header de categoría con icono - EXACTO como Android línea 447-490 */}
                                 <div 
-                                    className="flex items-center justify-between p-3 text-white font-bold mb-2 mt-4"
+                                    className="flex items-center justify-between text-white font-bold mb-2 mt-2"
                                     style={{
                                         backgroundColor: categoria === 'EMPANADAS' ? '#FF6B6B' : 
                                                        categoria === 'PIZZAS' ? '#4CAF50' : 
                                                        categoria === 'PASTELITOS' ? '#FF9800' : '#9C27B0',
                                         borderRadius: '8px',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                        padding: '12px'
                                     }}
                                 >
-                                    <span className="text-lg">
+                                    <span style={{fontSize: '16px'}}>
                                         {categoria === 'EMPANADAS' ? '🥟' : 
                                          categoria === 'PIZZAS' ? '🍕' : 
                                          categoria === 'PASTELITOS' ? '🥧' : '🍬'} {categoria}
                                     </span>
-                                    <span className="text-xs px-2 py-1 rounded" style={{backgroundColor: 'rgba(255,255,255,0.2)'}}>
+                                    <span style={{fontSize: '10px', padding: '2px 4px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.2)'}}>
                                         {productos.length} productos
                                     </span>
                     </div>
 
-                                {/* Productos de la categoría */}
-                                <div className="mb-4" style={{backgroundColor: '#F8F9FA', borderRadius: '8px', padding: '8px'}}>
+                                {/* Productos de la categoría - EXACTO como Android línea 495-497 */}
+                                <div className="mb-2" style={{backgroundColor: '#F8F9FA', borderRadius: '8px', padding: '8px'}}>
                                     {productos.map((producto, index) => {
                                         const nombre = producto.split(' - ')[1] || producto;
                                         return (
                                             <div 
                                                 key={producto} 
-                                                className="flex text-xs mb-1 ventas-row"
+                                                className="flex mb-1 ventas-row"
                                                 style={{
                                                     backgroundColor: 'white',
                                                     border: '1px solid #E0E0E0',
@@ -7600,7 +7683,7 @@
                                                 }}
                                             >
                                                 <div 
-                                                    className="p-2 text-left text-black border-r border-gray-300 ventas-name" 
+                                                    className="text-left text-black border-r border-gray-300 ventas-name" 
                                                     style={{flex: '1.2'}}
                                                 >
                                                     {nombre}
@@ -7617,10 +7700,10 @@
                                                     return (
                                                         <div 
                                                             key={diaCompleto} 
-                                                            className={`p-2 text-center text-black ventas-cell ${diaIndex < diasCompletos.length - 1 ? 'border-r border-gray-300' : ''}`} 
+                                                            className={`text-center text-black ventas-cell ${diaIndex < diasCompletos.length - 1 ? 'border-r border-gray-300' : ''}`} 
                                                             style={{flex: '0.8'}}
                                                         >
-                                                            {valor > 0 ? valor : '-'}
+                                                            {valor > 0 ? Math.round(valor) : '-'}
                 </div>
             );
                                                 })}
@@ -7628,17 +7711,17 @@
                                         );
                                     })}
                                     
-                                    {/* Total de empanadas - EXACTO como línea 345-388 */}
+                                    {/* Total de empanadas - Responsive: PC normal, móvil compacto */}
                                     {categoria === 'EMPANADAS' && (
                                         <div 
-                                            className="flex p-2 text-white text-xs font-bold mt-2"
+                                            className="flex text-white font-bold mt-2 ventas-row"
                                             style={{
                                                 backgroundColor: '#4CAF50',
                                                 border: '1px solid #388E3C',
                                                 borderRadius: '4px'
                                             }}
                                         >
-                                            <div className="p-2 border-r border-green-300" style={{flex: '1.2'}}>TOTAL</div>
+                                            <div className="border-r border-green-300 ventas-name" style={{flex: '1.2'}}>TOTAL</div>
                                             {diasCompletos.map((diaCompleto, index) => {
                                                 const totalDia = productos.reduce((acc, producto) => {
                                                     return acc + (promedios[diaCompleto]?.[producto] || 0);
@@ -7650,7 +7733,7 @@
                                                 return (
                                                     <div 
                                                         key={diaCompleto} 
-                                                        className={`p-2 text-center ${index < diasCompletos.length - 1 ? 'border-r border-green-300' : ''}`} 
+                                                        className={`text-center ventas-cell ${index < diasCompletos.length - 1 ? 'border-r border-green-300' : ''}`} 
                                                         style={{flex: '0.8'}}
                                                     >
                                                         {totalDia > 0 ? Math.round(totalDia) : '-'}

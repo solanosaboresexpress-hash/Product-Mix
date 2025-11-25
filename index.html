@@ -5078,6 +5078,120 @@
                 }
             };
             
+            // Función para sincronizar lotes con stock final - EXACTO como Android VencimientoManager.kt líneas 138-229
+            const sincronizarLotesConStockFinal = async (localId, fecha, stockFinalPorProducto, db) => {
+                try {
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('🔄 SINCRONIZANDO LOTES CON STOCK FINAL');
+                    console.log('📅 Fecha:', fecha);
+                    console.log('🏪 Local:', localId);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    
+                    for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                        // Obtener lotes activos del producto
+                        const lotesSnapshot = await db.collection('locales')
+                            .doc(localId)
+                            .collection('vencimientos_activos')
+                            .where('codigo', '==', productoCodigo.toLowerCase())
+                            .where('activo', '==', true)
+                            .get();
+                        
+                        const lotes = [];
+                        lotesSnapshot.forEach(doc => {
+                            const data = doc.data();
+                            lotes.push({
+                                id: doc.id,
+                                cantidad: data.cantidad || 0,
+                                fechaVencimiento: data.fechaVencimiento || '',
+                                productoNombre: data.nombre || ''
+                            });
+                        });
+                        
+                        // Ordenar por fecha de vencimiento (más viejo primero) para FIFO
+                        lotes.sort((a, b) => {
+                            if (!a.fechaVencimiento) return 1;
+                            if (!b.fechaVencimiento) return -1;
+                            return a.fechaVencimiento.localeCompare(b.fechaVencimiento);
+                        });
+                        
+                        const sumaLotes = lotes.reduce((sum, lote) => sum + lote.cantidad, 0);
+                        
+                        console.log(`\n🔍 Sincronizando: ${productoCodigo}`);
+                        console.log(`   Stock Final: ${stockFinal}`);
+                        console.log(`   Suma Lotes: ${sumaLotes}`);
+                        
+                        // Si el stock final es 0, eliminar TODOS los lotes
+                        if (stockFinal === 0) {
+                            if (lotes.length > 0) {
+                                console.log(`   🗑️ Stock Final = 0 → Eliminando TODOS los lotes`);
+                                for (const lote of lotes) {
+                                    await db.collection('locales')
+                                        .doc(localId)
+                                        .collection('vencimientos_activos')
+                                        .doc(lote.id)
+                                        .delete();
+                                    console.log(`      Eliminado: ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
+                                }
+                            } else {
+                                console.log(`   ✅ Ya no hay lotes (correcto)`);
+                            }
+                        }
+                        // Si el stock final > 0 pero hay más lotes que stock, ajustar
+                        else if (sumaLotes > stockFinal) {
+                            const diferencia = sumaLotes - stockFinal;
+                            console.log(`   ⚠️ Hay más lotes (${sumaLotes}) que stock final (${stockFinal})`);
+                            console.log(`   🔄 Descontando diferencia: ${diferencia} uds`);
+                            
+                            // Descontar la diferencia de los lotes más viejos (FIFO)
+                            let pendienteDescontar = diferencia;
+                            for (const lote of lotes) {
+                                if (pendienteDescontar <= 0) break;
+                                
+                                const descontar = Math.min(lote.cantidad, pendienteDescontar);
+                                const cantidadRestante = lote.cantidad - descontar;
+                                
+                                if (cantidadRestante <= 0) {
+                                    await db.collection('locales')
+                                        .doc(localId)
+                                        .collection('vencimientos_activos')
+                                        .doc(lote.id)
+                                        .delete();
+                                    console.log(`      🗑️ Lote eliminado: ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
+                                } else {
+                                    await db.collection('locales')
+                                        .doc(localId)
+                                        .collection('vencimientos_activos')
+                                        .doc(lote.id)
+                                        .update({ cantidad: cantidadRestante });
+                                    console.log(`      ✅ Lote ajustado: ${lote.cantidad} → ${cantidadRestante} uds`);
+                                }
+                                
+                                pendienteDescontar -= descontar;
+                            }
+                        }
+                        // Si el stock final > 0 y coincide con lotes, está correcto
+                        else if (sumaLotes === stockFinal) {
+                            console.log(`   ✅ Lotes coinciden con stock final (correcto)`);
+                        }
+                        // Si hay menos lotes que stock final, es porque falta cargar lotes del ingreso de mercadería
+                        else if (sumaLotes < stockFinal) {
+                            const diferencia = stockFinal - sumaLotes;
+                            console.warn(`   ⚠️ ADVERTENCIA: Hay menos lotes (${sumaLotes}) que stock final (${stockFinal})`);
+                            console.warn(`   📋 Diferencia: ${diferencia} uds`);
+                            console.warn(`   💡 ACCIÓN REQUERIDA: Debes cargar los lotes del Ingreso de Mercadería en Vencimientos`);
+                            console.warn(`   💡 Si ingresaste ${diferencia} uds nuevas, debes crear un lote con la fecha de vencimiento correcta`);
+                            console.warn(`   💡 NO se crean lotes automáticamente para evitar fechas incorrectas`);
+                        }
+                    }
+                    
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('✅ SINCRONIZACIÓN COMPLETADA');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                } catch (error) {
+                    console.error('❌ Error sincronizando lotes con stock final:', error);
+                }
+            };
+            
             // Función para guardar datos - EXACTO como CargaActivity.kt líneas 659-822
             const guardarDatos = async () => {
                 try {
@@ -5170,10 +5284,13 @@
                     console.log('✅ Datos guardados exitosamente');
                     
                     // 🚀 OPTIMIZACIÓN: Si es Stock Final, actualizar promedio general acumulado
+                    // EXACTO como Android CargaActivity.kt líneas 1772-1802
                     // (Nota: La actualización de promedios se puede hacer en background, no bloquea)
                     if (tipo === 'Stock Final') {
-                        // TODO: Implementar actualizarPromedioGeneral cuando sea necesario
-                        console.log('📊 Promedio general: Se actualizará en background');
+                        // Ejecutar en background para no bloquear el guardado
+                        actualizarPromedioGeneral(usuario.localId, fechaString, productos, db).catch(error => {
+                            console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
+                        });
                     }
                     
                     // 🔥 Si es Stock Final y es la PRIMERA VEZ, procesar descuentos FIFO de vencimientos
@@ -5190,6 +5307,17 @@
                         
                         // Procesar descuentos FIFO
                         await procesarDescuentosFIFO(usuario.localId, fechaString, ventasPorProducto, db);
+                        
+                        // 3. SINCRONIZAR lotes con stock final DESPUÉS del descuento FIFO
+                        // EXACTO como Android CargaActivity.kt línea 1638 - VencimientoManager.kt líneas 138-229
+                        console.log('🔄 Sincronizando lotes con stock final después del descuento FIFO...');
+                        const stockFinalPorProducto = {};
+                        productos.forEach(producto => {
+                            const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
+                            const codigoNormalizado = normalizarCodigoProducto(codigo);
+                            stockFinalPorProducto[codigoNormalizado] = producto.cantidad;
+                        });
+                        await sincronizarLotesConStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
                         
                         // Validar consistencia después del descuento
                         await validarConsistenciaLotes(usuario.localId, fechaString, productos, db);
@@ -5280,6 +5408,232 @@
                     console.error('❌ Error validando consistencia de lotes:', error);
                 }
             };
+            
+            // Función para actualizar promedio general - EXACTO como Android CargaActivity.kt líneas 1772-1989
+            const actualizarPromedioGeneral = async (localId, fecha, stockFinalProductos, db) => {
+                try {
+                    console.log('🔄 Calculando TODOS los promedios históricos (como Venta por Volumen)');
+                    
+                    // 🚀 Cargar TODOS los registros históricos
+                    const registrosSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('registros')
+                        .orderBy('fecha', 'desc')
+                        .get();
+                    
+                    const todosLosRegistros = [];
+                    registrosSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        todosLosRegistros.push({
+                            fecha: data.fecha,
+                            tipo: data.tipo,
+                            productos: data.productos || []
+                        });
+                    });
+                    
+                    console.log('📊 Total registros históricos:', todosLosRegistros.length);
+                    
+                    if (todosLosRegistros.length === 0) {
+                        console.warn('⚠️ No hay registros históricos para calcular promedios');
+                        return;
+                    }
+                    
+                    // 🚀 Calcular TODOS los promedios de TODOS los días (igual que Venta por Volumen)
+                    const promediosPorDia = calcularPromediosPorDiaCompleto(todosLosRegistros);
+                    console.log('✅ Promedios calculados para', Object.keys(promediosPorDia).length, 'días');
+                    
+                    // 🚀 Convertir a formato PromedioData (suma, cantidad, promedio) para Firebase
+                    const promediosGenerales = convertirPromediosAPromedioData(promediosPorDia, todosLosRegistros);
+                    
+                    // 🚀 Guardar TODOS los promedios en Firebase
+                    await guardarPromediosGeneralesEnFirebase(localId, promediosGenerales, db);
+                    
+                    console.log('✅ TODOS los promedios guardados en Firebase:', Object.keys(promediosGenerales).length, 'días');
+                    
+                } catch (error) {
+                    console.error('❌ Error calculando promedios generales:', error);
+                    // No lanzar excepción para no interrumpir el guardado de Stock Final
+                }
+            };
+            
+            // Función para calcular promedios por día completo - EXACTO como Android CargaActivity.kt líneas 1808-1857
+            const calcularPromediosPorDiaCompleto = (registros) => {
+                const promediosPorDia = {};
+                const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+                
+                // Inicializar estructura
+                diasSemana.forEach(dia => {
+                    promediosPorDia[dia] = {};
+                });
+                
+                // Obtener todas las fechas ordenadas
+                const fechasOrdenadas = [...new Set(registros.map(r => r.fecha))].sort();
+                
+                if (fechasOrdenadas.length === 0) {
+                    return promediosPorDia;
+                }
+                
+                // Agrupar por día de la semana
+                const ventasPorDia = {};
+                
+                fechasOrdenadas.forEach(fecha => {
+                    const diaSemana = obtenerDiaSemana(fecha);
+                    const ventasDia = calcularVentasDiaCompleto(fecha, registros);
+                    if (Object.keys(ventasDia).length > 0) {
+                        if (!ventasPorDia[diaSemana]) {
+                            ventasPorDia[diaSemana] = [];
+                        }
+                        ventasPorDia[diaSemana].push(ventasDia);
+                    }
+                });
+                
+                // Calcular promedios
+                Object.keys(ventasPorDia).forEach(dia => {
+                    const listaVentas = ventasPorDia[dia];
+                    if (listaVentas.length > 0) {
+                        // Obtener TODOS los productos únicos de TODOS los registros de este día
+                        const productos = [...new Set(listaVentas.flatMap(v => Object.keys(v)))];
+                        productos.forEach(producto => {
+                            // Filtrar solo los días donde este producto tiene ventas > 0
+                            const ventasConDatos = listaVentas
+                                .map(v => v[producto])
+                                .filter(v => v !== undefined && v > 0);
+                            
+                            if (ventasConDatos.length > 0) {
+                                const suma = ventasConDatos.reduce((a, b) => a + b, 0);
+                                const promedio = suma / ventasConDatos.length;
+                                promediosPorDia[dia][producto] = promedio;
+                            } else {
+                                // Si no hay días con ventas > 0, el promedio es 0
+                                promediosPorDia[dia][producto] = 0;
+                            }
+                        });
+                    }
+                });
+                
+                return promediosPorDia;
+            };
+            
+            // Función para calcular ventas de un día específico - EXACTO como Android CargaActivity.kt líneas 1862-1893
+            const calcularVentasDiaCompleto = (fecha, registros) => {
+                const registrosFecha = registros.filter(r => r.fecha === fecha);
+                const ingreso = registrosFecha.find(r => r.tipo === 'Ingreso de Mercadería')?.productos || [];
+                const stockFinal = registrosFecha.find(r => r.tipo === 'Stock Final')?.productos || [];
+                
+                // Obtener stock final del día anterior
+                const fechaAnterior = obtenerFechaAnterior(fecha);
+                const stockAnterior = registros
+                    .filter(r => r.fecha === fechaAnterior)
+                    .find(r => r.tipo === 'Stock Final')?.productos || [];
+                
+                const ventas = {};
+                
+                // Si no hay stock final del día actual, no podemos calcular ventas
+                if (stockFinal.length === 0) {
+                    return ventas;
+                }
+                
+                // Calcular ventas para cada producto del stock final
+                stockFinal.forEach(productoStock => {
+                    const nombreProducto = productoStock.nombre;
+                    const ingresoCantidad = ingreso.find(p => p.nombre === nombreProducto)?.cantidad || 0;
+                    const stockFinalCantidad = productoStock.cantidad;
+                    const stockAnteriorCantidad = stockAnterior.find(p => p.nombre === nombreProducto)?.cantidad || 0;
+                    
+                    const venta = stockAnteriorCantidad + ingresoCantidad - stockFinalCantidad;
+                    
+                    // Agregar TODOS los productos al map, incluso si la venta es 0
+                    ventas[nombreProducto] = venta > 0 ? venta : 0;
+                });
+                
+                return ventas;
+            };
+            
+            // Función para convertir promedios a PromedioData - EXACTO como Android CargaActivity.kt líneas 1899-1942
+            const convertirPromediosAPromedioData = (promediosPorDia, registros) => {
+                const promediosGenerales = {};
+                
+                // Obtener todas las fechas ordenadas
+                const fechasOrdenadas = [...new Set(registros.map(r => r.fecha))].sort();
+                
+                // Agrupar ventas por día de la semana para calcular suma y cantidad
+                const ventasPorDiaSemana = {};
+                
+                fechasOrdenadas.forEach(fecha => {
+                    const diaSemana = obtenerDiaSemana(fecha);
+                    const ventasDia = calcularVentasDiaCompleto(fecha, registros);
+                    if (Object.keys(ventasDia).length > 0) {
+                        if (!ventasPorDiaSemana[diaSemana]) {
+                            ventasPorDiaSemana[diaSemana] = [];
+                        }
+                        ventasPorDiaSemana[diaSemana].push(ventasDia);
+                    }
+                });
+                
+                // Convertir promedios a PromedioData
+                Object.keys(promediosPorDia).forEach(dia => {
+                    promediosGenerales[dia] = {};
+                    const productos = promediosPorDia[dia];
+                    
+                    Object.keys(productos).forEach(producto => {
+                        // Obtener todas las ventas de este producto en este día de la semana
+                        const ventasDelProducto = (ventasPorDiaSemana[dia] || [])
+                            .map(v => v[producto])
+                            .filter(v => v !== undefined && v > 0);
+                        
+                        const suma = ventasDelProducto.reduce((a, b) => a + b, 0);
+                        const cantidad = ventasDelProducto.length;
+                        const promedioCalculado = cantidad > 0 ? suma / cantidad : 0;
+                        
+                        promediosGenerales[dia][producto] = {
+                            suma: suma,
+                            cantidad: cantidad,
+                            promedio: promedioCalculado
+                        };
+                    });
+                });
+                
+                return promediosGenerales;
+            };
+            
+            // Función para guardar promedios generales en Firebase - EXACTO como Android CargaActivity.kt líneas 1947-1989
+            const guardarPromediosGeneralesEnFirebase = async (localId, promedios, db) => {
+                try {
+                    // Convertir estructura a formato Firebase
+                    const promediosFirebase = {};
+                    Object.keys(promedios).forEach(dia => {
+                        promediosFirebase[dia] = {};
+                        const productos = promedios[dia];
+                        Object.keys(productos).forEach(producto => {
+                            const data = productos[producto];
+                            promediosFirebase[dia][producto] = {
+                                suma: data.suma,
+                                cantidad: data.cantidad,
+                                promedio: data.promedio
+                            };
+                        });
+                    });
+                    
+                    const promedioGeneralData = {
+                        promedios: promediosFirebase,
+                        fechaActualizacion: new Date().toISOString(),
+                        localId: localId
+                    };
+                    
+                    // Guardar en: locales/{localId}/promedios_generales/promedios
+                    await db.collection('locales')
+                        .doc(localId)
+                        .collection('promedios_generales')
+                        .doc('promedios')
+                        .set(promedioGeneralData);
+                    
+                    console.log('✅ Promedios generales guardados en Firebase');
+                } catch (error) {
+                    console.warn('⚠️ Error guardando promedios en Firebase:', error);
+                }
+            };
+            
+            // Nota: obtenerFechaAnterior y obtenerDiaSemana ya están definidas más arriba en el código
 
             // Mostrar pantalla de gestión de locales si está seleccionada
             if (pantallaActual === 'gestion-locales') {

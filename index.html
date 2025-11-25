@@ -7093,6 +7093,32 @@
             const diasSemana = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
             const diasCompletos = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
             
+            // Función para obtener abreviación - EXACTO como Android línea 559-584
+            const obtenerAbreviacion = (nombreCompleto) => {
+                if (nombreCompleto.startsWith('JQ')) return 'JQ';
+                if (nombreCompleto.startsWith('PB')) return 'PB';
+                if (nombreCompleto.startsWith('CS')) return 'CS';
+                if (nombreCompleto.startsWith('PO')) return 'PO';
+                if (nombreCompleto.startsWith('CP')) return 'CP';
+                if (nombreCompleto.startsWith('HU')) return 'HU';
+                if (nombreCompleto.startsWith('ES')) return 'ES';
+                if (nombreCompleto.startsWith('CQ')) return 'CQ';
+                if (nombreCompleto.startsWith('RJ')) return 'RJ';
+                if (nombreCompleto.startsWith('QC')) return 'QC';
+                if (nombreCompleto.startsWith('CB')) return 'CB';
+                if (nombreCompleto.startsWith('CH -')) return 'CH';
+                if (nombreCompleto.startsWith('MUZZARE')) return 'MUZZA';
+                if (nombreCompleto.startsWith('JAMON')) return 'JAMON';
+                if (nombreCompleto.startsWith('PEPPERO')) return 'PEPPER';
+                if (nombreCompleto.startsWith('BATATA')) return 'BATATA';
+                if (nombreCompleto.startsWith('MEMBRIL')) return 'MEMBRIL';
+                if (nombreCompleto.startsWith('DULCES')) return 'DULCES';
+                if (nombreCompleto.startsWith('SALADO')) return 'SALADO';
+                if (nombreCompleto.startsWith('CHIPA')) return 'CHIPA';
+                if (nombreCompleto.startsWith('CRIOLLITO')) return 'CRIOLLITO';
+                return nombreCompleto;
+            };
+            
             const productosPorCategoria = {
                 'EMPANADAS': [
                     'JQ - Jamón y Queso', 'PB - Pollo BBQ', 'CS - Carne Suave', 'PO - Pollo',
@@ -7670,7 +7696,8 @@
                                 {/* Productos de la categoría - EXACTO como Android línea 495-497 */}
                                 <div className="mb-2" style={{backgroundColor: '#F8F9FA', borderRadius: '8px', padding: '8px'}}>
                                     {productos.map((producto, index) => {
-                                        const nombre = producto.split(' - ')[1] || producto;
+                                        // Usar abreviación como en Android línea 515
+                                        const nombreAbreviado = obtenerAbreviacion(producto);
                                         return (
                                             <div 
                                                 key={producto} 
@@ -7686,7 +7713,7 @@
                                                     className="text-left text-black border-r border-gray-300 ventas-name" 
                                                     style={{flex: '1.2'}}
                                                 >
-                                                    {nombre}
+                                                    {nombreAbreviado}
                 </div>
                                                 {diasCompletos.map((diaCompleto, diaIndex) => {
                                                     const valor = promedios[diaCompleto]?.[producto] || 0;
@@ -9098,6 +9125,34 @@
       const vencimientosManana = [];
       const vencimientosProximos = [];
       
+      // Función para obtener abreviación - EXACTO como Android
+      const obtenerAbreviacionVencimiento = (codigo) => {
+        if (!codigo) return codigo;
+        const codigoUpper = codigo.toUpperCase();
+        if (codigoUpper.startsWith('JQ')) return 'JQ';
+        if (codigoUpper.startsWith('PB')) return 'PB';
+        if (codigoUpper.startsWith('CS')) return 'CS';
+        if (codigoUpper.startsWith('PO')) return 'PO';
+        if (codigoUpper.startsWith('CP')) return 'CP';
+        if (codigoUpper.startsWith('HU')) return 'HU';
+        if (codigoUpper.startsWith('ES')) return 'ES';
+        if (codigoUpper.startsWith('CQ')) return 'CQ';
+        if (codigoUpper.startsWith('RJ')) return 'RJ';
+        if (codigoUpper.startsWith('QC')) return 'QC';
+        if (codigoUpper.startsWith('CB')) return 'CB';
+        if (codigoUpper.startsWith('CH')) return 'CH';
+        if (codigoUpper.startsWith('MUZZARE') || codigoUpper.startsWith('MUZZA')) return 'MUZZA';
+        if (codigoUpper.startsWith('JAMON')) return 'JAMON';
+        if (codigoUpper.startsWith('PEPPERO') || codigoUpper.startsWith('PEPPER')) return 'PEPPER';
+        if (codigoUpper.startsWith('BATATA')) return 'BATATA';
+        if (codigoUpper.startsWith('MEMBRIL')) return 'MEMBRIL';
+        if (codigoUpper.startsWith('DULCES')) return 'DULCES';
+        if (codigoUpper.startsWith('SALADO')) return 'SALADO';
+        if (codigoUpper.startsWith('CHIPA')) return 'CHIPA';
+        if (codigoUpper.startsWith('CRIOLLITO')) return 'CRIOLLITO';
+        return codigo;
+      };
+      
       lotes.forEach(lote => {
         if (!lote.fechaVencimiento) return;
         
@@ -9105,10 +9160,18 @@
         const fechaVencStr = fechaISO(fechaVenc);
         const diasHasta = Math.floor((fechaVenc - fechaHoy) / (1000 * 60 * 60 * 24));
         
+        // Usar código abreviado como en Android línea 2041, 2049, 2057
+        const codigo = lote.productoCodigo || lote.codigo || '';
+        const codigoAbreviado = obtenerAbreviacionVencimiento(codigo);
+        
+        // Formatear fecha como dd/MM/yyyy
+        const fechaParts = lote.fechaVencimiento.split('-');
+        const fechaDisplay = fechaParts.length === 3 ? `${fechaParts[2]}/${fechaParts[1]}/${fechaParts[0]}` : lote.fechaVencimiento;
+        
         const item = {
-          nombre: lote.productoNombre || productos[lote.codigo] || lote.codigo || 'Producto',
+          codigo: codigoAbreviado,
           cantidad: lote.cantidad,
-          fecha: lote.fechaVencimiento.split('-').reverse().slice(0, 2).join('/'),
+          fecha: fechaDisplay,
           dias: diasHasta
         };
         
@@ -9128,15 +9191,17 @@
       const totalHoy = vencimientosHoy.reduce((sum, v) => sum + v.cantidad, 0);
       const totalManana = vencimientosManana.reduce((sum, v) => sum + v.cantidad, 0);
       
-      // Construir mensaje usando símbolos ASCII que siempre funcionan
+      // Construir mensaje - EXACTO como Android línea 2033-2068
+      const fechaHoyDisplay = fechaHoy.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      
       let mensaje = '*INFORME DE VENCIMIENTOS*\n';
       mensaje += 'Local: ' + (localNombre || 'Local') + '\n';
-      mensaje += 'Fecha: ' + fechaHoy.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + '\n\n';
+      mensaje += 'Fecha: ' + fechaHoyDisplay + '\n\n';
       
       if (vencimientosHoy.length > 0) {
         mensaje += '>>> *VENCEN HOY (URGENTE):*\n';
         vencimientosHoy.forEach(v => {
-          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds\n';
+          mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
         mensaje += '\n';
       }
@@ -9144,7 +9209,7 @@
       if (vencimientosManana.length > 0) {
         mensaje += '>>> *VENCEN MAÑANA (ATENCION):*\n';
         vencimientosManana.forEach(v => {
-          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds\n';
+          mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
         mensaje += '\n';
       }
@@ -9152,13 +9217,13 @@
       if (vencimientosProximos.length > 0) {
         mensaje += '>>> *PROXIMOS VENCIMIENTOS (7 dias):*\n';
         vencimientosProximos.forEach(v => {
-          mensaje += '  • ' + v.nombre + ': ' + v.cantidad + ' uds (vence ' + v.fecha + ')\n';
+          mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds (' + v.fecha + ')\n';
         });
         mensaje += '\n';
       }
       
       if (vencimientosHoy.length === 0 && vencimientosManana.length === 0 && vencimientosProximos.length === 0) {
-        mensaje += 'OK - No hay vencimientos proximos en los proximos 7 dias.\n\n';
+        mensaje += '✅ OK - No hay vencimientos proximos en los proximos 7 dias.\n\n';
       }
       
       mensaje += '================================\n';

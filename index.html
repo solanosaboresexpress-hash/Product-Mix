@@ -821,6 +821,45 @@
                 padding: 2px !important;
             }
         }
+
+        /* ============================================
+           MENU BUTTONS - Responsive como Android
+           PC: 12px, Móvil: se adapta automáticamente
+           ============================================ */
+        .menu-button {
+            font-size: 12px !important;
+            max-lines: 2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Tablet - Reducción moderada */
+        @media (max-width: 1024px) {
+            .menu-button {
+                font-size: 11px !important;
+            }
+        }
+
+        /* Móvil - Compacto como Android */
+        @media (max-width: 768px) {
+            .menu-button {
+                font-size: 10px !important;
+            }
+        }
+
+        /* Móvil pequeño - Muy compacto */
+        @media (max-width: 480px) {
+            .menu-button {
+                font-size: 9px !important;
+            }
+        }
+
+        /* Móvil muy pequeño - Extra compacto */
+        @media (max-width: 360px) {
+            .menu-button {
+                font-size: 8px !important;
+            }
+        }
     </style>
     
     <script>
@@ -6549,14 +6588,16 @@
                             </div>
                             <button
                                 onClick={() => navegarA('Ingreso de Mercadería')}
-                                className={`w-full font-bold fade-in ${tieneIngreso ? 'btn-completed' : 'btn-primary'}`}
+                                className={`w-full font-bold fade-in menu-button ${tieneIngreso ? 'btn-completed' : 'btn-primary'}`}
                                 style={{
                                     height: '72px',
-                                    fontSize: '12px',
                                     textAlign: 'center',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word',
-                                    padding: '8px'
+                                    whiteSpace: 'pre-line',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2'
                                 }}
                             >
                                 {tieneIngreso ? '✅ Ingreso\nMercadería' : 'Ingreso\nMercadería'}
@@ -6582,14 +6623,16 @@
                             </div>
                             <button
                                 onClick={() => navegarA('Stock Final')}
-                                className={`w-full font-bold fade-in ${tieneStock ? 'btn-completed' : 'btn-primary'}`}
+                                className={`w-full font-bold fade-in menu-button ${tieneStock ? 'btn-completed' : 'btn-primary'}`}
                                 style={{
                                     height: '72px',
-                                    fontSize: '12px',
                                     textAlign: 'center',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word',
-                                    padding: '8px'
+                                    whiteSpace: 'pre-line',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2'
                                 }}
                             >
                                 {tieneStock ? '✅ Stock\nFinal' : 'Stock\nFinal'}
@@ -6621,14 +6664,16 @@
                                         alert('Función de vencimientos no disponible');
                                     }
                                 }}
-                                className={`w-full font-bold fade-in ${tieneVencimientosCoincidentes ? 'btn-completed' : 'btn-primary'}`}
+                                className={`w-full font-bold fade-in menu-button ${tieneVencimientosCoincidentes ? 'btn-completed' : 'btn-primary'}`}
                                 style={{
                                     height: '72px',
-                                    fontSize: '12px',
                                     textAlign: 'center',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word',
-                                    padding: '8px'
+                                    whiteSpace: 'pre-line',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2'
                                 }}
                             >
                                 {tieneVencimientosCoincidentes ? '✅ Vencimientos' : 'Vencimientos'}
@@ -6654,14 +6699,16 @@
                             </div>
                             <button
                                 onClick={() => navegarA('Promedio de Ventas')}
-                                className="w-full font-bold btn-primary fade-in"
+                                className="w-full font-bold btn-primary fade-in menu-button"
                                 style={{
                                     height: '72px',
-                                    fontSize: '12px',
                                     textAlign: 'center',
-                                    whiteSpace: 'normal',
-                                    wordBreak: 'break-word',
-                                    padding: '8px'
+                                    whiteSpace: 'pre-line',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2'
                                 }}
                             >
                                 Promedio\nVentas

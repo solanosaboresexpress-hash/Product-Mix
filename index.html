@@ -2237,6 +2237,156 @@
             );
         }
 
+        // Función global para mostrar popup de problemas (disponible para GestionLocales y Main)
+        const mostrarPopupProblemas = (nombreLocal, problemas) => {
+            if (!problemas || problemas.length === 0) return;
+            
+            // Crear diálogo mejorado similar a Android
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000';
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background:#fff;width:90%;max-width:600px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);overflow:hidden;max-height:80vh;display:flex;flex-direction:column';
+            
+            // Header
+            const header = document.createElement('div');
+            header.style.cssText = 'background:#F44336;color:#fff;padding:16px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center';
+            header.innerHTML = `⚠️ Alertas - ${nombreLocal}`;
+            dialog.appendChild(header);
+            
+            // Body con scroll
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:16px;overflow-y:auto;flex:1';
+            
+            // Mensaje introductorio
+            const intro = document.createElement('div');
+            intro.style.cssText = 'margin-bottom:16px;padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;font-size:14px;color:#856404';
+            intro.innerHTML = '<strong>⚠️ Se encontraron los siguientes problemas:</strong><br><br>Hacé clic en cada problema para ir directamente a completarlo.';
+            body.appendChild(intro);
+            
+            // Lista de problemas (formato original - click directo en el error)
+            problemas.forEach((problema, index) => {
+                // Parsear fecha del problema si es posible
+                let fecha = null;
+                let tipo = null;
+                
+                try {
+                    // Buscar fecha en formato "día/mes/año" (ej: "5/11/2025" o "24/11/2025")
+                    const regexFecha = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+                    const matchFecha = problema.match(regexFecha);
+                    
+                    if (matchFecha) {
+                        const dia = matchFecha[1].padStart(2, '0');
+                        const mes = matchFecha[2].padStart(2, '0');
+                        const año = matchFecha[3];
+                        fecha = `${año}-${mes}-${dia}`;
+                    }
+                    
+                    // Detectar tipo
+                    if (problema.includes('Stock Final')) {
+                        tipo = 'Stock Final';
+                    } else if (problema.includes('Ingreso de Mercadería')) {
+                        tipo = 'Ingreso de Mercadería';
+                    }
+                } catch (e) {
+                    console.error('Error parseando problema:', problema, e);
+                }
+                
+                const problemaDiv = document.createElement('div');
+                problemaDiv.style.cssText = 'margin-bottom:12px;padding:12px;background:#f9fafb;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 1px 3px rgba(0,0,0,0.1)';
+                problemaDiv.innerHTML = problema.replace(/\n/g, '<br>');
+                
+                // Hover effect mejorado - más visible
+                problemaDiv.onmouseenter = () => {
+                    problemaDiv.style.background = '#e3f2fd';
+                    problemaDiv.style.borderColor = '#2196F3';
+                    problemaDiv.style.boxShadow = '0 4px 8px rgba(33, 150, 243, 0.3)';
+                    problemaDiv.style.transform = 'translateY(-2px)';
+                };
+                problemaDiv.onmouseleave = () => {
+                    problemaDiv.style.background = '#f9fafb';
+                    problemaDiv.style.borderColor = '#e5e7eb';
+                    problemaDiv.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                    problemaDiv.style.transform = 'translateY(0)';
+                };
+                
+                // Click para ir a completar el problema
+                problemaDiv.onclick = () => {
+                    overlay.remove();
+                    
+                    // Si tenemos fecha y tipo, establecer fecha y navegar con fecha específica
+                    if (fecha && tipo) {
+                        // Parsear fecha correctamente
+                        const fechaParts = fecha.split('-');
+                        const fechaDate = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
+                        
+                        // Establecer fecha en el estado
+                        if (window.setFechaSeleccionada) {
+                            window.setFechaSeleccionada(fechaDate);
+                        }
+                        
+                        // Navegar pasando la fecha directamente para evitar problemas de timing
+                        setTimeout(() => {
+                            if (window.navegarA) {
+                                console.log('🚀 Navegando a', tipo, 'con fecha:', fechaDate);
+                                window.navegarA(tipo, fechaDate);
+                            } else if (tipo === 'Stock Final' && window.abrirCargaStock) {
+                                window.abrirCargaStock();
+                            } else if (tipo === 'Ingreso de Mercadería' && window.abrirCargaIngreso) {
+                                window.abrirCargaIngreso();
+                            } else {
+                                alert(`Por favor, usa el botón "${tipo}" en el menú principal`);
+                            }
+                        }, 200);
+                    } else {
+                        // Fallback: navegar según el contenido del problema
+                        if (problema.includes('Stock Final')) {
+                            if (window.navegarA) {
+                                window.navegarA('Stock Final');
+                            } else if (window.abrirCargaStock) {
+                                window.abrirCargaStock();
+                            } else {
+                                alert('Por favor, usa el botón "Stock Final" en el menú principal');
+                            }
+                        } else if (problema.includes('Ingreso de Mercadería')) {
+                            if (window.navegarA) {
+                                window.navegarA('Ingreso de Mercadería');
+                            } else if (window.abrirCargaIngreso) {
+                                window.abrirCargaIngreso();
+                            } else {
+                                alert('Por favor, usa el botón "Ingreso de Mercadería" en el menú principal');
+                            }
+                        }
+                    }
+                };
+                
+                body.appendChild(problemaDiv);
+            });
+            
+            dialog.appendChild(body);
+            
+            // Footer con botón cerrar
+            const footer = document.createElement('div');
+            footer.style.cssText = 'padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end';
+            const btnCerrar = document.createElement('button');
+            btnCerrar.textContent = 'Cerrar';
+            btnCerrar.style.cssText = 'padding:8px 24px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold';
+            btnCerrar.onclick = () => overlay.remove();
+            footer.appendChild(btnCerrar);
+            dialog.appendChild(footer);
+            
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            
+            // Cerrar al hacer click fuera del diálogo
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+        };
+        
+        // Exponer globalmente
+        window.mostrarPopupProblemas = mostrarPopupProblemas;
+
         // GestionLocales Component - EXACTO como GestionLocalesActivity.kt
         function GestionLocales({ onVolver, onLoginSuccess }) {
             console.log('🏢 GestionLocales renderizado con props:', { onVolver: !!onVolver, onLoginSuccess: !!onLoginSuccess });
@@ -2821,11 +2971,7 @@
                 }
             };
             
-            // Mostrar popup de problemas
-            const mostrarPopupProblemas = (nombreLocal, problemas) => {
-                const mensaje = `⚠️ Problemas encontrados en ${nombreLocal}:\n\n${problemas.join('\n\n')}`;
-                alert(mensaje);
-            };
+            // Usar la función global mostrarPopupProblemas
             
             const filtrarLocales = (termino) => {
                 if (!termino.trim()) {
@@ -3343,7 +3489,9 @@
                                         }}
                                         onClick={() => {
                                             if (problemasLocales[local.id]) {
-                                                mostrarPopupProblemas(local.nombre, problemasLocales[local.id]);
+                                                if (window.mostrarPopupProblemas) {
+                                                    window.mostrarPopupProblemas(local.nombre, problemasLocales[local.id]);
+                                                }
                                             }
                                         }}
                                     >
@@ -4240,6 +4388,9 @@
         // Main Component
         function Main({ usuario, onLogout, onVolverGestion }) {
             const [fechaSeleccionada, setFechaSeleccionada] = useState(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
+            
+            // Exponer setFechaSeleccionada globalmente para que el diálogo de alertas pueda usarla
+            window.setFechaSeleccionada = setFechaSeleccionada;
             const [mostrarCalendario, setMostrarCalendario] = useState(false);
             const [cargandoCalendario, setCargandoCalendario] = useState(false);
             const [fechasCompletas, setFechasCompletas] = useState(new Set());
@@ -4646,6 +4797,13 @@
             };
 
             const [pantallaActual, setPantallaActual] = useState('main');
+            const [enPantallaCarga, setEnPantallaCarga] = useState(false); // Variable para saber si estamos en Stock Final o Ingreso
+            const enPantallaCargaRef = React.useRef(false); // Referencia para leer el valor actual en timeouts
+            
+            // Sincronizar referencia cuando cambia el estado
+            React.useEffect(() => {
+                enPantallaCargaRef.current = enPantallaCarga;
+            }, [enPantallaCarga]);
 
             // Verificar registros cuando cambie la fecha - EXACTO como MainActivity.kt líneas 153-159
             useEffect(() => {
@@ -4653,6 +4811,7 @@
                 console.log('🔄 usuario.localId:', usuario?.localId);
                 console.log('🔄 usuario.localNombre:', usuario?.localNombre);
                 console.log('🔄 fechaSeleccionada:', fechaSeleccionada);
+                console.log('🔄 pantallaActual:', pantallaActual);
                 
                 if (usuario && usuario.localId) {
                     console.log('✅ Usuario válido, ejecutando verificarRegistrosExistentes para localId:', usuario.localId);
@@ -4663,6 +4822,241 @@
                     console.error('   usuario.localId:', usuario?.localId);
                 }
             }, [fechaSeleccionada, usuario]);
+            
+            // Verificar alertas SOLO cuando estamos en el menú principal Y NO estamos en pantalla de carga
+            useEffect(() => {
+                // NO verificar alertas si estamos en una pantalla de carga
+                if (enPantallaCarga) {
+                    console.log('⏭️ No verificando alertas - estamos en pantalla de carga');
+                    return;
+                }
+                
+                // Solo verificar alertas si estamos en el menú principal
+                if (pantallaActual === 'main' && usuario && usuario.localId && usuario.localNombre) {
+                    console.log('✅ Estamos en menú principal y no en pantalla de carga, verificando alertas...');
+                    verificarAlertasLocalAutomatico();
+                }
+            }, [fechaSeleccionada, usuario, pantallaActual, enPantallaCarga]);
+            
+            // Verificar alertas automáticamente al entrar al local (como Android MainActivity.kt verificarAlertasLocal)
+            const verificarAlertasLocalAutomatico = async () => {
+                // Verificar primero que NO estemos en una pantalla de carga (usar referencia para valor actual)
+                if (enPantallaCargaRef.current || enPantallaCarga) {
+                    console.log('⏭️ verificarAlertasLocalAutomatico: Estamos en pantalla de carga, NO mostrando alertas');
+                    return;
+                }
+                
+                // Verificar que estemos en el menú principal
+                if (pantallaActual !== 'main') {
+                    console.log('⏭️ verificarAlertasLocalAutomatico: No estamos en menú principal (pantallaActual:', pantallaActual, '), saliendo');
+                    return;
+                }
+                
+                if (!usuario || !usuario.localId || !usuario.localNombre) {
+                    console.log('⚠️ verificarAlertasLocalAutomatico: usuario o datos faltantes, saliendo');
+                    return;
+                }
+                
+                console.log('🚀 verificarAlertasLocalAutomatico: Iniciando verificación para local', usuario.localId);
+                
+                try {
+                    const problemas = [];
+                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    
+                    console.log('🔍 Verificando registros para fecha:', fechaHoy);
+                    
+                    const db = FirebaseRegionManager.getFirestore();
+                    
+                    // Verificar si es un local nuevo (sin registros históricos)
+                    const snapshotTotal = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('registros')
+                        .get();
+                    
+                    console.log('📊 Total de registros encontrados:', snapshotTotal.size);
+                    
+                    if (snapshotTotal.empty) {
+                        console.log('🏪 Local nuevo sin registros, mostrando bienvenida');
+                        // Local nuevo - mostrar mensaje de bienvenida
+                        setTimeout(() => {
+                            alert(`🏪 ¡Bienvenido a ${usuario.localNombre}!\n\nEste es un local nuevo. Podés empezar a cargar datos de inventario.`);
+                        }, 500);
+                        return;
+                    }
+                    
+                    // Local existente - verificar alertas normales
+                    // 1. Verificar datos en 0 de hoy
+                    await verificarDatosEnCeroHoyWeb(usuario.localId, fechaHoy, problemas);
+                    
+                    // 2. Verificar días faltantes en los últimos 7 días
+                    await verificarDiasFaltantesWeb(usuario.localId, fechaHoy, problemas);
+                    
+                    console.log('🔍 Total de problemas encontrados:', problemas.length);
+                    problemas.forEach((problema, index) => {
+                        console.log(`  ${index + 1}. ${problema}`);
+                    });
+                    
+                    // Mostrar automáticamente el diálogo de alertas SOLO si NO estamos en pantalla de carga
+                    if (problemas.length > 0) {
+                        setTimeout(() => {
+                            // Verificar usando la REFERENCIA para obtener el valor ACTUAL (no el capturado)
+                            if (enPantallaCargaRef.current) {
+                                console.log('⏭️ No se muestra alerta - enPantallaCargaRef.current es true (estamos en pantalla de carga)');
+                                return;
+                            }
+                            
+                            if (pantallaActual !== 'main') {
+                                console.log('⏭️ No se muestra alerta - pantallaActual:', pantallaActual, '(no estamos en main)');
+                                return;
+                            }
+                            
+                            console.log('📋 Mostrando diálogo automático de alertas (no estamos en pantalla de carga)...');
+                            if (window.mostrarPopupProblemas) {
+                                window.mostrarPopupProblemas(usuario.localNombre, problemas);
+                            } else {
+                                console.error('❌ mostrarPopupProblemas no está disponible');
+                            }
+                        }, 800);
+                    } else {
+                        console.log('ℹ️ No hay problemas - no se muestra diálogo');
+                    }
+                } catch (e) {
+                    console.error('❌ Error verificando alertas para local', usuario.localId, ':', e);
+                }
+            };
+            
+            // Verificar datos en 0 en TODOS los registros históricos (versión web de verificarDatosEnCeroHoy)
+            // EXACTO como Android MainActivity.kt líneas 2242-2296
+            const verificarDatosEnCeroHoyWeb = async (localId, fechaHoy, problemas) => {
+                console.log('🔍 Verificando datos en 0 en TODOS los registros históricos para local:', localId);
+                
+                try {
+                    const db = FirebaseRegionManager.getFirestore();
+                    
+                    // Obtener TODOS los registros históricos del local (como Android)
+                    const snapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('registros')
+                        .get();
+                    
+                    console.log('📊 Total de registros para verificar datos en 0:', snapshot.size);
+                    
+                    snapshot.forEach(doc => {
+                        const registro = doc.data();
+                        
+                        // Verificar que haya productos antes de verificar si están en 0
+                        const todosEnCero = registro.productos && registro.productos.length > 0 && 
+                                           registro.productos.every(producto => (producto.cantidad || 0) === 0);
+                        
+                        console.log('📅 Verificando', registro.tipo, '-', registro.fecha, ': todosEnCero=', todosEnCero, 'productos.size=', registro.productos?.length, 'noRecibioMercaderia=', registro.noRecibioMercaderia);
+                        
+                        if (registro.tipo === 'Ingreso de Mercadería') {
+                            // Si todos están en 0 y NO tiene el flag noRecibioMercaderia, mostrar alerta
+                            if (todosEnCero && !registro.noRecibioMercaderia) {
+                                // Parsear fecha correctamente usando zona horaria de Argentina
+                                const fechaParts = registro.fecha.split('-');
+                                const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
+                                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                                const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                                const problema = `📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`;
+                                problemas.push(problema);
+                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                            }
+                        } else if (registro.tipo === 'Stock Final') {
+                            // Para Stock Final solo alertar si todos están en 0 (no hay flag aquí)
+                            if (todosEnCero) {
+                                // Parsear fecha correctamente usando zona horaria de Argentina
+                                const fechaParts = registro.fecha.split('-');
+                                const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
+                                const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                                const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                                const problema = `📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`;
+                                problemas.push(problema);
+                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Verificación de datos en 0 completada. Problemas encontrados:', problemas.length);
+                } catch (e) {
+                    console.error('❌ Error verificando datos en 0:', e);
+                }
+            };
+            
+            // Verificar días faltantes en los últimos 7 días (versión web de verificarDiasFaltantes)
+            const verificarDiasFaltantesWeb = async (localId, fechaHoy, problemas) => {
+                console.log('🔍 Verificando días faltantes en los últimos 7 días para local:', localId);
+                
+                try {
+                    const db = FirebaseRegionManager.getFirestore();
+                    
+                    // Primero verificar si el local tiene algún registro histórico
+                    const snapshotTotal = await db.collection('locales')
+                        .doc(localId)
+                        .collection('registros')
+                        .get();
+                    
+                    // Si el local no tiene registros históricos (local nuevo), no generar alertas
+                    if (snapshotTotal.empty) {
+                        console.log('🏪 Local nuevo sin registros históricos, no generando alertas de días faltantes');
+                        return;
+                    }
+                    
+                    console.log('📊 Total de registros históricos encontrados:', snapshotTotal.size);
+                    
+                    const fechaHoyDate = new Date(fechaHoy);
+                    
+                    // Verificar los últimos 7 días (excluyendo hoy)
+                    for (let i = 1; i <= 7; i++) {
+                        const fechaCheck = new Date(fechaHoyDate);
+                        fechaCheck.setDate(fechaCheck.getDate() - i);
+                        const fechaCheckStr = fechaCheck.toISOString().split('T')[0];
+                        
+                        console.log('🔍 Verificando fecha:', fechaCheckStr);
+                        
+                        // Verificar si existe registro de "Ingreso de Mercadería" para esta fecha
+                        const snapshotIngreso = await db.collection('locales')
+                            .doc(localId)
+                            .collection('registros')
+                            .doc(`${fechaCheckStr}_Ingreso_de_Mercadería`)
+                            .get();
+                        
+                        // Verificar si existe registro de "Stock Final" para esta fecha
+                        const snapshotStock = await db.collection('locales')
+                            .doc(localId)
+                            .collection('registros')
+                            .doc(`${fechaCheckStr}_Stock_Final`)
+                            .get();
+                        
+                        const faltantes = [];
+                        if (!snapshotIngreso.exists) {
+                            faltantes.push('Ingreso de Mercadería');
+                            console.log('⚠️ Falta Ingreso de Mercadería para', fechaCheckStr);
+                        }
+                        if (!snapshotStock.exists) {
+                            faltantes.push('Stock Final');
+                            console.log('⚠️ Falta Stock Final para', fechaCheckStr);
+                        }
+                        
+                        if (faltantes.length > 0) {
+                            // Parsear fecha correctamente usando zona horaria de Argentina
+                            const fechaParts = fechaCheckStr.split('-');
+                            const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
+                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
+                            const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                            const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`;
+                            problemas.push(problemaTexto);
+                            console.log('📅 Agregado problema para', fechaCheckStr, ':', faltantes.join(', '));
+                        } else {
+                            console.log('✅ Fecha', fechaCheckStr, 'tiene todos los datos necesarios');
+                        }
+                    }
+                    
+                    console.log('✅ Verificación completada. Problemas encontrados:', problemas.length);
+                } catch (e) {
+                    console.error('❌ Error verificando días faltantes:', e);
+                }
+            };
 
 
             // Función para verificar si es el día actual - EXACTO como MainActivity.kt líneas 1219-1227
@@ -4680,10 +5074,29 @@
 
 
             // Función para cargar datos existentes - EXACTO como CargaActivity.kt
-            const cargarDatosExistentes = async (tipo) => {
+            const cargarDatosExistentes = async (tipo, fechaEspecifica = null) => {
                 setCargandoDatos(true);
                 try {
-                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    // Usar fecha específica si se proporciona, sino usar fechaSeleccionada
+                    const fechaAUsar = fechaEspecifica || fechaSeleccionada;
+                    
+                    // Formatear fecha de forma segura sin problemas de zona horaria
+                    let fechaString;
+                    if (fechaAUsar instanceof Date) {
+                        // Si es un objeto Date, usar los componentes directamente para evitar problemas de zona horaria
+                        const año = fechaAUsar.getFullYear();
+                        const mes = String(fechaAUsar.getMonth() + 1).padStart(2, '0');
+                        const dia = String(fechaAUsar.getDate()).padStart(2, '0');
+                        fechaString = `${año}-${mes}-${dia}`;
+                    } else if (typeof fechaAUsar === 'string' && fechaAUsar.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        // Si ya está en formato yyyy-MM-dd, usarlo directamente
+                        fechaString = fechaAUsar;
+                    } else {
+                        // Fallback a formatearFechaCorta
+                        fechaString = formatearFechaCorta(fechaAUsar);
+                    }
+                    
+                    console.log('📅 cargarDatosExistentes - fechaString:', fechaString, 'fechaAUsar:', fechaAUsar, 'fechaEspecifica:', fechaEspecifica, 'fechaSeleccionada:', fechaSeleccionada);
                     // Usar la región actual de Firebase
                     let db;
                     try {
@@ -4693,12 +5106,21 @@
                         setCargandoDatos(false);
                         return;
                     }
+                    console.log('🔍 Consultando Firebase - localId:', usuario.localId, 'fecha:', fechaString, 'tipo:', tipo);
                     const snapshot = await db.collection('locales')
                         .doc(usuario.localId)
                         .collection('registros')
                         .where('fecha', '==', fechaString)
                         .where('tipo', '==', tipo)
                         .get();
+                    
+                    console.log('📊 Resultados de consulta Firebase:', snapshot.size, 'documentos encontrados');
+                    if (snapshot.size > 0) {
+                        snapshot.docs.forEach((doc, index) => {
+                            const data = doc.data();
+                            console.log(`  Doc ${index + 1}: fecha=${data.fecha}, tipo=${data.tipo}, id=${doc.id}`);
+                        });
+                    }
                     
                     if (!snapshot.empty) {
                         console.log(`📊 Total registros encontrados: ${snapshot.docs.length}`);
@@ -4759,22 +5181,34 @@
             };
 
 
-            const navegarA = async (ruta) => {
-                console.log(`Navegando a ${ruta}`);
+            const navegarA = async (ruta, fechaEspecifica = null) => {
+                console.log(`🚀 Navegando a ${ruta}`, fechaEspecifica ? `con fecha específica: ${fechaEspecifica}` : '');
+                
                 if (ruta === 'Ingreso de Mercadería') {
+                    setEnPantallaCarga(true); // Marcar que estamos en pantalla de carga
+                    enPantallaCargaRef.current = true; // Actualizar referencia INMEDIATAMENTE
                     setPantallaActual('ingreso');
-                    await cargarDatosExistentes('Ingreso de Mercadería');
+                    await cargarDatosExistentes('Ingreso de Mercadería', fechaEspecifica);
                 } else if (ruta === 'Stock Final') {
+                    setEnPantallaCarga(true); // Marcar que estamos en pantalla de carga
+                    enPantallaCargaRef.current = true; // Actualizar referencia INMEDIATAMENTE
                     setPantallaActual('stock');
-                    await cargarDatosExistentes('Stock Final');
+                    await cargarDatosExistentes('Stock Final', fechaEspecifica);
                 } else if (ruta === 'Promedio de Ventas') {
                     setPantallaActual('ventas');
+                    setEnPantallaCarga(false); // No es pantalla de carga
+                    enPantallaCargaRef.current = false;
                 } else {
                     alert(`Funcionalidad de ${ruta} próximamente disponible`);
                 }
             };
+            
+            // Exponer navegarA globalmente para que el diálogo de alertas pueda usarla
+            window.navegarA = navegarA;
 
             const volverAlMenu = () => {
+                setEnPantallaCarga(false); // Ya no estamos en pantalla de carga
+                enPantallaCargaRef.current = false; // Actualizar referencia INMEDIATAMENTE
                 setPantallaActual('main');
             };
 
@@ -5501,6 +5935,51 @@
                         setTieneIngreso(true);
                     } else if (tipo === 'Stock Final') {
                         setTieneStock(true);
+                    }
+                    
+                    // Re-verificar alertas después de guardar SOLO si NO estamos en pantalla de carga
+                    // (no mostrar cuando estamos arreglando un problema)
+                    if (usuario && usuario.localId && usuario.localNombre && !enPantallaCargaRef.current && pantallaActual === 'main') {
+                        setTimeout(async () => {
+                            // Verificar nuevamente usando la REFERENCIA para obtener el valor ACTUAL
+                            if (enPantallaCargaRef.current) {
+                                console.log('⏭️ Ya estamos en pantalla de carga, cancelando re-verificación');
+                                return;
+                            }
+                            
+                            console.log('🔄 Re-verificando alertas después de guardar registro (no estamos en pantalla de carga)...');
+                            try {
+                                const problemas = [];
+                                const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                                
+                                // Verificar datos en 0
+                                await verificarDatosEnCeroHoyWeb(usuario.localId, fechaHoy, problemas);
+                                
+                                // Verificar días faltantes
+                                await verificarDiasFaltantesWeb(usuario.localId, fechaHoy, problemas);
+                                
+                                console.log('🔍 Re-verificación completada. Problemas encontrados:', problemas.length);
+                                
+                                // Solo mostrar si NO estamos en pantalla de carga (usar referencia)
+                                if (problemas.length > 0 && !enPantallaCargaRef.current && pantallaActual === 'main') {
+                                    console.log('⚠️ Aún hay problemas después de guardar, mostrando alertas actualizadas...');
+                                    setTimeout(() => {
+                                        // Verificar nuevamente usando la REFERENCIA antes de mostrar
+                                        if (!enPantallaCargaRef.current && pantallaActual === 'main' && window.mostrarPopupProblemas) {
+                                            window.mostrarPopupProblemas(usuario.localNombre, problemas);
+                                        } else {
+                                            console.log('⏭️ No se muestra alerta - enPantallaCargaRef.current:', enPantallaCargaRef.current, 'pantallaActual:', pantallaActual);
+                                        }
+                                    }, 500);
+                                } else {
+                                    console.log('✅ Todos los problemas fueron resueltos o estamos en pantalla de carga');
+                                }
+                            } catch (e) {
+                                console.error('❌ Error re-verificando alertas:', e);
+                            }
+                        }, 1000);
+                    } else {
+                        console.log('⏭️ No se re-verifican alertas - enPantallaCargaRef.current:', enPantallaCargaRef.current, 'pantallaActual:', pantallaActual);
                     }
                     
                     // Volver al menú principal
@@ -8363,11 +8842,76 @@
           });
         });
         console.log('✅ Lotes normalizados:', lotes);
-        if (lotes.length === 0) {
+        
+        // Detectar productos con problemas (como Android StockVencimientosActivity)
+        const codigosConControlVencimientos = new Set();
+        Object.values(categorias).forEach(codigos => {
+          codigos.forEach(codigo => codigosConControlVencimientos.add(normalizar(codigo)));
+        });
+        
+        const codigosConVencimientos = new Set(lotes.map(l => l.codigo));
+        const productosSinVencimientos = [];
+        const productosConDiferencias = [];
+        
+        // Detectar productos sin vencimientos
+        Object.keys(stockMap).forEach(codigo => {
+          const codigoNorm = normalizar(codigo);
+          if (codigosConControlVencimientos.has(codigoNorm) && stockMap[codigo] > 0) {
+            if (!codigosConVencimientos.has(codigoNorm)) {
+              productosSinVencimientos.push({ codigo: codigoNorm, stock: stockMap[codigo] });
+            }
+          }
+        });
+        
+        // Detectar productos con diferencias
+        const lotesPorProducto = {};
+        lotes.forEach(l => {
+          if (!lotesPorProducto[l.codigo]) lotesPorProducto[l.codigo] = [];
+          lotesPorProducto[l.codigo].push(l);
+        });
+        
+        Object.keys(stockMap).forEach(codigo => {
+          const codigoNorm = normalizar(codigo);
+          if (codigosConControlVencimientos.has(codigoNorm) && stockMap[codigo] > 0) {
+            const lotesProducto = lotesPorProducto[codigoNorm] || [];
+            if (lotesProducto.length > 0) {
+              const sumaLotes = lotesProducto.reduce((sum, l) => sum + l.cantidad, 0);
+              if (sumaLotes !== stockMap[codigo]) {
+                productosConDiferencias.push({ codigo: codigoNorm, stock: stockMap[codigo], sumaLotes });
+              }
+            }
+          }
+        });
+        
+        const datosStockCargados = Object.keys(stockMap).length > 0;
+        const hayProblemas = !datosStockCargados || productosSinVencimientos.length > 0 || productosConDiferencias.length > 0;
+        
+        if (lotes.length === 0 && !datosStockCargados) {
           body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:16px">📭 No hay vencimientos cargados para este local<br><small style="color:#9ca3af">LocalId: ' + localId + '</small></div>';
           return;
         }
         body.innerHTML = '';
+        
+        // Mostrar banner de alerta (verde si todo está bien, rojo si hay problemas)
+        if (!hayProblemas && datosStockCargados) {
+          const bannerVerde = document.createElement('div');
+          bannerVerde.style.cssText = 'background:#4caf50;color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:700;text-align:center;font-size:15px';
+          bannerVerde.textContent = '✓ TODO EN ORDEN - Todos los productos con stock tienen lotes cargados';
+          body.appendChild(bannerVerde);
+        } else if (hayProblemas) {
+          const bannerError = document.createElement('div');
+          bannerError.style.cssText = 'background:#c62828;color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:700;text-align:center;font-size:15px';
+          let mensajeError = '';
+          if (productosSinVencimientos.length > 0) {
+            mensajeError += '🔴 ' + productosSinVencimientos.length + ' producto(s) con stock SIN lotes cargados';
+          }
+          if (productosConDiferencias.length > 0) {
+            if (mensajeError) mensajeError += ' | ';
+            mensajeError += '🔴 ' + productosConDiferencias.length + ' producto(s) con diferencia entre stock y lotes';
+          }
+          bannerError.textContent = mensajeError;
+          body.appendChild(bannerError);
+        }
         Object.keys(categorias).forEach(categoria => {
           const codigosCategoria = categorias[categoria];
           const lotesCategoria = lotes.filter(l => codigosCategoria.includes(l.codigo));
@@ -8431,12 +8975,68 @@
               prodDiv.appendChild(loteDiv);
             });
             const coincide = sumaLotes === stockReal;
-            const iconoValidacion = coincide ? '✅' : '⚠️';
-            const colorValidacion = coincide ? '#059669' : '#f57c00';
             const diferencia = stockReal - sumaLotes;
-            prodDiv.innerHTML += '<div style="height:1px;background:#d1d5db;margin:8px 32px"></div>' +
-              '<div style="padding:4px 32px;font-size:14px;font-weight:700;color:' + colorValidacion + '">   ' + iconoValidacion + ' Subtotal lotes: ' + sumaLotes + ' uds</div>' +
-              (!coincide ? '<div style="padding:0 32px 8px;font-size:12px;color:#f57c00">   ⚠️ Diferencia: ' + (diferencia > 0 ? '+' : '') + diferencia + ' uds</div>' : '');
+            
+            // Validación mejorada (como Android)
+            prodDiv.innerHTML += '<div style="height:1px;background:#d1d5db;margin:8px 32px"></div>';
+            
+            if (coincide) {
+              prodDiv.innerHTML += '<div style="padding:4px 32px;font-size:14px;font-weight:700;color:#059669">   ✅ Stock: ' + stockReal + ' uds | Lotes: ' + sumaLotes + ' uds (Coincide)</div>';
+            } else {
+              prodDiv.innerHTML += '<div style="padding:4px 32px;font-size:14px;font-weight:700;color:#374151">   Stock: ' + stockReal + ' uds | Lotes: ' + sumaLotes + ' uds</div>';
+              
+              // Mensaje de error en ROJO si NO coincide (como Android)
+              const mensajeError = diferencia > 0 
+                ? '🔴 FALTAN: +' + diferencia + ' unidades | Los lotes NO coinciden con el stock'
+                : '🔴 SOBRAN: ' + Math.abs(diferencia) + ' unidades | Los lotes NO coinciden con el stock';
+              
+              const errorDiv = document.createElement('div');
+              errorDiv.style.cssText = 'padding:12px 32px;margin:8px 0;background:#c62828;color:#fff;font-weight:700;font-size:15px;border-radius:4px';
+              errorDiv.textContent = '   ' + mensajeError;
+              prodDiv.appendChild(errorDiv);
+              
+              const mensajeDiv = document.createElement('div');
+              mensajeDiv.style.cssText = 'padding:0 32px 16px;font-size:12px;color:#c62828';
+              mensajeDiv.textContent = '   ⚠️ Debes ajustar los lotes para que coincidan con el stock actual';
+              prodDiv.appendChild(mensajeDiv);
+            }
+            
+            body.appendChild(prodDiv);
+          });
+          
+          // Mostrar productos con stock pero sin lotes de vencimiento (como Android)
+          productosSinVencimientos.forEach(({ codigo, stock }) => {
+            // Verificar si el producto pertenece a esta categoría
+            if (!codigosCategoria.includes(codigo)) return;
+            
+            const productos = {
+              'JQ': 'JQ - Jamón y Queso',
+              'PB': 'PB - Pollo BBQ',
+              'CS': 'CS - Carne Suave',
+              'PO': 'PO - Pollo',
+              'CP': 'CP - Carne Picante',
+              'HU': 'HU - Humita',
+              'ES': 'ES - Espinaca',
+              'CQ': 'CQ - Calabaza y Queso',
+              'RJ': 'RJ - Roquefort y Jamón',
+              'QC': 'QC - Queso y Cebolla',
+              'CB': 'CB - Cerdo y Barbacoa',
+              'CH': 'CH - Cheeseburger',
+              'MUZZA': 'Pizza Muzzarella',
+              'JAMON': 'Pizza Jamón',
+              'PEPPER': 'Pizza Pepperoni',
+              'BATATA': 'Pastelito Batata',
+              'MEMBRIL': 'Pastelito Membrillo'
+            };
+            
+            const productoNombre = productos[codigo] || codigo;
+            
+            const prodDiv = document.createElement('div');
+            prodDiv.style.cssText = 'margin:16px 0;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden';
+            prodDiv.innerHTML = '<div style="background:#f57c00;color:#fff;font-weight:700;padding:12px 16px;font-size:15px">' + productoNombre + '</div>' +
+              '<div style="padding:8px 16px;font-size:14px">   Stock actual: ' + stock + ' uds</div>' +
+              '<div style="padding:4px 16px;font-size:14px;font-weight:700;color:#c62828">   ⚠️ NO HAY VENCIMIENTOS CARGADOS para este producto</div>' +
+              '<div style="padding:0 16px 16px;font-size:12px;color:#6b7280">   💡 Debes cargar los vencimientos desde la sección "Vencimientos"</div>';
             body.appendChild(prodDiv);
           });
         });
@@ -9291,12 +9891,12 @@
       // Construir mensaje - EXACTO como Android línea 2033-2068
       const fechaHoyDisplay = fechaHoy.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
       
-      let mensaje = '*INFORME DE VENCIMIENTOS*\n';
+      let mensaje = '⌛*VENCIMIENTOS*⌛\n';
       mensaje += 'Local: ' + (localNombre || 'Local') + '\n';
       mensaje += 'Fecha: ' + fechaHoyDisplay + '\n\n';
       
       if (vencimientosHoy.length > 0) {
-        mensaje += '>>> *VENCEN HOY (URGENTE):*\n';
+        mensaje += '> *VENCEN HOY* 🚨:\n';
         vencimientosHoy.forEach(v => {
           mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
@@ -9304,28 +9904,18 @@
       }
       
       if (vencimientosManana.length > 0) {
-        mensaje += '>>> *VENCEN MAÑANA (ATENCION):*\n';
+        mensaje += '> *VENCEN MAÑANA* ⚠️:\n';
         vencimientosManana.forEach(v => {
           mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
         mensaje += '\n';
       }
-      
-      if (vencimientosProximos.length > 0) {
-        mensaje += '>>> *PROXIMOS VENCIMIENTOS (7 dias):*\n';
-        vencimientosProximos.forEach(v => {
-          mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds (' + v.fecha + ')\n';
-        });
-        mensaje += '\n';
-      }
-      
+            
       if (vencimientosHoy.length === 0 && vencimientosManana.length === 0 && vencimientosProximos.length === 0) {
         mensaje += '✅ OK - No hay vencimientos proximos en los proximos 7 dias.\n\n';
       }
       
       mensaje += '================================\n';
-      if (totalHoy > 0) mensaje += 'TOTAL vencen hoy: ' + totalHoy + ' uds\n';
-      if (totalManana > 0) mensaje += 'TOTAL vencen manana: ' + totalManana + ' uds\n';
       
       // Función para escapar HTML
       function escapeHtml(text) {
@@ -9463,6 +10053,91 @@
         msg.textContent = 'Complete producto, fecha y cantidad válida';
         return;
       }
+      
+      // Validar que el stock final de ayer esté cargado antes de permitir cargar lotes (como Android)
+      try {
+        const fechaHoy = getFechaActualArgentina();
+        const fechaAyerObj = new Date(fechaHoy);
+        fechaAyerObj.setDate(fechaAyerObj.getDate() - 1);
+        const fechaAyer = fechaISO(fechaAyerObj);
+        
+        const db = FirebaseRegionManager.getFirestore();
+        const docStockFinalAyer = await db.collection('locales')
+          .doc(localId)
+          .collection('registros')
+          .doc(`${fechaAyer}_Stock_Final`)
+          .get();
+        
+        if (!docStockFinalAyer.exists) {
+          const fechaAyerFormateada = fechaAyerObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          
+          // Crear diálogo de alerta similar a Android
+          const alertOverlay = document.createElement('div');
+          alertOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10001';
+          
+          const alertDialog = document.createElement('div');
+          alertDialog.style.cssText = 'background:#fff;width:90%;max-width:500px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);overflow:hidden';
+          
+          const alertHeader = document.createElement('div');
+          alertHeader.style.cssText = 'background:#ff9800;color:#fff;padding:16px;font-weight:bold;font-size:18px';
+          alertHeader.textContent = '⚠️ Stock Final Pendiente';
+          alertDialog.appendChild(alertHeader);
+          
+          const alertBody = document.createElement('div');
+          alertBody.style.cssText = 'padding:20px;font-size:15px;line-height:1.6;color:#374151';
+          alertBody.innerHTML = `No podés cargar lotes porque falta cargar el Stock Final de ayer (${fechaAyerFormateada}).<br><br>Por favor, cargá el Stock Final de ayer primero.`;
+          alertDialog.appendChild(alertBody);
+          
+          const alertFooter = document.createElement('div');
+          alertFooter.style.cssText = 'padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end';
+          
+          const btnEntendido = document.createElement('button');
+          btnEntendido.textContent = 'Entendido';
+          btnEntendido.style.cssText = 'padding:8px 24px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold';
+          btnEntendido.onclick = () => alertOverlay.remove();
+          
+          const btnIrStock = document.createElement('button');
+          btnIrStock.textContent = '📊 Ir a Stock Final';
+          btnIrStock.style.cssText = 'padding:8px 24px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold';
+          btnIrStock.onclick = () => {
+            alertOverlay.remove();
+            overlay.remove(); // Cerrar también el modal de vencimientos
+            // Abrir Stock Final de ayer
+            if (window.abrirCargaStock) {
+              // Cambiar fecha seleccionada a ayer antes de abrir
+              const fechaAyerDate = new Date(fechaAyer);
+              if (window.setFechaSeleccionada) {
+                window.setFechaSeleccionada(fechaAyerDate);
+              }
+              setTimeout(() => {
+                window.abrirCargaStock();
+              }, 300);
+            } else {
+              alert('Por favor, usa el botón "Stock Final" en el menú principal y selecciona la fecha de ayer');
+            }
+          };
+          
+          alertFooter.appendChild(btnEntendido);
+          alertFooter.appendChild(btnIrStock);
+          alertDialog.appendChild(alertFooter);
+          
+          alertOverlay.appendChild(alertDialog);
+          document.body.appendChild(alertOverlay);
+          
+          // Cerrar al hacer click fuera del diálogo
+          alertOverlay.onclick = (e) => {
+            if (e.target === alertOverlay) alertOverlay.remove();
+          };
+          
+          return; // No continuar con la carga del lote
+        }
+      } catch (e) {
+        console.error('Error verificando Stock Final de ayer:', e);
+        msg.style.color = '#dc2626';
+        msg.textContent = 'Error verificando Stock Final de ayer: ' + e.message;
+        return;
+      }
+      
       try {
         const fechaActual = getFechaActualArgentina();
         const nuevoLote = {

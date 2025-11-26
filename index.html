@@ -1184,6 +1184,24 @@
             const [cargandoRegiones, setCargandoRegiones] = useState(true);
             const [recordarDatos, setRecordarDatos] = useState(false);
             const [regionCargada, setRegionCargada] = useState(false); // Flag para saber si ya se cargó la región inicial
+            const [downloadUrl, setDownloadUrl] = useState('https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk'); // URL por defecto
+
+            // Función para cargar la URL de descarga desde GitHub
+            const cargarDownloadUrl = async () => {
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/refs/heads/main/version_info.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.downloadUrl) {
+                            setDownloadUrl(data.downloadUrl);
+                            console.log('✅ URL de descarga cargada:', data.downloadUrl);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    // Mantener la URL por defecto si falla
+                }
+            };
 
             useEffect(() => {
                 // Resetear estados al montar el componente (pero NO limpiar regionSeleccionada todavía)
@@ -1194,6 +1212,7 @@
                 // NO limpiar localSeleccionado ni password aquí - se cargarán desde localStorage si existen
                 setRegionCargada(false);
                 cargarRegiones();
+                cargarDownloadUrl(); // Cargar URL de descarga
             }, []);
 
             useEffect(() => {
@@ -2175,7 +2194,7 @@
                             {/* Enlace de descarga de la app Android */}
                             <div className="mt-6 text-center">
                                 <a
-                                    href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
+                                    href={downloadUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"
@@ -4232,6 +4251,29 @@
             const [tieneVencimientosCoincidentes, setTieneVencimientosCoincidentes] = useState(false);
             const [ultimoEstadoIngreso, setUltimoEstadoIngreso] = useState(null);
             const [ultimoEstadoStock, setUltimoEstadoStock] = useState(null);
+            const [downloadUrl, setDownloadUrl] = useState('https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk'); // URL por defecto
+
+            // Función para cargar la URL de descarga desde GitHub
+            const cargarDownloadUrl = async () => {
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/refs/heads/main/version_info.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.downloadUrl) {
+                            setDownloadUrl(data.downloadUrl);
+                            console.log('✅ URL de descarga cargada:', data.downloadUrl);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    // Mantener la URL por defecto si falla
+                }
+            };
+
+            // Cargar URL de descarga al montar el componente
+            useEffect(() => {
+                cargarDownloadUrl();
+            }, []);
 
             const formatearFecha = (fecha) => {
                 return fecha.toLocaleDateString('es-ES', {
@@ -6592,15 +6634,17 @@
                                 style={{
                                     height: '72px',
                                     textAlign: 'center',
-                                    whiteSpace: 'pre-line',
+                                    whiteSpace: 'nowrap',
                                     padding: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    lineHeight: '1.2'
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}
                             >
-                                {tieneIngreso ? '✅ Ingreso\nMercadería' : 'Ingreso\nMercadería'}
+                                {tieneIngreso ? '✅ Ingreso Mercadería' : 'Ingreso Mercadería'}
                             </button>
                         </div>
 
@@ -6627,15 +6671,17 @@
                                 style={{
                                     height: '72px',
                                     textAlign: 'center',
-                                    whiteSpace: 'pre-line',
+                                    whiteSpace: 'nowrap',
                                     padding: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    lineHeight: '1.2'
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}
                             >
-                                {tieneStock ? '✅ Stock\nFinal' : 'Stock\nFinal'}
+                                {tieneStock ? '✅ Stock Final' : 'Stock Final'}
                             </button>
                         </div>
 
@@ -6668,12 +6714,14 @@
                                 style={{
                                     height: '72px',
                                     textAlign: 'center',
-                                    whiteSpace: 'pre-line',
+                                    whiteSpace: 'nowrap',
                                     padding: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    lineHeight: '1.2'
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}
                             >
                                 {tieneVencimientosCoincidentes ? '✅ Vencimientos' : 'Vencimientos'}
@@ -6703,15 +6751,17 @@
                                 style={{
                                     height: '72px',
                                     textAlign: 'center',
-                                    whiteSpace: 'pre-line',
+                                    whiteSpace: 'nowrap',
                                     padding: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    lineHeight: '1.2'
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
                                 }}
                             >
-                                Promedio\nVentas
+                                Promedio Ventas
                             </button>
                         </div>
                     </div>
@@ -6762,7 +6812,7 @@
                     {/* Enlace de descarga de la app Android */}
                     <div className="mt-6 text-center">
                         <a
-                            href="https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk"
+                            href={downloadUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center px-4 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all"

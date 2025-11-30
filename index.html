@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.8"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.8"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.8"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.8"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
@@ -1047,14 +1048,29 @@
                     // Limpiar estado anterior completamente antes de crear nuevo
                     if (this.currentApp) {
                         try {
-                            // Limpiar referencias primero
+                            // Verificar si la app todavía existe antes de intentar eliminarla
+                            const appName = this.currentApp.name;
+                            try {
+                                // Intentar acceder a una propiedad para verificar que la app esté activa
+                                const testApp = firebase.app(appName);
+                                if (testApp) {
+                                    // La app existe, intentar eliminarla
+                                    testApp.delete();
+                                    console.log('Firebase anterior cerrado');
+                                }
+                            } catch (deleteError) {
+                                // Si la app ya fue eliminada o no existe, solo limpiar referencias
+                                if (deleteError.message && deleteError.message.includes('already deleted')) {
+                                    console.log('Firebase anterior ya estaba eliminado, limpiando referencias');
+                                } else {
+                                    console.warn('No se pudo verificar/cerrar Firebase anterior:', deleteError.message);
+                                }
+                            }
+                            
+                            // Limpiar referencias siempre
                             this.currentDb = null;
                             this.currentAuth = null;
                             this.currentRegion = null;
-                            
-                            // Luego cerrar la app
-                            this.currentApp.delete();
-                            console.log('Firebase anterior cerrado');
                         } catch (e) {
                             console.warn('No se pudo cerrar Firebase anterior:', e.message);
                             // Asegurar que las referencias estén limpias incluso si falla el delete
@@ -1147,6 +1163,35 @@
                 return this.currentAuth;
             },
 
+            /**
+             * Obtiene la instancia de FirebaseAuth para una región específica
+             * Útil para intentar operaciones en múltiples regiones (ej: reset de contraseña)
+             */
+            getAuthForRegion(region) {
+                try {
+                    let app = null;
+                    
+                    // Si es la región actual, usar la instancia actual
+                    if (this.currentRegion && this.currentRegion.id === region.id) {
+                        return this.currentAuth;
+                    }
+                    
+                    // Intentar obtener la app existente para esta región
+                    const appName = 'firebase_' + region.id;
+                    try {
+                        app = firebase.app(appName);
+                    } catch (e) {
+                        // Si no existe, crear una nueva instancia temporal
+                        app = firebase.initializeApp(region.firebaseConfig, appName);
+                    }
+                    
+                    return firebase.auth(app);
+                } catch (e) {
+                    console.warn('No se pudo obtener FirebaseAuth para región ' + region.nombre + ':', e.message);
+                    return null;
+                }
+            },
+
             getCurrentRegion() {
                 return this.currentRegion;
             }
@@ -1175,12 +1220,11 @@
             const [regiones, setRegiones] = useState([]);
             const [regionSeleccionada, setRegionSeleccionada] = useState(null);
             const [nombresMaestros, setNombresMaestros] = useState([]);
-            const [locales, setLocales] = useState([]);
-            const [localSeleccionado, setLocalSeleccionado] = useState('');
+            const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
-            const [cargandoLocales, setCargandoLocales] = useState(false); // Cambiar a false inicialmente
+            // Ya no se usa cargandoLocales - se eliminó la carga de locales en login
             const [cargandoRegiones, setCargandoRegiones] = useState(true);
             const [recordarDatos, setRecordarDatos] = useState(false);
             const [regionCargada, setRegionCargada] = useState(false); // Flag para saber si ya se cargó la región inicial
@@ -1206,47 +1250,23 @@
             useEffect(() => {
                 // Resetear estados al montar el componente (pero NO limpiar regionSeleccionada todavía)
                 setCargandoRegiones(true);
-                setCargandoLocales(false);
                 setError('');
-                // NO limpiar locales ni regionSeleccionada aquí, esperar a cargarRegiones()
-                // NO limpiar localSeleccionado ni password aquí - se cargarán desde localStorage si existen
+                // NO limpiar email ni password aquí - se cargarán desde localStorage si existen
                 setRegionCargada(false);
                 cargarRegiones();
                 cargarDownloadUrl(); // Cargar URL de descarga
             }, []);
 
+            // Ya no se cargan locales en el login - se usa email/password con Firebase Auth
+            // Cargar datos guardados al montar el componente
             useEffect(() => {
-                // Solo ejecutar si regionSeleccionada cambió Y ya se cargó la región inicial
-                // Esto evita que se ejecute cuando regionSeleccionada es null al inicio
-                if (!regionCargada) {
-                    return; // Esperar a que se cargue la región inicial
+                if (regionCargada) {
+                    // Solo cargar credenciales si el email está vacío (permite cambio de cuenta si el usuario ya escribió algo)
+                    if (!email || email.trim() === '') {
+                        cargarDatosGuardados();
+                    }
                 }
-                
-                if (regionSeleccionada) {
-                    console.log('Region seleccionada cambiada, cargando locales para:', regionSeleccionada.nombre);
-                    // Delay largo para asegurar que Firebase esté completamente inicializado y el cliente anterior esté cerrado
-                    const timer = setTimeout(() => {
-                        cargarLocales();
-                        // NO llamar cargarDatosGuardados aquí - se llamará DESPUÉS de cargar locales (igual que Android)
-                    }, 1000); // 1 segundo de delay para dar tiempo a que Firebase se inicialice completamente
-                    return () => clearTimeout(timer);
-                } else {
-                    // Solo limpiar locales si el usuario cambió manualmente la región a null
-                    // (esto no debería pasar normalmente, pero por si acaso)
-                    console.log('Region seleccionada es null después de cargar región inicial');
-                    setLocales([]);
-                    setCargandoLocales(false);
-                }
-            }, [regionSeleccionada, regionCargada]);
-            
-            // EXACTO como Android: Cargar datos guardados cuando los locales ya están cargados
-            // Esto asegura que al volver al login, se restauren los datos guardados
-            useEffect(() => {
-                if (locales.length > 0 && !cargandoLocales) {
-                    console.log('📋 Locales cargados, intentando cargar datos guardados...');
-                    cargarDatosGuardados(locales);
-                }
-            }, [locales.length, cargandoLocales]);
+            }, [regionCargada]);
 
             const cargarRegiones = async () => {
                 try {
@@ -1339,11 +1359,9 @@
                     
                     // Limpiar estados primero (pero solo si NO es la carga inicial)
                     if (!esCargaInicial) {
-                        setLocales([]);
-                        setLocalSeleccionado('');
+                        setEmail('');
                         setPassword('');
                     }
-                    setCargandoLocales(false);
                     
                     const usuarioData = localStorage.getItem('usuario');
                     if (usuarioData) {
@@ -1395,26 +1413,18 @@
                     console.log('🔍 cargarDatosGuardados - datosGuardados en localStorage:', datosGuardados ? 'EXISTE' : 'NO EXISTE');
                     if (datosGuardados) {
                         const parsed = JSON.parse(datosGuardados);
-                        console.log('🔍 Datos parseados:', { localId: parsed.localId, recordar: parsed.recordar, tienePassword: !!parsed.password });
-                        const { localId, password: savedPassword, recordar } = parsed;
-                        if (recordar && localId) {
-                            // EXACTO como Android: Buscar el local en la lista de locales cargados (línea 792 LoginActivity.kt)
-                            // Usar la lista pasada como parámetro o el estado locales
-                            const listaParaBuscar = localesLista || locales;
-                            console.log('🔍 Buscando localId:', localId, 'en lista de', listaParaBuscar.length, 'locales');
-                            const localEncontrado = listaParaBuscar.find(l => l.id === localId);
-                            if (localEncontrado) {
-                                console.log('✅ Local guardado encontrado:', localEncontrado.nombre, '- Restaurando datos...');
-                                setLocalSeleccionado(localId);
-                                setPassword(savedPassword || '');
-                                setRecordarDatos(true);
-                                console.log('✅ Datos restaurados: localId =', localId, 'password =', savedPassword ? '***' : '(vacío)');
-                            } else {
-                                console.log('⚠️ Local guardado no encontrado en la lista de locales:', localId, 'Lista disponible:', listaParaBuscar.length, 'locales');
-                                console.log('⚠️ IDs disponibles:', listaParaBuscar.map(l => l.id).slice(0, 10));
-                            }
+                        console.log('🔍 Datos parseados:', { email: parsed.email, recordar: parsed.recordar, tienePassword: !!parsed.password });
+                        const { email: savedEmail, password: savedPassword, recordar } = parsed;
+                        if (recordar && savedEmail) {
+                            // EXACTO como Android: Solo cargar si el campo de email está vacío
+                            // Si el usuario ya escribió algo, no sobrescribir (permite cambio de cuenta)
+                            console.log('✅ Restaurando credenciales guardadas...');
+                            setEmail(savedEmail || '');
+                            setPassword(savedPassword || '');
+                            setRecordarDatos(true);
+                            console.log('✅ Datos restaurados: email =', savedEmail, 'password =', savedPassword ? '***' : '(vacío)');
                         } else {
-                            console.log('⚠️ Datos guardados no tienen recordar=true o localId:', { recordar, localId });
+                            console.log('⚠️ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
                         }
                     } else {
                         console.log('⚠️ No hay datos guardados en localStorage');
@@ -1424,152 +1434,29 @@
                 }
             };
 
-            const cargarLocales = async () => {
-                try {
-                    if (!regionSeleccionada) {
-                        setCargandoLocales(false);
-                        return;
-                    }
-                    
-                    setCargandoLocales(true);
-                    setError('');
-                    
-                    // Función auxiliar para obtener Firestore con reintentos
-                    const obtenerFirestoreConReintento = async (maxIntentos = 5) => {
-                        // Guardar el ID de la región al inicio para comparar durante los reintentos
-                        const regionIdInicial = regionSeleccionada?.id;
-                        
-                        for (let intento = 0; intento < maxIntentos; intento++) {
-                            try {
-                                // Solo verificar cambio de región al inicio (intento 0), no durante reintentos
-                                if (intento === 0) {
-                                    if (!regionSeleccionada || regionSeleccionada.id !== FirebaseRegionManager.currentRegion?.id) {
-                                        throw new Error('La región cambió durante la carga');
-                                    }
-                                } else {
-                                    // Durante reintentos, verificar que la región seleccionada no haya cambiado
-                                    if (!regionSeleccionada || regionSeleccionada.id !== regionIdInicial) {
-                                        throw new Error('La región cambió durante la carga');
-                                    }
-                                }
-                                
-                                const db = FirebaseRegionManager.getFirestore();
-                                if (db) {
-                                    return db;
-                                }
-                            } catch (error) {
-                                if (error.message && (
-                                    error.message.includes('terminated') || 
-                                    error.message.includes('already been') ||
-                                    error.message.includes('already deleted') ||
-                                    error.message.includes('app-deleted') ||
-                                    error.message.includes('no esta inicializado')
-                                )) {
-                                    if (intento < maxIntentos - 1) {
-                                        console.log(`Cliente Firebase terminado/eliminado/no inicializado, limpiando estado y reintentando... (intento ${intento + 1}/${maxIntentos})`);
-                                        
-                                        // Guardar la región completa antes de limpiar (NO limpiar currentRegion todavía)
-                                        const regionParaReinicializar = FirebaseRegionManager.currentRegion || regionSeleccionada;
-                                        
-                                        // Limpiar solo las referencias de Firebase (db, app, auth), pero NO currentRegion
-                                        FirebaseRegionManager.currentDb = null;
-                                        FirebaseRegionManager.currentApp = null;
-                                        FirebaseRegionManager.currentAuth = null;
-                                        
-                                        // Esperar más tiempo en cada intento (progresivo: 800ms, 1000ms, 1200ms, etc.)
-                                        const delay = 800 + (intento * 200);
-                                        await new Promise(resolve => setTimeout(resolve, delay));
-                                        
-                                        // Si tenemos una región válida, reinicializar Firebase
-                                        if (regionParaReinicializar && regionSeleccionada && regionSeleccionada.id === regionParaReinicializar.id) {
-                                            console.log('Reinicializando Firebase para la misma región:', regionParaReinicializar.nombre);
-                                            const exito = FirebaseRegionManager.initializeFirebase(regionParaReinicializar);
-                                            if (exito) {
-                                                await new Promise(resolve => setTimeout(resolve, 500));
-                                            } else {
-                                                console.warn('No se pudo reinicializar Firebase, reintentando...');
-                                            }
-                                        } else {
-                                            console.warn('No se puede reinicializar: región no coincide o no disponible');
-                                        }
-                                        continue;
-                                    } else {
-                                        throw error;
-                                    }
-                                } else if (error.message && error.message.includes('La región cambió')) {
-                                    // Si la región cambió, no reintentar
-                                    throw error;
-                                } else {
-                                    throw error;
-                                }
-                            }
-                        }
-                        throw new Error('No se pudo obtener Firestore después de varios intentos');
-                    };
-                    
-                    let db;
-                    try {
-                        db = await obtenerFirestoreConReintento();
-                    } catch (firebaseError) {
-                        console.error('Error obteniendo Firestore:', firebaseError);
-                        setError('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
-                        setCargandoLocales(false);
-                        return;
-                    }
-                    
-                    // Timeout de seguridad para evitar que se quede cargando indefinidamente
-                    const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Timeout cargando locales')), 15000); // Aumentado a 15 segundos
-                    });
-                    
-                    const snapshotPromise = db.collection('locales').get();
-                    const snapshot = await Promise.race([snapshotPromise, timeoutPromise]);
-                    
-                    const localesData = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        // Solo incluir locales activos (o todos si activo no está definido)
-                        if (data.activo !== false) {
-                            localesData.push({ 
-                                id: doc.id, 
-                                nombre: data.nombre || doc.id,
-                                activo: data.activo !== undefined ? data.activo : true
-                            });
-                        }
-                    });
-                    
-                    console.log('Locales cargados para región', regionSeleccionada.nombre, ':', localesData.length, localesData);
-                    setLocales(localesData);
-                    
-                    // EXACTO como Android: Cargar credenciales guardadas DESPUÉS de cargar locales (línea 522 LoginActivity.kt)
-                    // Pasar localesData directamente para evitar problemas de timing con el estado
-                    cargarDatosGuardados(localesData);
-                } catch (error) {
-                    console.error('Error cargando locales:', error);
-                    // Si el error es que el cliente fue terminado o timeout, no mostrar error al usuario si es durante reinicialización
-                    if (error.message && (error.message.includes('terminated') || error.message.includes('already been'))) {
-                        console.log('Cliente Firebase terminado durante la carga, esto es normal al cambiar de región');
-                        setLocales([]);
-                    } else if (error.message && error.message.includes('Timeout')) {
-                        console.log('Timeout cargando locales, puede ser que Firebase aún se esté inicializando');
-                        setLocales([]);
-                    } else {
-                        setError('Error cargando locales: ' + error.message);
-                        setLocales([]);
-                    }
-                } finally {
-                    setCargandoLocales(false);
-                }
-            };
+            // Ya no se cargan locales en el login - se usa email/password con Firebase Auth
 
             const handleLogin = async (e) => {
                 e.preventDefault();
                 if (!regionSeleccionada) {
-                    setError('Por favor selecciona una region');
+                    setError('Por favor selecciona una región');
                     return;
                 }
-                if (!localSeleccionado || !password) {
-                    setError('Por favor completa todos los campos');
+                
+                // Validar email
+                const emailCompleto = email.includes('@') ? email : email + '@saboresexpress.com.ar';
+                if (!email || email.trim() === '') {
+                    setError('Ingrese el email');
+                    return;
+                }
+                
+                if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
+                    setError('El email debe ser @saboresexpress.com.ar');
+                    return;
+                }
+                
+                if (!password) {
+                    setError('Ingrese la contraseña');
                     return;
                 }
 
@@ -1577,30 +1464,231 @@
                     setLoading(true);
                     setError('');
                     
-                    const db = FirebaseRegionManager.getFirestore();
-                    const localDoc = await db.collection('locales').doc(localSeleccionado).get();
-                    const local = localDoc.data();
+                    // Asegurar que Firebase esté inicializado para la región seleccionada
+                    if (!regionSeleccionada) {
+                        setError('Por favor selecciona una región');
+                        setLoading(false);
+                        return;
+                    }
                     
-                    if (!local || !local.usuarios) {
-                        throw new Error('Local no encontrado');
+                    // Verificar que Firebase esté inicializado
+                    try {
+                        FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.log('Firebase no inicializado, inicializando con región seleccionada');
+                        const exito = FirebaseRegionManager.initializeFirebase(regionSeleccionada);
+                        if (!exito) {
+                            setError('Error inicializando Firebase. Intenta nuevamente.');
+                            setLoading(false);
+                            return;
+                        }
                     }
-
-                    const usuario = Object.values(local.usuarios).find(
-                        user => user.contraseña === password && user.activo
-                    );
-
-                    if (!usuario) {
-                        throw new Error('Credenciales incorrectas');
+                    
+                    const auth = FirebaseRegionManager.getAuth();
+                    
+                    // Si hay un usuario actual de Firebase Auth y el email es diferente, cerrar sesión primero
+                    // Esto es necesario después de hacer logout para poder iniciar sesión con otro usuario
+                    const currentUser = auth.currentUser;
+                    if (currentUser && currentUser.email && currentUser.email !== emailCompleto) {
+                        console.log('🔄 Usuario diferente detectado, cerrando sesión anterior antes de login');
+                        try {
+                            await auth.signOut();
+                            console.log('✅ Sesión anterior cerrada');
+                            // Pequeño delay para asegurar que Firebase procese el signOut
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        } catch (signOutError) {
+                            console.warn('⚠️ Error cerrando sesión anterior (continuando con login):', signOutError);
+                            // Continuar con el login aunque falle el signOut
+                        }
                     }
-
-                    const usuarioData = {
-                        localId: localSeleccionado,
-                        localNombre: local.nombre,
-                        usuarioId: usuario.id,
-                        usuario: usuario.usuario,
-                        rol: usuario.rol,
-                        regionId: regionSeleccionada.id
-                    };
+                    
+                    // Limpiar usuario guardado si el email es diferente
+                    const usuarioGuardado = localStorage.getItem('usuario');
+                    if (usuarioGuardado) {
+                        try {
+                            const usuarioData = JSON.parse(usuarioGuardado);
+                            // Verificar si el email del usuario guardado es diferente
+                            // (los locales no tienen email en usuarioData, pero supervisores/maestros sí)
+                            if (usuarioData.email && usuarioData.email !== emailCompleto) {
+                                console.log('🗑️ Limpiando usuario guardado (email diferente)');
+                                localStorage.removeItem('usuario');
+                                localStorage.removeItem('usuario_actual');
+                            }
+                        } catch (e) {
+                            console.warn('Error verificando usuario guardado:', e);
+                        }
+                    }
+                    
+                    // Intentar autenticar con Firebase Auth
+                    // Si falla, intentar con todas las regiones (detección automática de región)
+                    let userCredential = null;
+                    let uid = null;
+                    let regionCorrecta = regionSeleccionada;
+                    let authCorrecto = null;
+                    
+                    try {
+                        // Intentar primero con la región seleccionada
+                        userCredential = await auth.signInWithEmailAndPassword(emailCompleto, password);
+                        uid = userCredential.user.uid;
+                        authCorrecto = auth;
+                        console.log('✅ Firebase Auth exitoso con región seleccionada. UID:', uid);
+                    } catch (firstError) {
+                        // Si falla con error de API key o auth, intentar con todas las regiones
+                        if (firstError.code === 'auth/api-key-not-valid' || 
+                            firstError.code === 'auth/invalid-api-key' ||
+                            firstError.code === 'auth/network-request-failed' ||
+                            firstError.message?.includes('api-key')) {
+                            console.log('🔄 Login falló con región seleccionada, intentando con todas las regiones...');
+                            
+                            // Intentar con cada región hasta encontrar la correcta
+                            for (const region of regiones) {
+                                if (region.id === regionSeleccionada.id) {
+                                    continue; // Ya intentamos con esta
+                                }
+                                
+                                try {
+                                    console.log(`🔄 Intentando login con región: ${region.nombre} (${region.id})`);
+                                    
+                                    // Inicializar Firebase con esta región
+                                    const exito = FirebaseRegionManager.initializeFirebase(region);
+                                    if (!exito) {
+                                        console.warn(`⚠️ No se pudo inicializar Firebase para ${region.nombre}`);
+                                        continue;
+                                    }
+                                    
+                                    // Intentar login con esta región
+                                    const tempAuth = FirebaseRegionManager.getAuth();
+                                    
+                                    // Cerrar sesión si hay un usuario actual
+                                    if (tempAuth.currentUser) {
+                                        await tempAuth.signOut();
+                                        await new Promise(resolve => setTimeout(resolve, 100));
+                                    }
+                                    
+                                    userCredential = await tempAuth.signInWithEmailAndPassword(emailCompleto, password);
+                                    uid = userCredential.user.uid;
+                                    authCorrecto = tempAuth;
+                                    regionCorrecta = region;
+                                    
+                                    // Actualizar región seleccionada
+                                    setRegionSeleccionada(region);
+                                    localStorage.setItem('region_id', region.id);
+                                    FirebaseRegionManager.guardarRegionActual(region);
+                                    
+                                    console.log(`✅ Firebase Auth exitoso con región: ${region.nombre}. UID: ${uid}`);
+                                    break; // Encontramos la región correcta
+                                } catch (regionError) {
+                                    console.log(`❌ Login falló con región ${region.nombre}:`, regionError.code || regionError.message);
+                                    // Continuar con la siguiente región
+                                    continue;
+                                }
+                            }
+                            
+                            // Si no encontramos ninguna región válida, lanzar el error original
+                            if (!uid || !userCredential) {
+                                throw firstError;
+                            }
+                        } else {
+                            // Si es otro tipo de error (contraseña incorrecta, usuario no encontrado, etc.), lanzarlo
+                            throw firstError;
+                        }
+                    }
+                    
+                    // Asegurar que estamos usando el auth correcto
+                    if (authCorrecto && authCorrecto !== auth) {
+                        // Reinicializar Firebase con la región correcta si cambió
+                        FirebaseRegionManager.initializeFirebase(regionCorrecta);
+                    }
+                    
+                    const authFinal = authCorrecto || auth;
+                    uid = userCredential.user.uid;
+                    
+                    console.log('✅ Firebase Auth exitoso. UID:', uid, 'Región:', regionCorrecta.nombre);
+                    
+                    // Buscar el usuario en Firestore por firebaseAuthUid
+                    const db = FirebaseRegionManager.getFirestore();
+                    
+                    // Buscar en locales
+                    let localDoc = null;
+                    let local = null;
+                    const localesSnapshot = await db.collection('locales')
+                        .where('firebaseAuthUid', '==', uid)
+                        .limit(1)
+                        .get();
+                    
+                    if (!localesSnapshot.empty) {
+                        localDoc = localesSnapshot.docs[0];
+                        local = localDoc.data();
+                        console.log('✅ Usuario encontrado como LOCAL:', local.nombre);
+                    }
+                    
+                    // Buscar en supervisores
+                    let supervisor = null;
+                    if (!local) {
+                        const supervisoresSnapshot = await db.collection('supervisores')
+                            .where('firebaseAuthUid', '==', uid)
+                            .limit(1)
+                            .get();
+                        
+                        if (!supervisoresSnapshot.empty) {
+                            const supervisorDoc = supervisoresSnapshot.docs[0];
+                            supervisor = { id: supervisorDoc.id, ...supervisorDoc.data() };
+                            console.log('✅ Usuario encontrado como SUPERVISOR:', supervisor.usuario);
+                        }
+                    }
+                    
+                    // Buscar en maestros
+                    let maestro = null;
+                    if (!local && !supervisor) {
+                        const configDoc = await db.collection('configuracion').doc('admin').get();
+                        const firebaseAuthUid = configDoc.data()?.firebaseAuthUid;
+                        if (firebaseAuthUid === uid) {
+                            maestro = {
+                                id: 'maestro',
+                                usuario: configDoc.data()?.maestro_nombre || 'Maestro',
+                                email: configDoc.data()?.email || '',
+                                rol: 'maestro'
+                            };
+                            console.log('✅ Usuario encontrado como MAESTRO:', maestro.usuario);
+                        }
+                    }
+                    
+                    if (!local && !supervisor && !maestro) {
+                        throw new Error('Usuario no encontrado en la base de datos. Verifica que el email esté correctamente asociado.');
+                    }
+                    
+                    // Determinar tipo de usuario y crear usuarioData
+                    // Usar regionCorrecta (puede haber cambiado durante la detección automática)
+                    let usuarioData;
+                    if (maestro) {
+                        usuarioData = {
+                            localId: '',
+                            localNombre: '',
+                            usuarioId: maestro.id,
+                            usuario: maestro.usuario,
+                            rol: 'maestro',
+                            regionId: regionCorrecta.id
+                        };
+                    } else if (supervisor) {
+                        usuarioData = {
+                            localId: '',
+                            localNombre: '',
+                            usuarioId: supervisor.id,
+                            usuario: supervisor.usuario,
+                            rol: 'supervisor',
+                            localesAsignados: supervisor.localesAsignados || [],
+                            regionId: regionCorrecta.id
+                        };
+                    } else {
+                        usuarioData = {
+                            localId: localDoc.id,
+                            localNombre: local.nombre,
+                            usuarioId: 'admin_' + localDoc.id.toLowerCase(),
+                            usuario: 'admin_' + localDoc.id.toLowerCase(),
+                            rol: 'admin_local',
+                            regionId: regionCorrecta.id
+                        };
+                    }
 
                     localStorage.setItem('usuario', JSON.stringify(usuarioData));
                     localStorage.setItem('region_id', regionSeleccionada.id);
@@ -1608,12 +1696,12 @@
                     // Guardar datos de login si está marcado recordar
                     if (recordarDatos) {
                         const loginData = {
-                            localId: localSeleccionado,
+                            email: email,
                             password: password,
                             recordar: true
                         };
                         localStorage.setItem('loginData', JSON.stringify(loginData));
-                        console.log('💾 Datos de login guardados:', { localId: loginData.localId, tienePassword: !!loginData.password, recordar: loginData.recordar });
+                        console.log('💾 Datos de login guardados:', { email: loginData.email, tienePassword: !!loginData.password, recordar: loginData.recordar });
                     } else {
                         // Limpiar datos guardados si no se quiere recordar
                         localStorage.removeItem('loginData');
@@ -1624,10 +1712,229 @@
                     
                 } catch (error) {
                     console.error('Error en login:', error);
-                    setError(error.message);
+                    if (error.code === 'auth/user-not-found') {
+                        setError('Email no registrado');
+                    } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                        setError('Contraseña incorrecta');
+                    } else {
+                        setError(error.message || 'Error en el login');
+                    }
                 } finally {
                     setLoading(false);
                 }
+            };
+
+            const mostrarDialogoResetContraseña = () => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                `;
+                
+                const dialogContent = document.createElement('div');
+                dialogContent.style.cssText = `
+                    background: white;
+                    padding: 24px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                `;
+                
+                const emailCompleto = email.includes('@') ? email : email + '@saboresexpress.com.ar';
+                
+                dialogContent.innerHTML = `
+                    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #333;">
+                        🔐 Recuperar Contraseña
+                    </h3>
+                    <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+                        Se enviará un enlace a tu email para restablecer la contraseña.
+                    </p>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-size: 14px; font-weight: 500;">
+                            Email
+                        </label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input
+                                type="text"
+                                id="resetEmailInput"
+                                value="${email || ''}"
+                                style="
+                                    width: 100%;
+                                    padding: 12px;
+                                    padding-right: 180px;
+                                    border: 1px solid #ddd;
+                                    border-radius: 8px;
+                                    font-size: 14px;
+                                    box-sizing: border-box;
+                                "
+                                placeholder="Ingresa tu email"
+                            />
+                            <span style="
+                                position: absolute;
+                                right: 12px;
+                                color: #9E9E9E;
+                                font-size: 14px;
+                                pointer-events: none;
+                            ">
+                                @saboresexpress.com.ar
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button
+                            id="btnCancelarReset"
+                            style="
+                                padding: 10px 20px;
+                                background: #9E9E9E;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 500;
+                            "
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            id="btnEnviarReset"
+                            style="
+                                padding: 10px 20px;
+                                background: var(--brand-gold);
+                                color: var(--brand-black);
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 500;
+                            "
+                        >
+                            Enviar
+                        </button>
+                    </div>
+                `;
+                
+                modal.appendChild(dialogContent);
+                document.body.appendChild(modal);
+                
+                const inputEmail = dialogContent.querySelector('#resetEmailInput');
+                inputEmail.addEventListener('input', (e) => {
+                    let valor = e.target.value;
+                    if (valor.includes('@') || valor.includes('saboresexpress.com.ar')) {
+                        e.target.value = valor.replace(/[@saboresexpress.com.ar]/g, '');
+                    }
+                });
+                
+                dialogContent.querySelector('#btnCancelarReset').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                
+                dialogContent.querySelector('#btnEnviarReset').addEventListener('click', async () => {
+                    try {
+                        const emailInput = inputEmail.value.trim();
+                        if (!emailInput) {
+                            alert('Ingrese el email');
+                            return;
+                        }
+                        
+                        const emailCompleto = emailInput.includes('@') ? emailInput : emailInput + '@saboresexpress.com.ar';
+                        
+                        if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
+                            alert('El email debe ser @saboresexpress.com.ar');
+                            return;
+                        }
+                        
+                        // Cargar todas las regiones disponibles
+                        const todasLasRegiones = await FirebaseRegionManager.cargarRegiones();
+                        
+                        // Ordenar regiones: primero la seleccionada, luego la por defecto, luego las demás
+                        const regionActual = FirebaseRegionManager.getCurrentRegion();
+                        const regionesOrdenadas = [];
+                        
+                        // 1. Agregar región seleccionada primero (si existe)
+                        if (regionActual) {
+                            regionesOrdenadas.push(regionActual);
+                        }
+                        
+                        // 2. Agregar región por defecto (region_1)
+                        const regionPorDefecto = todasLasRegiones.find(function(r) { return r.id === 'region_1'; });
+                        if (regionPorDefecto && regionPorDefecto !== regionActual) {
+                            regionesOrdenadas.push(regionPorDefecto);
+                        }
+                        
+                        // 3. Agregar las demás regiones
+                        todasLasRegiones.forEach(function(region) {
+                            if (region !== regionActual && region !== regionPorDefecto) {
+                                regionesOrdenadas.push(region);
+                            }
+                        });
+                        
+                        console.log('🔍 Intentando reset de contraseña en', regionesOrdenadas.length, 'regiones');
+                        
+                        // Intentar con cada región hasta encontrar una donde el usuario exista
+                        var exito = false;
+                        var ultimoError = null;
+                        
+                        for (var i = 0; i < regionesOrdenadas.length; i++) {
+                            var region = regionesOrdenadas[i];
+                            try {
+                                console.log('🔄 Intentando reset en región:', region.nombre);
+                                var auth = FirebaseRegionManager.getAuthForRegion(region);
+                                
+                                if (auth) {
+                                    await auth.sendPasswordResetEmail(emailCompleto);
+                                    
+                                    // Éxito: el usuario existe en esta región
+                                    console.log('✅ Email de reset enviado desde región:', region.nombre);
+                                    exito = true;
+                                    
+                                    alert('✅ Email enviado. Revisa tu bandeja de entrada para restablecer tu contraseña.');
+                                    document.body.removeChild(modal);
+                                    
+                                    break;
+                                }
+                            } catch (error) {
+                                // Verificar si es error de usuario no encontrado
+                                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+                                    // Usuario no existe en esta región, continuar con la siguiente
+                                    console.log('⚠️ Usuario no encontrado en región', region.nombre, ', intentando siguiente...');
+                                    ultimoError = error;
+                                    continue;
+                                } else {
+                                    // Otro error, guardar pero continuar
+                                    console.warn('⚠️ Error en región', region.nombre, ':', error.message);
+                                    if (!ultimoError) {
+                                        ultimoError = error;
+                                    }
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        // Si no se encontró el usuario en ninguna región
+                        if (!exito) {
+                            console.error('❌ Usuario no encontrado en ninguna región');
+                            if (ultimoError && ultimoError.code === 'auth/user-not-found') {
+                                alert('El email ' + emailCompleto + ' no está registrado en ninguna región del sistema.');
+                            } else {
+                                alert('Error: ' + (ultimoError ? ultimoError.message : 'No se pudo enviar el email'));
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error enviando email reset:', error);
+                        alert('Error: ' + (error.message || 'No se pudo enviar el email. Verifique su conexión e intente nuevamente.'));
+                    }
+                });
             };
 
             const mostrarDialogoContraseñaGestion = () => {
@@ -1996,12 +2303,12 @@
                 };
             };
 
-            if (cargandoRegiones || cargandoLocales) {
+            if (cargandoRegiones) {
                 return (
                     <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#E0E0E0'}}>
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">{cargandoRegiones ? 'Cargando regiones...' : 'Cargando locales...'}</p>
+                            <p className="mt-4 text-gray-600">Cargando regiones...</p>
                         </div>
                     </div>
                 );
@@ -2099,32 +2406,75 @@
                                 </select>
                             </div>
 
-                            {/* Selector de Local - Estilo TextInputLayout */}
+                            {/* Campo Email - Estilo TextInputLayout con autocompletado */}
                             <div className="login-text-input-wrapper">
                                 <label className="login-text-input-label">
-                                    Seleccionar Local
+                                    Email
                                 </label>
-                                <select 
-                                    value={localSeleccionado}
-                                    onChange={(e) => setLocalSeleccionado(e.target.value)}
-                                    className="login-text-input"
-                                    required
-                                    disabled={cargandoLocales}
-                                >
-                                    <option value="">
-                                        {cargandoLocales ? 'Cargando locales...' : locales.length === 0 ? 'No hay locales disponibles' : 'Selecciona un local'}
-                                    </option>
-                                    {locales.map(local => (
-                                        <option key={local.id} value={local.id}>
-                                            {local.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                                {!cargandoLocales && locales.length === 0 && regionSeleccionada && (
-                                    <p className="text-sm mt-1" style={{color: 'var(--brand-grey-medium)'}}>
-                                        No se encontraron locales para esta región. Verifica que la región tenga locales configurados en Firebase.
-                                    </p>
-                                )}
+                                <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
+                                    <input
+                                        type="text"
+                                        value={email}
+                                        onChange={(e) => {
+                                            let valor = e.target.value;
+                                            // Prevenir que el usuario escriba @ o el dominio
+                                            if (valor.includes('@') || valor.includes('saboresexpress.com.ar')) {
+                                                return;
+                                            }
+                                            setEmail(valor);
+                                            
+                                            // Si el email cambia manualmente y es diferente al guardado en loginData, limpiar loginData
+                                            // Esto permite que el usuario pueda cambiar de cuenta incluso si tiene "Recordar credenciales" activado
+                                            if (valor) {
+                                                const loginDataGuardado = localStorage.getItem('loginData');
+                                                if (loginDataGuardado) {
+                                                    try {
+                                                        const loginData = JSON.parse(loginDataGuardado);
+                                                        const emailCompleto = valor.includes('@') ? valor : valor + '@saboresexpress.com.ar';
+                                                        // Si el email es diferente al guardado, limpiar loginData para permitir cambio de cuenta
+                                                        if (loginData.email && loginData.email !== emailCompleto) {
+                                                            console.log('🗑️ Email cambiado manualmente, limpiando credenciales guardadas para permitir cambio de cuenta');
+                                                            localStorage.removeItem('loginData');
+                                                            setRecordarDatos(false);
+                                                        }
+                                                    } catch (e) {
+                                                        // Ignorar errores de parsing
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Si el email cambia manualmente y es diferente al usuario guardado, limpiar usuario guardado
+                                            const usuarioGuardado = localStorage.getItem('usuario');
+                                            if (usuarioGuardado && valor) {
+                                                try {
+                                                    const usuarioData = JSON.parse(usuarioGuardado);
+                                                    const emailCompleto = valor.includes('@') ? valor : valor + '@saboresexpress.com.ar';
+                                                    // Si el email es diferente, limpiar usuario guardado
+                                                    if (usuarioData.email && usuarioData.email !== emailCompleto) {
+                                                        console.log('🗑️ Email cambiado manualmente, limpiando usuario guardado');
+                                                        localStorage.removeItem('usuario');
+                                                        localStorage.removeItem('usuario_actual');
+                                                    }
+                                                } catch (e) {
+                                                    // Ignorar errores de parsing
+                                                }
+                                            }
+                                        }}
+                                        className="login-text-input"
+                                        placeholder="Ingresa tu email"
+                                        required
+                                        style={{paddingRight: '180px'}}
+                                    />
+                                    <span style={{
+                                        position: 'absolute',
+                                        right: '12px',
+                                        color: 'var(--brand-grey-medium)',
+                                        fontSize: '14px',
+                                        pointerEvents: 'none'
+                                    }}>
+                                        @saboresexpress.com.ar
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Campo Contraseña - Estilo TextInputLayout */}
@@ -2142,22 +2492,38 @@
                                 />
                             </div>
 
-                            {/* Checkbox Recordar Datos */}
-                            <div className="flex items-center mb-6">
-                                <input
-                                    type="checkbox"
-                                    id="recordarDatos"
-                                    checked={recordarDatos}
-                                    onChange={(e) => setRecordarDatos(e.target.checked)}
-                                    className="mr-2 h-4 w-4"
+                            {/* Checkbox Recordar Datos y Olvidaste Contraseña en la misma línea */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="recordarDatos"
+                                        checked={recordarDatos}
+                                        onChange={(e) => setRecordarDatos(e.target.checked)}
+                                        className="mr-2 h-4 w-4"
+                                        style={{
+                                            accentColor: 'var(--brand-gold)',
+                                            cursor: 'pointer'
+                                        }}
+                                    />
+                                    <label htmlFor="recordarDatos" className="text-sm" style={{color: 'var(--brand-black)'}}>
+                                        Recordar credenciales
+                                    </label>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => mostrarDialogoResetContraseña()}
+                                    className="text-sm"
                                     style={{
-                                        accentColor: 'var(--brand-gold)',
-                                        cursor: 'pointer'
+                                        color: 'var(--brand-gold)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline'
                                     }}
-                                />
-                                <label htmlFor="recordarDatos" className="text-sm" style={{color: 'var(--brand-black)'}}>
-                                    Recordar local y contraseña
-                                </label>
+                                >
+                                    Olvidaste tu contraseña?
+                                </button>
                             </div>
 
                             {error && (
@@ -2176,20 +2542,7 @@
                             </button>
                         </form>
 
-                            {/* Botón Gestión de Locales - EXACTO como Android líneas 144-151 (DENTRO del card, después del botón login) */}
-                            {locales.length > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => mostrarDialogoContraseñaGestion()}
-                                    className="login-button"
-                                    style={{
-                                        marginTop: '0',
-                                        marginBottom: '16px'
-                                    }}
-                                >
-                                    GESTIÓN DE LOCALES
-                                </button>
-                            )}
+                            {/* Botón Gestión de Locales eliminado - la navegación es automática según el rol */}
 
                             {/* Enlace de descarga de la app Android */}
                             <div className="mt-6 text-center">
@@ -2404,11 +2757,13 @@
             const [esUsuarioMaestro, setEsUsuarioMaestro] = useState(false);
             const [nuevoLocal, setNuevoLocal] = useState({
                 nombre: '',
+                email: '',
                 contraseña: ''
             });
             const [nuevoSupervisor, setNuevoSupervisor] = useState({
                 nombre: '',
                 usuario: '',
+                email: '',
                 contraseña: '',
                 localesAsignados: []
             });
@@ -2444,9 +2799,17 @@
                     const usuarioData = localStorage.getItem('usuario_actual');
                     if (usuarioData) {
                         const usuario = JSON.parse(usuarioData);
+                        
+                        // Convertir localesAsignados de string a array (igual que Android)
+                        if (usuario.localesAsignados && typeof usuario.localesAsignados === 'string') {
+                            usuario.localesAsignados = usuario.localesAsignados.split(',').filter(id => id.trim() !== '');
+                        } else if (!usuario.localesAsignados) {
+                            usuario.localesAsignados = [];
+                        }
+                        
                         setUsuarioActual(usuario);
                         setEsUsuarioMaestro(usuario.rol === 'maestro');
-                        console.log('Usuario cargado:', usuario.usuario, 'Rol:', usuario.rol, 'EsMaestro:', usuario.rol === 'maestro');
+                        console.log('Usuario cargado:', usuario.usuario, 'Rol:', usuario.rol, 'EsMaestro:', usuario.rol === 'maestro', 'LocalesAsignados:', usuario.localesAsignados);
                     }
                 } catch (error) {
                     console.error('Error cargando usuario actual:', error);
@@ -2499,7 +2862,17 @@
                     setCargando(true);
                     setError('');
                     
-                    const localesAsignados = usuarioActual?.localesAsignados || [];
+                    // Usar los localesAsignados que ya están en usuarioActual (cargados desde localStorage)
+                    // Esto evita loops infinitos y es más eficiente
+                    if (!usuarioActual || !usuarioActual.localesAsignados) {
+                        setError('No hay locales asignados');
+                        setLocales([]);
+                        setLocalesFiltrados([]);
+                        setCargando(false);
+                        return;
+                    }
+                    
+                    const localesAsignados = usuarioActual.localesAsignados;
                     
                     if (localesAsignados.length === 0) {
                         setError('No tienes locales asignados');
@@ -2530,7 +2903,7 @@
                         }
                     });
                     
-                    console.log('Locales asignados cargados:', localesData.length);
+                    console.log('Locales asignados cargados desde Firebase:', localesData.length);
                     setLocales(localesData);
                     setLocalesFiltrados(localesData);
                     
@@ -2578,7 +2951,28 @@
                 try {
                     setError('');
                     
+                    // Validar email
+                    const emailCompleto = nuevoLocal.email.includes('@') ? nuevoLocal.email : nuevoLocal.email + '@saboresexpress.com.ar';
+                    if (!nuevoLocal.email || nuevoLocal.email.trim() === '') {
+                        setError('El email es obligatorio');
+                        return;
+                    }
+                    
+                    if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
+                        setError('El email debe ser @saboresexpress.com.ar');
+                        return;
+                    }
+                    
+                    // Validar formato de email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(emailCompleto)) {
+                        setError('El formato del email no es válido');
+                        return;
+                    }
+                    
                     const db = FirebaseRegionManager.getFirestore();
+                    const auth = FirebaseRegionManager.getAuth();
+                    
                     // Verificar si el local ya existe
                     const snapshot = await db.collection('locales')
                         .where('nombre', '==', nuevoLocal.nombre)
@@ -2589,26 +2983,60 @@
                         return;
                     }
                     
+                    // Verificar si el email ya está en uso en locales
+                    const snapshotEmail = await db.collection('locales')
+                        .where('email', '==', emailCompleto)
+                        .get();
+                    
+                    if (!snapshotEmail.empty) {
+                        setError('El email ' + emailCompleto + ' ya está en uso por otro local');
+                        return;
+                    }
+                    
                     // Usar contraseña personalizada o generar una automáticamente
                     const contraseñaFinal = nuevoLocal.contraseña || generarContraseña();
                     
-                    // Crear usuario admin para el nuevo local
+                    // Crear usuario en Firebase Auth
+                    let userCredential;
+                    try {
+                        userCredential = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaFinal);
+                    } catch (authError) {
+                        if (authError.code === 'auth/email-already-in-use') {
+                            setError('El email ' + emailCompleto + ' ya está registrado en Firebase Auth');
+                            return;
+                        }
+                        throw authError;
+                    }
+                    
+                    const uid = userCredential.user.uid;
+                    console.log('✅ Usuario creado en Firebase Auth con UID:', uid);
+                    
+                    // Obtener la región actual
+                    const regionActual = FirebaseRegionManager.getCurrentRegion();
+                    const regionId = regionActual?.id || null;
+                    
+                    // Crear usuario admin para el nuevo local (mantener para compatibilidad)
                     const usuarioAdmin = {
                         id: 'admin_' + nuevoLocal.nombre.toLowerCase(),
                         usuario: 'admin_' + nuevoLocal.nombre.toLowerCase(),
-                        contraseña: contraseñaFinal,
+                        email: emailCompleto,
+                        contraseña: contraseñaFinal, // Se mantiene temporalmente para migración
                         rol: 'admin_local',
-                        activo: true
+                        activo: true,
+                        firebaseAuthUid: uid
                     };
                     
                     // Crear el local
                     const localData = {
                         nombre: nuevoLocal.nombre,
+                        email: emailCompleto,
                         fechaCreacion: window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0],
                         activo: true,
                         usuarios: {
                             [usuarioAdmin.id]: usuarioAdmin
-                        }
+                        },
+                        firebaseAuthUid: uid,
+                        regionId: regionId
                     };
 
                     await db.collection('locales').doc(nuevoLocal.nombre).set(localData);
@@ -2616,6 +3044,7 @@
                     // Limpiar formulario
                     setNuevoLocal({
                         nombre: '',
+                        email: '',
                         contraseña: ''
                     });
                     setMostrarFormulario(false);
@@ -2628,7 +3057,7 @@
                     }
                     
                     // Mostrar credenciales
-                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n👤 Usuario: ${usuarioAdmin.usuario}\n🔑 Contraseña: ${usuarioAdmin.contraseña}\n\n⚠️ Guarda estas credenciales para acceder al local`);
+                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para acceder al local\nUsa el email y contraseña para iniciar sesión`);
                     
                 } catch (error) {
                     console.error('Error creando local:', error);
@@ -2646,7 +3075,28 @@
                 try {
                     setError('');
                     
+                    // Validar email
+                    const emailCompleto = nuevoSupervisor.email.includes('@') ? nuevoSupervisor.email : nuevoSupervisor.email + '@saboresexpress.com.ar';
+                    if (!nuevoSupervisor.email || nuevoSupervisor.email.trim() === '') {
+                        setError('El email es obligatorio');
+                        return;
+                    }
+                    
+                    if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
+                        setError('El email debe ser @saboresexpress.com.ar');
+                        return;
+                    }
+                    
+                    // Validar formato de email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(emailCompleto)) {
+                        setError('El formato del email no es válido');
+                        return;
+                    }
+                    
                     const db = FirebaseRegionManager.getFirestore();
+                    const auth = FirebaseRegionManager.getAuth();
+                    
                     // Verificar si el supervisor ya existe
                     const snapshot = await db.collection('supervisores')
                         .where('usuario', '==', nuevoSupervisor.usuario)
@@ -2657,22 +3107,59 @@
                         return;
                     }
                     
+                    // Verificar si el email ya está en uso en supervisores
+                    const snapshotEmail = await db.collection('supervisores')
+                        .where('email', '==', emailCompleto)
+                        .get();
+                    
+                    if (!snapshotEmail.empty) {
+                        setError('El email ' + emailCompleto + ' ya está en uso por otro supervisor');
+                        return;
+                    }
+                    
+                    // Usar contraseña personalizada o generar una automáticamente
+                    const contraseñaFinal = nuevoSupervisor.contraseña || generarContraseña();
+                    
+                    // Crear usuario en Firebase Auth
+                    let userCredential;
+                    try {
+                        userCredential = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaFinal);
+                    } catch (authError) {
+                        if (authError.code === 'auth/email-already-in-use') {
+                            setError('El email ' + emailCompleto + ' ya está registrado en Firebase Auth');
+                            return;
+                        }
+                        throw authError;
+                    }
+                    
+                    const uid = userCredential.user.uid;
+                    console.log('✅ Usuario creado en Firebase Auth con UID:', uid);
+                    
+                    // Obtener la región actual
+                    const regionActual = FirebaseRegionManager.getCurrentRegion();
+                    const regionId = regionActual?.id || null;
+                    
                     // Crear el supervisor
                     const supervisorData = {
                         nombre: nuevoSupervisor.nombre,
                         usuario: nuevoSupervisor.usuario,
-                        contraseña: nuevoSupervisor.contraseña || generarContraseña(),
+                        email: emailCompleto,
+                        contraseña: contraseñaFinal, // Se mantiene temporalmente para migración
                         localesAsignados: nuevoSupervisor.localesAsignados,
                         activo: true,
-                        fechaCreacion: new Date().toISOString().split('T')[0]
+                        fechaCreacion: new Date().toISOString().split('T')[0],
+                        creadoPor: usuarioActual?.usuarioId || '',
+                        firebaseAuthUid: uid,
+                        regionId: regionId
                     };
 
-                    await db.collection('supervisores').doc(nuevoSupervisor.usuario).set(supervisorData);
+                    await db.collection('supervisores').add(supervisorData);
                     
                     // Limpiar formulario
                     setNuevoSupervisor({
                         nombre: '',
                         usuario: '',
+                        email: '',
                         contraseña: '',
                         localesAsignados: []
                     });
@@ -2682,7 +3169,7 @@
                     cargarSupervisores();
                     
                     // Mostrar credenciales
-                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Nombre: ${nuevoSupervisor.nombre}\n👤 Usuario: ${nuevoSupervisor.usuario}\n🔑 Contraseña: ${supervisorData.contraseña}\n\n⚠️ Guarda estas credenciales para acceder como supervisor`);
+                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
                     
                 } catch (error) {
                     console.error('Error creando supervisor:', error);
@@ -3021,7 +3508,22 @@
                         return;
                     }
                     
-                    // Eliminar el local
+                    // Si tiene firebaseAuthUid, intentar eliminar de Firebase Auth primero
+                    if (local.firebaseAuthUid) {
+                        try {
+                            const functions = firebase.functions(FirebaseRegionManager.currentApp);
+                            const deleteUser = functions.httpsCallable('deleteUser');
+                            await deleteUser({ uid: local.firebaseAuthUid });
+                            console.log('✅ Usuario de Firebase Auth del local eliminado:', local.firebaseAuthUid);
+                        } catch (authError) {
+                            // Si no se puede eliminar de Firebase Auth, NO eliminar de Firestore
+                            console.error('❌ No se pudo eliminar usuario de Firebase Auth:', authError);
+                            alert('Error: No se pudo eliminar el usuario de Firebase Auth. El local no fue eliminado.');
+                            return;
+                        }
+                    }
+                    
+                    // Eliminar el local de Firestore
                     const db = FirebaseRegionManager.getFirestore();
                     await db.collection('locales').doc(local.nombre).delete();
                     
@@ -3093,7 +3595,7 @@
             const mostrarUsuarios = (local) => {
                 const usuarios = Object.values(local.usuarios);
                 const mensaje = usuarios.map(usuario => 
-                    `👤 Usuario: ${usuario.usuario}\n🔑 Contraseña: ${usuario.contraseña}\n📋 Rol: ${usuario.rol}`
+                    `👤 Usuario: ${usuario.usuario}\n📧 Email: ${usuario.email || local.email || 'No configurado'}\n🔑 Contraseña: ${usuario.contraseña}\n📋 Rol: ${usuario.rol}`
                 ).join('\n\n');
                 
                 alert(`Usuarios de ${local.nombre}\n\n${mensaje}`);
@@ -3113,7 +3615,7 @@
             };
             
             const mostrarContraseñaSupervisor = (supervisor) => {
-                const mensaje = `👤 Usuario: ${supervisor.usuario}\n\n🔑 Contraseña: ${supervisor.contraseña}\n\n📅 Creado: ${supervisor.fechaCreacion}`;
+                const mensaje = `👤 Usuario: ${supervisor.usuario}\n📧 Email: ${supervisor.email || 'No configurado'}\n\n🔑 Contraseña: ${supervisor.contraseña}\n\n📅 Creado: ${supervisor.fechaCreacion}`;
                 alert(`Credenciales de ${supervisor.usuario}\n\n${mensaje}`);
             };
             
@@ -3293,7 +3795,22 @@
             
             const eliminarSupervisor = async (supervisor) => {
                 try {
-                    // Eliminar de Firebase
+                    // Si tiene firebaseAuthUid, intentar eliminar de Firebase Auth primero
+                    if (supervisor.firebaseAuthUid) {
+                        try {
+                            const functions = firebase.functions(FirebaseRegionManager.currentApp);
+                            const deleteUser = functions.httpsCallable('deleteUser');
+                            await deleteUser({ uid: supervisor.firebaseAuthUid });
+                            console.log('✅ Usuario de Firebase Auth del supervisor eliminado:', supervisor.firebaseAuthUid);
+                        } catch (authError) {
+                            // Si no se puede eliminar de Firebase Auth, NO eliminar de Firestore
+                            console.error('❌ No se pudo eliminar usuario de Firebase Auth:', authError);
+                            alert('Error: No se pudo eliminar el usuario de Firebase Auth. El supervisor no fue eliminado.');
+                            return;
+                        }
+                    }
+                    
+                    // Eliminar de Firestore
                     const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).delete();
                     
@@ -4040,14 +4557,47 @@
                                     
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Contraseña del admin (opcional)
+                                            Email del local (obligatorio)
+                                        </label>
+                                        <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
+                                            <input
+                                                type="text"
+                                                value={nuevoLocal.email}
+                                                onChange={(e) => {
+                                                    let valor = e.target.value;
+                                                    // Prevenir que el usuario escriba @ o el dominio
+                                                    if (valor.includes('@') || valor.includes('saboresexpress.com.ar')) {
+                                                        return;
+                                                    }
+                                                    setNuevoLocal({...nuevoLocal, email: valor});
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Ingresa el email"
+                                                style={{paddingRight: '180px'}}
+                                                required
+                                            />
+                                            <span style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                color: '#9E9E9E',
+                                                fontSize: '14px',
+                                                pointerEvents: 'none'
+                                            }}>
+                                                @saboresexpress.com.ar
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Contraseña inicial del admin
                                         </label>
                                         <input
                                             type="password"
                                             value={nuevoLocal.contraseña}
                                             onChange={(e) => setNuevoLocal({...nuevoLocal, contraseña: e.target.value})}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Contraseña del admin (opcional)"
+                                            placeholder="Contraseña inicial (opcional)"
                                         />
                                     </div>
                                     
@@ -4116,6 +4666,39 @@
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                             placeholder="Usuario para login"
                                         />
+                                    </div>
+                                    
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Email del supervisor (obligatorio)
+                                        </label>
+                                        <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
+                                            <input
+                                                type="text"
+                                                value={nuevoSupervisor.email}
+                                                onChange={(e) => {
+                                                    let valor = e.target.value;
+                                                    // Prevenir que el usuario escriba @ o el dominio
+                                                    if (valor.includes('@') || valor.includes('saboresexpress.com.ar')) {
+                                                        return;
+                                                    }
+                                                    setNuevoSupervisor({...nuevoSupervisor, email: valor});
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                placeholder="Ingresa el email"
+                                                style={{paddingRight: '180px'}}
+                                                required
+                                            />
+                                            <span style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                color: '#9E9E9E',
+                                                fontSize: '14px',
+                                                pointerEvents: 'none'
+                                            }}>
+                                                @saboresexpress.com.ar
+                                            </span>
+                                        </div>
                                     </div>
                                     
                                     <div className="mb-4">
@@ -8361,57 +8944,10 @@
             const [vistaActual, setVistaActual] = useState('login');
 
             useEffect(() => {
-                // Función asíncrona para inicializar región y usuario
-                async function inicializarUsuarioYRegion() {
-                    const usuarioGuardado = localStorage.getItem('usuario');
-                    const regionIdActual = localStorage.getItem('region_id');
-                    
-                    if (usuarioGuardado) {
-                        try {
-                            const usuarioData = JSON.parse(usuarioGuardado);
-                            // Verificar que la región del usuario coincida con la región actual
-                            if (usuarioData.regionId && regionIdActual && usuarioData.regionId === regionIdActual) {
-                                // Asegurar que las regiones estén cargadas
-                                if (!REGIONES_CONFIG_CACHE || REGIONES_CONFIG_CACHE.length === 0) {
-                                    console.log('Cargando regiones para inicializar Firebase...');
-                                    const response = await fetch('regiones.json');
-                                    const regionesData = await response.json();
-                                    REGIONES_CONFIG_CACHE = regionesData.filter(r => r.activo);
-                                }
-                                
-                                // Inicializar Firebase con la región del usuario si no está inicializado
-                                try {
-                                    FirebaseRegionManager.getFirestore();
-                                    console.log('✅ Firebase ya estaba inicializado');
-                                } catch (e) {
-                                    // Firebase no está inicializado, inicializarlo con la región del usuario
-                                    console.log('Firebase no inicializado, inicializando con región del usuario:', usuarioData.regionId);
-                                    const regionUsuario = REGIONES_CONFIG_CACHE.find(r => r.id === usuarioData.regionId);
-                                    if (regionUsuario) {
-                                        FirebaseRegionManager.initializeFirebase(regionUsuario);
-                                        console.log('✅ Firebase inicializado con región:', regionUsuario.nombre);
-                                    } else {
-                                        console.error('❌ No se encontró la región:', usuarioData.regionId);
-                                    }
-                                }
-                                
-                                setUsuario(usuarioData);
-                                setVistaActual('main');
-                            } else {
-                                // Si la región cambió, limpiar el usuario guardado
-                                console.log('⚠️ Región cambió, limpiando usuario guardado');
-                                localStorage.removeItem('usuario');
-                                localStorage.removeItem('loginData');
-                            }
-                        } catch (error) {
-                            console.error('Error parseando usuario guardado:', error);
-                            localStorage.removeItem('usuario');
-                        }
-                    }
-                    setLoading(false);
-                }
-                
-                inicializarUsuarioYRegion();
+                // EXACTO como Android LoginActivity.onCreate(): 
+                // NO verificar sesión activa, NO hacer login automático
+                // Siempre mostrar pantalla de login, solo cargar credenciales guardadas en los campos
+                setLoading(false);
             }, []);
 
             // Manejar navegación por hash
@@ -8420,49 +8956,101 @@
                     const hash = window.location.hash;
                     console.log('🔗 Hash cambiado:', hash, 'Usuario:', usuario, 'VistaActual:', vistaActual);
                     
-                    // Manejar navegación por hash
-                    if (hash === '#gestion-locales') {
+                    // Solo manejar cambios de hash que vienen del navegador (no de cambios programáticos)
+                    // Los cambios programáticos (como en handleLoginSuccess) ya establecen vistaActual directamente
+                    if (hash === '#gestion-locales' && vistaActual !== 'gestion-locales') {
                         setVistaActual('gestion-locales');
-                    } else if (hash === '#main' || (usuario && vistaActual === 'main')) {
+                    } else if (hash === '#main' && vistaActual !== 'main') {
                         setVistaActual('main');
-                    } else if (!usuario && hash === '') {
+                    } else if (!hash && !usuario && vistaActual !== 'login') {
                         setVistaActual('login');
                     }
                 };
 
                 window.addEventListener('hashchange', handleHashChange);
-                handleHashChange(); // Ejecutar al cargar
+                // Solo ejecutar al cargar si no hay vistaActual establecida
+                if (!vistaActual || vistaActual === 'login') {
+                    handleHashChange();
+                }
 
                 return () => window.removeEventListener('hashchange', handleHashChange);
-            }, [usuario, vistaActual]);
+            }, []); // Sin dependencias - solo escuchar cambios de hash del navegador
 
             const handleLoginSuccess = (usuarioData) => {
                 console.log('🚀 handleLoginSuccess llamado con:', usuarioData);
-                console.log('🔍 Verificando usuarioData.localId:', usuarioData?.localId);
-                console.log('🔍 Verificando usuarioData.localNombre:', usuarioData?.localNombre);
                 
-                // Verificar que el usuario tenga localId
-                if (!usuarioData || !usuarioData.localId) {
-                    console.error('❌ ERROR: usuarioData no tiene localId:', usuarioData);
-                    alert('Error: No se pudo obtener el ID del local. Por favor, intenta nuevamente.');
+                if (!usuarioData) {
+                    console.error('❌ ERROR: usuarioData es null o undefined');
+                    alert('Error: No se pudo obtener los datos del usuario. Por favor, intenta nuevamente.');
                     return;
                 }
                 
-                // Guardar también en localStorage para persistencia
+                const rol = usuarioData.rol || '';
+                console.log('🔍 Rol del usuario:', rol);
+                
+                // Guardar en localStorage (igual que Android SharedPreferences)
                 localStorage.setItem('usuario', JSON.stringify(usuarioData));
                 
-                setUsuario(usuarioData);
-                setVistaActual('main');
-                // Cambiar hash para evitar conflicto con useEffect
-                window.location.hash = '#main';
-                console.log('✅ Vista establecida a main, usuario:', usuarioData);
-                console.log('✅ Usuario guardado en localStorage');
+                // Guardar en usuario_actual con el mismo formato que Android SharedPreferences
+                const usuarioActualData = {
+                    localId: usuarioData.localId || '',
+                    localNombre: usuarioData.localNombre || '',
+                    usuarioId: usuarioData.usuarioId || '',
+                    usuario: usuarioData.usuario || '',
+                    rol: rol,
+                    localesAsignados: usuarioData.localesAsignados ? usuarioData.localesAsignados.join(',') : '',
+                    regionId: usuarioData.regionId || ''
+                };
+                localStorage.setItem('usuario_actual', JSON.stringify(usuarioActualData));
+                console.log('💾 Usuario guardado en usuario_actual:', usuarioActualData);
+                
+                // Navegación según rol (EXACTO como Android)
+                // IMPORTANTE: Establecer vistaActual ANTES de setUsuario para evitar conflictos
+                if (rol === 'maestro') {
+                    console.log('🔑 Login como MAESTRO:', usuarioData.usuario);
+                    setVistaActual('gestion-locales');
+                    window.location.hash = '#gestion-locales';
+                    setUsuario(usuarioData);
+                    console.log('✅ Redirigiendo a Gestión de Locales (maestro)');
+                } else if (rol === 'supervisor') {
+                    console.log('👤 Login como SUPERVISOR:', usuarioData.usuario);
+                    setVistaActual('gestion-locales');
+                    window.location.hash = '#gestion-locales';
+                    setUsuario(usuarioData);
+                    console.log('✅ Redirigiendo a Gestión de Locales (supervisor)');
+                } else if (rol === 'admin_local') {
+                    console.log('🏪 Login como LOCAL:', usuarioData.localNombre);
+                    if (!usuarioData.localId) {
+                        console.error('❌ ERROR: usuarioData no tiene localId:', usuarioData);
+                        alert('Error: No se pudo obtener el ID del local. Por favor, intenta nuevamente.');
+                        return;
+                    }
+                    setVistaActual('main');
+                    window.location.hash = '#main';
+                    setUsuario(usuarioData);
+                    console.log('✅ Redirigiendo a Main (admin_local)');
+                } else {
+                    console.error('❌ ERROR: Rol desconocido:', rol);
+                    alert('Error: Rol de usuario no reconocido. Por favor, contacta al administrador.');
+                }
             };
 
-            const handleLogout = () => {
+            const handleLogout = async () => {
+                // Cerrar sesión de Firebase Auth
+                try {
+                    const auth = FirebaseRegionManager.getAuth();
+                    if (auth.currentUser) {
+                        console.log('🚪 Cerrando sesión de Firebase Auth');
+                        await auth.signOut();
+                    }
+                } catch (error) {
+                    console.error('Error cerrando sesión de Firebase Auth:', error);
+                }
+                
                 // EXACTO como Android: Solo limpiar usuario, NO limpiar región ni loginData
                 // La región y los datos de login (si se marcó "Recordar") se mantienen guardados
                 localStorage.removeItem('usuario');
+                localStorage.removeItem('usuario_actual');
                 // NO limpiar 'loginData' - se mantiene si el usuario marcó "Recordar local y contraseña"
                 // NO limpiar 'region_id' ni 'firebase_region_prefs' - se mantiene como en Android
                 setUsuario(null);
@@ -8484,6 +9072,22 @@
 
             console.log('🎯 App render - usuario:', usuario, 'vistaActual:', vistaActual);
 
+            // EXACTO como Android: GestionLocales se puede mostrar sin usuario (lo lee de localStorage)
+            if (vistaActual === 'gestion-locales') {
+                console.log('✅ Renderizando GestionLocales');
+                return <GestionLocales 
+                    onVolver={() => {
+                        // EXACTO como Android: Volver al login SIN limpiar región ni usuario_actual
+                        // El usuario_actual se mantiene para poder volver a Gestión de Locales
+                        console.log('🔄 Volviendo al Login (manteniendo región y usuario_actual)');
+                        setUsuario(null);
+                        setVistaActual('login');
+                        window.location.hash = '';
+                    }} 
+                    onLoginSuccess={handleLoginSuccess}
+                />;
+            }
+
             if (usuario && vistaActual === 'main') {
                 console.log('✅ Renderizando Main');
                 return <Main 
@@ -8497,24 +9101,12 @@
                 />;
             }
 
-            if (vistaActual === 'gestion-locales') {
-                console.log('✅ Renderizando GestionLocales');
-                return <GestionLocales 
-                    onVolver={() => {
-                        // EXACTO como Android: Volver al login SIN limpiar región ni usuario_actual
-                        // El usuario_actual se mantiene para poder volver a Gestión de Locales
-                        console.log('🔄 Volviendo al Login (manteniendo región y usuario_actual)');
-                        setVistaActual('login');
-                        window.location.hash = '';
-                    }} 
-                    onLoginSuccess={handleLoginSuccess}
-                />;
-            }
-
             return <Login onLoginSuccess={handleLoginSuccess} />;
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        // Usar createRoot en lugar de ReactDOM.render (React 18)
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
@@ -9911,8 +10503,8 @@
         mensaje += '\n';
       }
             
-      if (vencimientosHoy.length === 0 && vencimientosManana.length === 0 && vencimientosProximos.length === 0) {
-        mensaje += '✅ OK - No hay vencimientos proximos en los proximos 7 dias.\n\n';
+      if (vencimientosHoy.length === 0 && vencimientosManana.length === 0) {
+        mensaje += '✅ OK - No hay vencimientos proximos en los proximos 2 dias.\n\n';
       }
       
       mensaje += '================================\n';

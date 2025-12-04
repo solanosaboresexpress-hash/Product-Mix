@@ -6074,6 +6074,11 @@
             };
             
             // Función para calcular ventas por producto - EXACTO como Android CargaActivity.kt líneas 1358-1404
+            /**
+             * @deprecated Esta función ya no se usa. Ver ajustarLotesAStockFinal()
+             * La nueva lógica NO calcula ventas, solo ajusta lotes al stock final directamente
+             * Se mantiene solo como referencia histórica
+             */
             const calcularVentasPorProducto = async (fecha, stockFinalProductos, db) => {
                 try {
                     const fechaAnterior = obtenerFechaAnterior(fecha);
@@ -6141,6 +6146,11 @@
             };
             
             // Función para procesar descuentos FIFO - EXACTO como Android VencimientoManager.kt líneas 22-118
+            /**
+             * @deprecated Esta función ya no se usa. Ver ajustarLotesAStockFinal()
+             * La nueva lógica NO descuenta por ventas, solo ajusta lotes al stock final directamente
+             * Se mantiene solo como referencia histórica
+             */
             const procesarDescuentosFIFO = async (localId, fecha, ventasPorProducto, db) => {
                 try {
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -6257,11 +6267,20 @@
                 }
             };
             
-            // Función para sincronizar lotes con stock final - EXACTO como Android VencimientoManager.kt líneas 138-229
-            const sincronizarLotesConStockFinal = async (localId, fecha, stockFinalPorProducto, db) => {
+            /**
+             * ✅ FUNCIÓN PRINCIPAL: Ajusta los lotes para que sumen exactamente el Stock Final
+             * 
+             * LÓGICA SIMPLE (igual a Android VencimientoManager.kt líneas 145-264):
+             * - Si Stock Final = 50 y Lotes suman 100 → Descuenta 50 de los lotes más viejos (FIFO)
+             * - Si Stock Final = 0 → Elimina TODOS los lotes
+             * - Si Stock Final = 50 y Lotes suman 30 → Advierte que faltan 20 uds (usuario debe cargar lotes)
+             * 
+             * NO calcula "venta" - solo ajusta lotes al stock final directamente
+             */
+            const ajustarLotesAStockFinal = async (localId, fecha, stockFinalPorProducto, db) => {
                 try {
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                    console.log('🔄 SINCRONIZANDO LOTES CON STOCK FINAL');
+                    console.log('🔥 AJUSTANDO LOTES AL STOCK FINAL (FIFO)');
                     console.log('📅 Fecha:', fecha);
                     console.log('🏪 Local:', localId);
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -6272,7 +6291,6 @@
                             .doc(localId)
                             .collection('vencimientos_activos')
                             .where('codigo', '==', productoCodigo.toLowerCase())
-                            .where('activo', '==', true)
                             .get();
                         
                         const lotes = [];
@@ -6295,79 +6313,81 @@
                         
                         const sumaLotes = lotes.reduce((sum, lote) => sum + lote.cantidad, 0);
                         
-                        console.log(`\n🔍 Sincronizando: ${productoCodigo}`);
-                        console.log(`   Stock Final: ${stockFinal}`);
-                        console.log(`   Suma Lotes: ${sumaLotes}`);
+                        console.log(`\n🔍 ${productoCodigo}:`);
+                        console.log(`   Stock Final deseado: ${stockFinal}`);
+                        console.log(`   Lotes actuales: ${sumaLotes}`);
                         
-                        // Si el stock final es 0, eliminar TODOS los lotes
+                        if (lotes.length > 0) {
+                            console.log(`   📦 Lotes:`);
+                            lotes.forEach(lote => {
+                                console.log(`      - ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
+                            });
+                        }
+                        
+                        // CASO 1: Stock Final = 0 → Eliminar TODOS los lotes
                         if (stockFinal === 0) {
                             if (lotes.length > 0) {
-                                console.log(`   🗑️ Stock Final = 0 → Eliminando TODOS los lotes`);
+                                console.log(`   🗑️ Eliminando TODOS los lotes (Stock Final = 0)`);
                                 for (const lote of lotes) {
                                     await db.collection('locales')
                                         .doc(localId)
                                         .collection('vencimientos_activos')
                                         .doc(lote.id)
                                         .delete();
-                                    console.log(`      Eliminado: ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
                                 }
-                            } else {
-                                console.log(`   ✅ Ya no hay lotes (correcto)`);
+                                console.log(`   ✅ Todos los lotes eliminados`);
                             }
                         }
-                        // Si el stock final > 0 pero hay más lotes que stock, ajustar
+                        // CASO 2: Lotes = Stock Final → Perfecto, no hacer nada
+                        else if (sumaLotes === stockFinal) {
+                            console.log(`   ✅ Lotes ya coinciden con Stock Final`);
+                        }
+                        // CASO 3: Lotes > Stock Final → Descontar diferencia (FIFO)
                         else if (sumaLotes > stockFinal) {
-                            const diferencia = sumaLotes - stockFinal;
-                            console.log(`   ⚠️ Hay más lotes (${sumaLotes}) que stock final (${stockFinal})`);
-                            console.log(`   🔄 Descontando diferencia: ${diferencia} uds`);
+                            const cantidadADescontar = sumaLotes - stockFinal;
+                            console.log(`   🔄 Descontando ${cantidadADescontar} uds (FIFO)`);
                             
-                            // Descontar la diferencia de los lotes más viejos (FIFO)
-                            let pendienteDescontar = diferencia;
+                            let pendiente = cantidadADescontar;
                             for (const lote of lotes) {
-                                if (pendienteDescontar <= 0) break;
+                                if (pendiente <= 0) break;
                                 
-                                const descontar = Math.min(lote.cantidad, pendienteDescontar);
-                                const cantidadRestante = lote.cantidad - descontar;
+                                const descontar = Math.min(lote.cantidad, pendiente);
+                                const restante = lote.cantidad - descontar;
                                 
-                                if (cantidadRestante <= 0) {
+                                console.log(`      Lote Vto ${lote.fechaVencimiento}: ${lote.cantidad} → ${restante} uds`);
+                                
+                                if (restante <= 0) {
                                     await db.collection('locales')
                                         .doc(localId)
                                         .collection('vencimientos_activos')
                                         .doc(lote.id)
                                         .delete();
-                                    console.log(`      🗑️ Lote eliminado: ${lote.cantidad} uds → Vto ${lote.fechaVencimiento}`);
                                 } else {
                                     await db.collection('locales')
                                         .doc(localId)
                                         .collection('vencimientos_activos')
                                         .doc(lote.id)
-                                        .update({ cantidad: cantidadRestante });
-                                    console.log(`      ✅ Lote ajustado: ${lote.cantidad} → ${cantidadRestante} uds`);
+                                        .update({ cantidad: restante });
                                 }
                                 
-                                pendienteDescontar -= descontar;
+                                pendiente -= descontar;
                             }
+                            
+                            console.log(`   ✅ Descuento completado`);
                         }
-                        // Si el stock final > 0 y coincide con lotes, está correcto
-                        else if (sumaLotes === stockFinal) {
-                            console.log(`   ✅ Lotes coinciden con stock final (correcto)`);
-                        }
-                        // Si hay menos lotes que stock final, es porque falta cargar lotes del ingreso de mercadería
-                        else if (sumaLotes < stockFinal) {
-                            const diferencia = stockFinal - sumaLotes;
-                            console.warn(`   ⚠️ ADVERTENCIA: Hay menos lotes (${sumaLotes}) que stock final (${stockFinal})`);
-                            console.warn(`   📋 Diferencia: ${diferencia} uds`);
-                            console.warn(`   💡 ACCIÓN REQUERIDA: Debes cargar los lotes del Ingreso de Mercadería en Vencimientos`);
-                            console.warn(`   💡 Si ingresaste ${diferencia} uds nuevas, debes crear un lote con la fecha de vencimiento correcta`);
-                            console.warn(`   💡 NO se crean lotes automáticamente para evitar fechas incorrectas`);
+                        // CASO 4: Lotes < Stock Final → Faltan lotes
+                        else {
+                            const faltante = stockFinal - sumaLotes;
+                            console.warn(`   ⚠️ Faltan ${faltante} uds en lotes`);
+                            console.warn(`   💡 Carga los lotes del ingreso en Vencimientos`);
                         }
                     }
                     
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                    console.log('✅ SINCRONIZACIÓN COMPLETADA');
+                    console.log('✅ AJUSTE COMPLETADO');
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                 } catch (error) {
-                    console.error('❌ Error sincronizando lotes con stock final:', error);
+                    console.error('❌ Error ajustando lotes a stock final:', error);
                 }
             };
             
@@ -6472,36 +6492,53 @@
                         });
                     }
                     
-                    // 🔥 Si es Stock Final y es la PRIMERA VEZ, procesar descuentos FIFO de vencimientos
-                    // ⚠️ NO procesar descuentos si es MODIFICACIÓN (ya se procesaron la primera vez)
+                    // 🔥 Si es Stock Final y es la PRIMERA VEZ, ajustar lotes al stock final
+                    // ⚠️ NO procesar si es MODIFICACIÓN (ya se procesó la primera vez)
+                    // ✅ LÓGICA SIMPLE Y DIRECTA (igual a Android CargaActivity.kt líneas 1700-1745):
+                    //    - NO calcular "venta" - solo ajustar lotes al stock final usando FIFO
                     if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar && resultadoVerificacion.esPrimeraVez) {
-                        // Solo procesar descuentos si es PRIMERA VEZ
-                        console.log('✅ Primera vez guardando Stock Final - Procesará descuentos FIFO');
+                        console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
                         
-                        // Guardar estado inicial ANTES de procesar descuentos
+                        // Guardar estado inicial ANTES de ajustar lotes
                         await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
                         
-                        // Calcular ventas por producto
-                        const ventasPorProducto = await calcularVentasPorProducto(fechaString, productos, db);
-                        
-                        // Procesar descuentos FIFO
-                        await procesarDescuentosFIFO(usuario.localId, fechaString, ventasPorProducto, db);
-                        
-                        // 3. SINCRONIZAR lotes con stock final DESPUÉS del descuento FIFO
-                        // EXACTO como Android CargaActivity.kt línea 1638 - VencimientoManager.kt líneas 138-229
-                        console.log('🔄 Sincronizando lotes con stock final después del descuento FIFO...');
+                        // ✅ LÓGICA SIMPLE Y DIRECTA:
+                        // Ajustar lotes para que sumen exactamente el Stock Final (descuento FIFO)
+                        // NO calcular "venta" - solo ajustar lotes al stock final
+                        console.log('🔥 Ajustando lotes al Stock Final (FIFO)');
                         const stockFinalPorProducto = {};
                         productos.forEach(producto => {
                             const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
                             const codigoNormalizado = normalizarCodigoProducto(codigo);
                             stockFinalPorProducto[codigoNormalizado] = producto.cantidad;
                         });
-                        await sincronizarLotesConStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
                         
-                        // Validar consistencia después del descuento
-                        await validarConsistenciaLotes(usuario.localId, fechaString, productos, db);
+                        console.log('📊 Stock Final por producto (normalizado):', stockFinalPorProducto);
+                        await ajustarLotesAStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
                         
-                        // Guardar estado final DESPUÉS de procesar descuentos
+                        // Validar resultado
+                        console.log('🔍 Validando resultado...');
+                        for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                            const lotesSnapshot = await db.collection('locales')
+                                .doc(usuario.localId)
+                                .collection('vencimientos_activos')
+                                .where('codigo', '==', productoCodigo.toLowerCase())
+                                .get();
+                            
+                            const sumaLotes = lotesSnapshot.docs.reduce((sum, doc) => {
+                                return sum + (doc.data().cantidad || 0);
+                            }, 0);
+                            
+                            if (sumaLotes === stockFinal) {
+                                console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
+                            } else {
+                                console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                            }
+                        }
+                        
+                        console.log('✅ Ajuste FIFO completado exitosamente');
+                        
+                        // Guardar estado final DESPUÉS de ajustar lotes
                         await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
                     } else if (tipo === 'Ingreso de Mercadería') {
                         // Guardar estado inicial cuando se carga el ingreso (inicio del día)
@@ -10507,7 +10544,7 @@
         mensaje += '✅ OK - No hay vencimientos proximos en los proximos 2 dias.\n\n';
       }
       
-      mensaje += '================================\n';
+      mensaje += '===========================\n';
       
       // Función para escapar HTML
       function escapeHtml(text) {
@@ -10838,6 +10875,318 @@
   };
 
   // Función principal para abrir el modal de Pedido a Fábrica
+  /**
+   * 📈 Obtiene historial de ventas para el gráfico de tendencias
+   * Retorna array de {fecha, ventaReal, promedioHistorico}
+   */
+  async function obtenerHistorialVentasTendencia(codigo, localId, nombreProducto, promediosVentaProducto) {
+    try {
+      const db = FirebaseRegionManager.getFirestore();
+      const historial = [];
+      const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+      
+      // Cargar últimos 14 días
+      for (let i = 1; i <= 14; i++) {
+        try {
+          const fecha = new Date(fechaHoy);
+          fecha.setDate(fecha.getDate() - i);
+          const fechaStr = fecha.toISOString().split('T')[0];
+          
+          const fechaAnterior = new Date(fechaStr);
+          fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+          const fechaAnteriorStr = fechaAnterior.toISOString().split('T')[0];
+          
+          // Cargar los 3 documentos necesarios
+          const stockAnteriorDoc = await db.collection('locales').doc(localId).collection('registros').doc(fechaAnteriorStr + '_Stock_Final').get();
+          const ingresoDoc = await db.collection('locales').doc(localId).collection('registros').doc(fechaStr + '_Ingreso_de_Mercadería').get();
+          const stockFinalDoc = await db.collection('locales').doc(localId).collection('registros').doc(fechaStr + '_Stock_Final').get();
+          
+          // Buscar el producto (múltiples formatos posibles)
+          const nombreCompleto = codigo + ' - ' + nombreProducto;
+          
+          const stockAnterior = stockAnteriorDoc.exists ? (stockAnteriorDoc.data().productos || []).find(p => 
+            p.nombre === nombreCompleto || p.nombre.startsWith(codigo + ' ') || p.nombre === codigo
+          )?.cantidad || 0 : 0;
+          
+          const ingreso = ingresoDoc.exists ? (ingresoDoc.data().productos || []).find(p => 
+            p.nombre === nombreCompleto || p.nombre.startsWith(codigo + ' ') || p.nombre === codigo
+          )?.cantidad || 0 : 0;
+          
+          const stockFinal = stockFinalDoc.exists ? (stockFinalDoc.data().productos || []).find(p => 
+            p.nombre === nombreCompleto || p.nombre.startsWith(codigo + ' ') || p.nombre === codigo
+          )?.cantidad || 0 : 0;
+          
+          // Calcular venta
+          const ventaReal = stockAnterior + ingreso - stockFinal;
+          
+          if (ventaReal > 0 || stockAnterior > 0 || ingreso > 0 || stockFinal > 0) {
+            // Obtener día de la semana
+            const diaSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'][fecha.getDay()];
+            const promedioHistorico = promediosVentaProducto[diaSemana] || 0;
+            
+            historial.push({
+              fecha: fechaStr,
+              ventaReal: ventaReal,
+              promedioHistorico: promedioHistorico
+            });
+          }
+        } catch (e) {
+          console.warn('Error obteniendo día:', e);
+        }
+      }
+      
+      return historial.reverse(); // Del más antiguo al más reciente
+    } catch (e) {
+      console.error('Error obteniendo historial:', e);
+      return [];
+    }
+  }
+
+  /**
+   * 📊 Dibuja gráfico de tendencias usando Canvas
+   */
+  function dibujarGraficoTendencias(canvas, historial, codigo, nombreProducto, tendencia) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Limpiar canvas
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+    
+    if (historial.length === 0) {
+      ctx.fillStyle = '#666666';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('No hay datos suficientes', width / 2, height / 2);
+      return;
+    }
+    
+    // Márgenes
+    const margin = { top: 80, right: 30, bottom: 60, left: 60 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    
+    // Título
+    ctx.fillStyle = '#7b2cbf';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(codigo + ' - ' + nombreProducto, width / 2, 30);
+    
+    // Subtítulo con tendencia
+    const iconoTendencia = tendencia >= 10 ? '📈' : tendencia >= 5 ? '⬆️' : tendencia <= -10 ? '📉' : '⬇️';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = tendencia >= 0 ? '#22c55e' : '#f59e0b';
+    ctx.fillText(iconoTendencia + ' Tendencia: ' + tendencia.toFixed(1) + '%', width / 2, 55);
+    
+    // Encontrar valores máximos
+    const maxVenta = Math.max(...historial.map(h => h.ventaReal), ...historial.map(h => h.promedioHistorico));
+    const minVenta = 0;
+    const rangoY = maxVenta - minVenta;
+    
+    // Función para escalar valores
+    const escalaX = (index) => margin.left + (index / (historial.length - 1)) * chartWidth;
+    const escalaY = (valor) => margin.top + chartHeight - ((valor - minVenta) / rangoY) * chartHeight;
+    
+    // Dibujar ejes
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    
+    // Eje Y
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, height - margin.bottom);
+    ctx.stroke();
+    
+    // Eje X
+    ctx.beginPath();
+    ctx.moveTo(margin.left, height - margin.bottom);
+    ctx.lineTo(width - margin.right, height - margin.bottom);
+    ctx.stroke();
+    
+    // Etiqueta del eje Y (arriba)
+    ctx.fillStyle = '#7b2cbf';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(20, margin.top + chartHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Unidades', 0, 0);
+    ctx.restore();
+    
+    // Etiquetas eje Y
+    ctx.fillStyle = '#666666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+      const valor = minVenta + (rangoY / 5) * i;
+      const y = escalaY(valor);
+      ctx.fillText(Math.round(valor), margin.left - 10, y + 4);
+      
+      // Líneas guía horizontales (más visibles)
+      ctx.strokeStyle = '#d1d5db'; // Gris más oscuro
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(width - margin.right, y);
+      ctx.stroke();
+    }
+    
+    // Etiquetas eje X (fechas) - Mostrar más fechas
+    ctx.fillStyle = '#666666';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    
+    // Calcular cuántas fechas mostrar (máximo 7-8 para que no se amontonen)
+    const maxFechas = Math.min(8, historial.length);
+    const intervalo = Math.max(1, Math.floor(historial.length / maxFechas));
+    
+    historial.forEach((h, i) => {
+      // Mostrar primera, última y algunas intermedias
+      if (i === 0 || i === historial.length - 1 || i % intervalo === 0) {
+        const x = escalaX(i);
+        const fecha = h.fecha.split('-');
+        ctx.fillText(fecha[2] + '/' + fecha[1], x, height - margin.bottom + 20);
+      }
+    });
+    
+    // Dibujar línea de promedio (línea punteada naranja)
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    historial.forEach((h, i) => {
+      const x = escalaX(i);
+      const y = escalaY(h.promedioHistorico);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Dibujar línea de venta real (línea sólida morada)
+    ctx.strokeStyle = '#7b2cbf';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    historial.forEach((h, i) => {
+      const x = escalaX(i);
+      const y = escalaY(h.ventaReal);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+    
+    // Dibujar puntos sobre la línea de venta real
+    historial.forEach((h, i) => {
+      const x = escalaX(i);
+      const y = escalaY(h.ventaReal);
+      
+      ctx.fillStyle = '#7b2cbf';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+    
+    // Leyenda
+    const leyendaY = height - 25;
+    
+    // Venta Real
+    ctx.strokeStyle = '#7b2cbf';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(width / 2 - 100, leyendaY);
+    ctx.lineTo(width / 2 - 70, leyendaY);
+    ctx.stroke();
+    ctx.fillStyle = '#666666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Venta Real', width / 2 - 65, leyendaY + 4);
+    
+    // Promedio
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(width / 2 + 20, leyendaY);
+    ctx.lineTo(width / 2 + 50, leyendaY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText('Promedio', width / 2 + 55, leyendaY + 4);
+  }
+
+  /**
+   * 📈 Muestra el gráfico de tendencias en un modal
+   */
+  window.mostrarGraficoTendenciaGlobal = async function(codigo, tendencia, nombreProducto, promediosVentaProducto, localId) {
+    try {
+      // Mostrar loading
+      const loadingOverlay = document.createElement('div');
+      loadingOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999';
+      loadingOverlay.innerHTML = '<div style="background:#fff;padding:30px;border-radius:8px;text-align:center"><div style="font-size:24px;margin-bottom:10px">📊</div><div style="font-size:16px;font-weight:700;color:#7b2cbf">Cargando gráfico...</div></div>';
+      document.body.appendChild(loadingOverlay);
+      
+      const historial = await obtenerHistorialVentasTendencia(codigo, localId, nombreProducto, promediosVentaProducto);
+      
+      // Remover loading
+      document.body.removeChild(loadingOverlay);
+      
+      // Crear modal
+      const modalOverlay = document.createElement('div');
+      modalOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px';
+      
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = 'background:#fff;border-radius:8px;padding:20px;max-width:900px;width:100%;max-height:90vh;overflow-y:auto';
+      
+      // Canvas para el gráfico
+      const canvas = document.createElement('canvas');
+      canvas.width = 850;
+      canvas.height = 500;
+      canvas.style.cssText = 'width:100%;height:auto;display:block';
+      
+      // Dibujar gráfico
+      dibujarGraficoTendencias(canvas, historial, codigo, nombreProducto, tendencia);
+      
+      modalContent.appendChild(canvas);
+      
+      // Mensaje
+      const mensaje = document.createElement('div');
+      mensaje.style.cssText = 'text-align:center;margin-top:15px;font-size:14px;font-weight:700;color:' + (tendencia >= 0 ? '#22c55e' : '#f59e0b');
+      mensaje.textContent = tendencia >= 5 ? '💡 Sugerencias ajustadas automáticamente' : '💡 Considera reducir el pedido';
+      modalContent.appendChild(mensaje);
+      
+      // Botón cerrar
+      const btnCerrar = document.createElement('button');
+      btnCerrar.textContent = 'Entendido';
+      btnCerrar.style.cssText = 'display:block;margin:20px auto 0;padding:12px 30px;background:#7b2cbf;color:#fff;border:none;border-radius:6px;font-size:16px;font-weight:700;cursor:pointer';
+      btnCerrar.onclick = () => document.body.removeChild(modalOverlay);
+      modalContent.appendChild(btnCerrar);
+      
+      modalOverlay.appendChild(modalContent);
+      document.body.appendChild(modalOverlay);
+      
+      // Cerrar al hacer click fuera
+      modalOverlay.onclick = (e) => {
+        if (e.target === modalOverlay) {
+          document.body.removeChild(modalOverlay);
+        }
+      };
+      
+    } catch (e) {
+      console.error('Error mostrando gráfico:', e);
+      alert('Error mostrando gráfico: ' + e.message);
+    }
+  }
+
   async function openPedidoFabricaModal() {
     const u = localStorage.getItem('usuario');
     if (!u) {
@@ -10942,6 +11291,12 @@
     
     modal.appendChild(infoDia);
 
+    // Leyenda de tendencias (igual que Android)
+    const leyendaTendencias = document.createElement('div');
+    leyendaTendencias.style.cssText = 'background:#f3f4f6;padding:4px;text-align:center;font-size:10px;color:#6b7280;border-bottom:1px solid #e5e7eb';
+    leyendaTendencias.textContent = '📈≥10% | ⬆️5-10% | 📉≤-10% | ⬇️-10 a -5%';
+    modal.appendChild(leyendaTendencias);
+
     // Contenido principal
     const body = document.createElement('div');
     body.style.cssText = 'flex:1;overflow-y:auto;padding:16px';
@@ -10953,6 +11308,9 @@
     let diasEntrega = { lunes: 'Mañana', martes: 'Mañana', miercoles: 'Mañana', jueves: 'Mañana', viernes: 'Sábado + Domingo', sabado: 'Domingo', domingo: 'Mañana' };
     let productos = [];
     let promediosVenta = {}; // {codigo: {LUNES: 100, MARTES: 120, ...}}
+    
+    // 📈 Cache de tendencias de ventas (igual que Android)
+    let cacheTendencias = null; // {codigo: porcentaje de tendencia}
 
     // Función helper para obtener Firestore de la región actual
     function obtenerFirestore() {
@@ -10972,6 +11330,74 @@
       return dias[date.getDay()];
     }
 
+    /**
+     * 📥 Carga el cache completo de tendencias desde Firebase (igual que Android)
+     * Usa documento único "tendencias" que se sobrescribe (sin fecha)
+     */
+    async function cargarCacheTendenciasDesdeFirebase() {
+      try {
+        // Si ya tenemos cache en memoria, no cargar de nuevo
+        if (cacheTendencias !== null) {
+          console.log('✅ Cache ya disponible en memoria (' + Object.keys(cacheTendencias).length + ' productos)');
+          return;
+        }
+
+        console.log('📥 Cargando cache de tendencias desde Firebase (documento único)...');
+        const db = obtenerFirestore();
+        
+        const docTendencias = await db.collection('locales')
+          .doc(localId)
+          .collection('cache_tendencias')
+          .doc('tendencias')  // Documento único
+          .get();
+
+        if (docTendencias.exists) {
+          const data = docTendencias.data();
+          if (data) {
+            const tendenciasGuardadas = {};
+            Object.keys(data).forEach(key => {
+              if (key !== 'timestamp' && key !== 'fecha') {
+                tendenciasGuardadas[key] = data[key] || 0;
+              }
+            });
+
+            if (Object.keys(tendenciasGuardadas).length > 0) {
+              cacheTendencias = tendenciasGuardadas;
+              console.log('✅ Cache cargado desde Firebase: ' + Object.keys(tendenciasGuardadas).length + ' productos');
+              console.log('   Productos con tendencia: ' + Object.keys(tendenciasGuardadas).filter(k => tendenciasGuardadas[k] !== 0).length);
+            } else {
+              console.log('⚠️ Documento existe pero no tiene tendencias válidas');
+            }
+          } else {
+            console.log('⚠️ Documento existe pero está vacío');
+          }
+        } else {
+          console.log('ℹ️ No hay cache en Firebase (aún no se cargó Stock Final)');
+        }
+      } catch (e) {
+        console.error('❌ Error cargando cache desde Firebase:', e);
+      }
+    }
+
+    /**
+     * 📈 Detecta tendencia de ventas de un producto
+     * SOLO lee del cache (igual que Android)
+     */
+    function detectarTendenciaVentas(codigo) {
+      try {
+        if (cacheTendencias !== null) {
+          const tendenciaCache = cacheTendencias[codigo] || 0;
+          if (tendenciaCache !== 0) {
+            console.log('⚡ ' + codigo + ': ' + tendenciaCache.toFixed(1) + '% (desde cache)');
+          }
+          return tendenciaCache;
+        }
+        return 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+
     // Función para cargar configuración desde Firebase
     async function cargarConfiguracion() {
       try {
@@ -10983,6 +11409,10 @@
           actualizarUI();
           return;
         }
+        
+        // 📈 Cargar cache de tendencias desde Firebase al inicio (una sola vez)
+        await cargarCacheTendenciasDesdeFirebase();
+        
         const configDoc = await db.collection('locales').doc(localId).collection('configuracion_pedido_fabrica').doc('config').get();
         if (configDoc.exists) {
           const data = configDoc.data();
@@ -11496,7 +11926,17 @@
         const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
 
         // Sumar todos los promedios hasta la próxima entrega
-        const sumaPromedios = obtenerPromediosHastaProximaEntrega(codigo);
+        let sumaPromedios = obtenerPromediosHastaProximaEntrega(codigo);
+
+        // 🔥 NUEVO: Detectar tendencia de ventas (aumento/disminución)
+        const tendenciaVentas = detectarTendenciaVentas(codigo);
+
+        // 🔥 NUEVO: Aplicar ajuste de tendencia a los promedios
+        if (tendenciaVentas !== 0) {
+          const factorTendencia = 1.0 + (tendenciaVentas / 100.0);
+          sumaPromedios = sumaPromedios * factorTendencia;
+          console.log('📈 ' + codigo + ': Ajustando promedios por tendencia ' + tendenciaVentas.toFixed(1) + '% (factor: ' + factorTendencia.toFixed(2) + ')');
+        }
 
         // Calcular stock al final de hoy
         const stockFinalHoy = stockActual - ventaRestanteHoy;
@@ -11581,11 +12021,30 @@
 
     // Función para mostrar sección de carga de stock integrada (replica exacta de mostrarSeccionCargarStockIntegrada de la APK)
     function mostrarSeccionCargarStockIntegrada() {
-      // Título de la sección
-      const tituloSeccion = document.createElement('div');
-      tituloSeccion.style.cssText = 'font-size:20px;font-weight:700;color:#1976d2;padding:16px;text-align:center;background:#f3f4f6;margin-bottom:16px';
-      tituloSeccion.textContent = '📊 CARGAR STOCK 15:30';
-      body.appendChild(tituloSeccion);
+      // 📈 Banner de tendencia general (reemplaza al título viejo)
+      // Calcular tendencia promedio de productos principales
+      const productosParaTendencia = ['JQ', 'PB', 'CS']; // Productos principales
+      const tendencias = productosParaTendencia
+        .map(codigo => detectarTendenciaVentas(codigo))
+        .filter(t => t !== 0); // Solo contar tendencias significativas
+      
+      if (tendencias.length > 0) {
+        const tendenciaGeneral = tendencias.reduce((a, b) => a + b, 0) / tendencias.length;
+        
+        // Solo mostrar si es significativa (≥5%)
+        if (Math.abs(tendenciaGeneral) >= 5.0) {
+          const bannerTendencia = document.createElement('div');
+          const icono = tendenciaGeneral > 0 ? '📈' : '📉';
+          const texto = tendenciaGeneral > 0 ? 'AUMENTO' : 'DISMINUCIÓN';
+          const colorBg = tendenciaGeneral > 0 ? '#22c55e' : '#f59e0b';
+          
+          bannerTendencia.style.cssText = 'font-size:16px;font-weight:700;color:#fff;padding:12px;text-align:center;background:' + colorBg + ';margin-bottom:16px;border-radius:6px';
+          bannerTendencia.textContent = icono + ' ' + texto + ' DE VENTAS: ' + Math.abs(tendenciaGeneral).toFixed(0) + '%';
+          body.appendChild(bannerTendencia);
+          
+          console.log('✅ Banner de tendencia general mostrado:', tendenciaGeneral.toFixed(1) + '%');
+        }
+      }
 
       // Orden de categorías (igual que la APK)
       const ordenCategorias = ['EMPANADAS', 'PIZZAS', 'PASTELITOS', 'OTROS'];
@@ -11667,6 +12126,29 @@
         codigoSpan.id = 'pf-codigo-' + prod.codigo;
         codigoSpan.style.cssText = 'font-size:13px;font-weight:700;color:#7b2cbf';
         codigoSpan.textContent = prod.codigo;
+        
+        // 📈 Agregar tendencia del cache si está disponible (instantáneo)
+        if (cacheTendencias !== null) {
+          const tendencia = cacheTendencias[prod.codigo] || 0;
+          if (Math.abs(tendencia) >= 5.0) {
+            const icono = tendencia >= 10.0 ? '📈' : 
+                         tendencia >= 5.0 ? '⬆️' : 
+                         tendencia <= -10.0 ? '📉' : '⬇️';
+            const porcentaje = Math.abs(tendencia).toFixed(0);
+            const tendenciaSpan = document.createElement('span');
+            tendenciaSpan.style.cssText = 'display:inline-block;margin-left:6px;font-size:12px;cursor:pointer';
+            tendenciaSpan.textContent = icono + porcentaje + '%';
+            tendenciaSpan.title = 'Click para ver gráfico de tendencia';
+            tendenciaSpan.onclick = function() {
+              const nombreProd = obtenerNombreProducto(prod.codigo);
+              const promediosProd = promediosVenta[prod.codigo] || {};
+              window.mostrarGraficoTendenciaGlobal(prod.codigo, tendencia, nombreProd, promediosProd, localId);
+            };
+            codigoSpan.appendChild(tendenciaSpan);
+            console.log('⚡ Tendencia desde cache: ' + prod.codigo + ' → ' + icono + porcentaje + '%');
+          }
+        }
+        
         codigoDiv.appendChild(codigoSpan);
         filaDiv.appendChild(codigoDiv);
 
@@ -13661,4 +14143,5 @@
     return openPedidoPanificadoraModal();
   };
 })();
+</script>
 </script>

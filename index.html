@@ -5973,10 +5973,11 @@
             // Función para verificar si debe procesar descuentos - EXACTO como Android CargaActivity.kt líneas 1143-1191
             const verificarSiDebeProcesarDescuentos = async (fecha, nuevosProductos, db) => {
                 try {
-                    // 🔥 FIX: NO procesar descuentos si la fecha es anterior a hoy
+                    // 🔥 FIX: Solo procesar descuentos si la fecha es HOY o AYER
                     const fechaHoy = formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
-                    if (fecha < fechaHoy) {
-                        console.log(`⏭️ Stock Final para ${fecha}: FECHA ANTERIOR (${fecha} < ${fechaHoy}) - NO procesará descuentos`);
+                    const fechaAyer = obtenerFechaAnterior(fechaHoy);
+                    if (fecha !== fechaHoy && fecha !== fechaAyer) {
+                        console.log(`⏭️ Stock Final para ${fecha}: FECHA ANTERIOR (no es HOY ni AYER) - NO procesará descuentos`);
                         return { debeProcesar: false, esPrimeraVez: false };
                     }
                     
@@ -6003,8 +6004,16 @@
                             console.log(`🔍 Stock Final para ${fecha}: EXISTE pero DATOS CAMBIARON (modificación)`);
                             return { debeProcesar: true, esPrimeraVez: false };
                         } else {
-                            console.log(`🔍 Stock Final para ${fecha}: EXISTE con MISMOS DATOS (recarga)`);
-                            return { debeProcesar: false, esPrimeraVez: false };
+                            // 🔥 FIX: Aunque los datos sean iguales, verificar si los lotes coinciden con el stock final
+                            // Si no coinciden, forzar el ajuste (puede pasar si se borró y recargó el stock final)
+                            const lotesCoinciden = await verificarSiLotesCoincidenConStockFinal(nuevosProductos, db);
+                            if (!lotesCoinciden) {
+                                console.log(`🔍 Stock Final para ${fecha}: EXISTE con MISMOS DATOS pero LOTES NO COINCIDEN - Forzando ajuste`);
+                                return { debeProcesar: true, esPrimeraVez: false };
+                            } else {
+                                console.log(`🔍 Stock Final para ${fecha}: EXISTE con MISMOS DATOS y LOTES COINCIDEN (recarga)`);
+                                return { debeProcesar: false, esPrimeraVez: false };
+                            }
                         }
                     }
                 } catch (error) {
@@ -6012,14 +6021,88 @@
                     // Si hay error, verificar si es fecha pasada antes de asumir que debe procesar
                     try {
                         const fechaHoy = formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
-                        if (fecha < fechaHoy) {
-                            console.log(`⏭️ Error pero fecha es anterior - NO procesará descuentos`);
+                        const fechaAyer = obtenerFechaAnterior(fechaHoy);
+                        if (fecha !== fechaHoy && fecha !== fechaAyer) {
+                            console.log(`⏭️ Error pero fecha es anterior (no es HOY ni AYER) - NO procesará descuentos`);
                             return { debeProcesar: false, esPrimeraVez: false };
                         }
                     } catch (e2) {
                         // Si no se puede verificar fecha, asumir que debe procesar (por seguridad)
                     }
                     return { debeProcesar: true, esPrimeraVez: true };
+                }
+            };
+            
+            // Verificar si los lotes activos coinciden con el stock final
+            const verificarSiLotesCoincidenConStockFinal = async (stockFinalProductos, db) => {
+                try {
+                    // Obtener todos los lotes activos del local (igual que Android)
+                    const lotesSnapshot = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    const todosLosLotes = [];
+                    lotesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        // 🔥 FIX: Los lotes tienen 'productoCodigo' (igual que Android)
+                        const codigoRaw = data.productoCodigo || data.codigo || '';
+                        const codigo = codigoRaw.toUpperCase(); // Normalizar a mayúsculas
+                        todosLosLotes.push({
+                            id: doc.id,
+                            productoCodigo: codigo,
+                            cantidad: data.cantidad || 0
+                        });
+                    });
+                    
+                    // Preparar mapa de stock final normalizado (mayúsculas)
+                    const stockFinalPorProducto = {};
+                    stockFinalProductos.forEach(producto => {
+                        const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
+                        const codigoNormalizado = normalizarCodigoProducto(codigo).toUpperCase();
+                        stockFinalPorProducto[codigoNormalizado] = producto.cantidad || 0;
+                    });
+                    
+                    // Agrupar lotes por producto
+                    const lotesPorProducto = {};
+                    todosLosLotes.forEach(lote => {
+                        const codigo = lote.productoCodigo;
+                        if (!lotesPorProducto[codigo]) {
+                            lotesPorProducto[codigo] = [];
+                        }
+                        lotesPorProducto[codigo].push(lote);
+                    });
+                    
+                    // Verificar cada producto del stock final
+                    let todosCoinciden = true;
+                    for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                        const lotes = lotesPorProducto[productoCodigo] || [];
+                        const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
+                        
+                        if (sumaLotes !== stockFinal) {
+                            console.log(`   ⚠️ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                            todosCoinciden = false;
+                        }
+                    }
+                    
+                    // También verificar si hay lotes de productos que no están en el stock final
+                    for (const [productoCodigo, lotes] of Object.entries(lotesPorProducto)) {
+                        const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
+                        if (sumaLotes > 0 && !stockFinalPorProducto[productoCodigo]) {
+                            console.log(`   ⚠️ ${productoCodigo}: Tiene lotes (${sumaLotes}) pero no está en Stock Final`);
+                            todosCoinciden = false;
+                        }
+                    }
+                    
+                    if (todosCoinciden) {
+                        console.log(`   ✅ Todos los lotes coinciden con el Stock Final`);
+                    }
+                    
+                    return todosCoinciden;
+                } catch (e) {
+                    console.error('❌ Error verificando coincidencia de lotes:', e);
+                    // Si hay error, asumir que no coinciden para forzar el ajuste
+                    return false;
                 }
             };
             
@@ -6285,31 +6368,54 @@
                     console.log('🏪 Local:', localId);
                     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                     
-                    for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
-                        // Obtener lotes activos del producto
-                        const lotesSnapshot = await db.collection('locales')
-                            .doc(localId)
-                            .collection('vencimientos_activos')
-                            .where('codigo', '==', productoCodigo.toLowerCase())
-                            .get();
-                        
-                        const lotes = [];
-                        lotesSnapshot.forEach(doc => {
-                            const data = doc.data();
-                            lotes.push({
-                                id: doc.id,
-                                cantidad: data.cantidad || 0,
-                                fechaVencimiento: data.fechaVencimiento || '',
-                                productoNombre: data.nombre || ''
-                            });
+                    // ✅ Cargar TODOS los lotes una vez (igual que Android)
+                    const todosLotesSnapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('vencimientos_activos')
+                        .get();
+                    
+                    const todosLosLotes = [];
+                    todosLotesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        // 🔥 FIX: Los lotes en Firebase tienen 'productoCodigo' (igual que Android)
+                        // Si no existe, intentar con 'codigo' (compatibilidad)
+                        const codigoRaw = data.productoCodigo || data.codigo || '';
+                        const codigo = codigoRaw.toUpperCase(); // Normalizar a mayúsculas
+                        todosLosLotes.push({
+                            id: doc.id,
+                            productoCodigo: codigo,
+                            cantidad: data.cantidad || 0,
+                            fechaVencimiento: data.fechaVencimiento || '',
+                            productoNombre: data.productoNombre || data.nombre || ''
                         });
-                        
-                        // Ordenar por fecha de vencimiento (más viejo primero) para FIFO
-                        lotes.sort((a, b) => {
+                    });
+                    
+                    console.log(`📦 Lotes totales cargados: ${todosLosLotes.length}`);
+                    
+                    // ✅ Agrupar por producto (igual que Android)
+                    const lotesPorProducto = {};
+                    todosLosLotes.forEach(lote => {
+                        const codigo = lote.productoCodigo;
+                        if (!lotesPorProducto[codigo]) {
+                            lotesPorProducto[codigo] = [];
+                        }
+                        lotesPorProducto[codigo].push(lote);
+                    });
+                    
+                    // Ordenar lotes por fecha de vencimiento (FIFO: más viejo primero)
+                    Object.keys(lotesPorProducto).forEach(codigo => {
+                        lotesPorProducto[codigo].sort((a, b) => {
                             if (!a.fechaVencimiento) return 1;
                             if (!b.fechaVencimiento) return -1;
                             return a.fechaVencimiento.localeCompare(b.fechaVencimiento);
                         });
+                    });
+                    
+                    // Procesar cada producto del stock final
+                    for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                        // Normalizar código a mayúsculas para comparar (igual que Android)
+                        const codigoNormalizado = productoCodigo.toUpperCase();
+                        const lotes = lotesPorProducto[codigoNormalizado] || [];
                         
                         const sumaLotes = lotes.reduce((sum, lote) => sum + lote.cantidad, 0);
                         
@@ -6492,15 +6598,17 @@
                         });
                     }
                     
-                    // 🔥 Si es Stock Final y es la PRIMERA VEZ, ajustar lotes al stock final
-                    // ⚠️ NO procesar si es MODIFICACIÓN (ya se procesó la primera vez)
+                    // 🔥 Si es Stock Final y debe procesar, ajustar lotes al stock final
                     // ✅ LÓGICA SIMPLE Y DIRECTA (igual a Android CargaActivity.kt líneas 1700-1745):
                     //    - NO calcular "venta" - solo ajustar lotes al stock final usando FIFO
-                    if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar && resultadoVerificacion.esPrimeraVez) {
-                        console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
-                        
-                        // Guardar estado inicial ANTES de ajustar lotes
-                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                    if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar) {
+                        if (resultadoVerificacion.esPrimeraVez) {
+                            console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
+                            // Guardar estado inicial ANTES de ajustar lotes
+                            await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                        } else {
+                            console.log('✅ Modificación/Reajuste - Reajustará lotes al nuevo Stock Final (FIFO)');
+                        }
                         
                         // ✅ LÓGICA SIMPLE Y DIRECTA:
                         // Ajustar lotes para que sumen exactamente el Stock Final (descuento FIFO)
@@ -6516,18 +6624,27 @@
                         console.log('📊 Stock Final por producto (normalizado):', stockFinalPorProducto);
                         await ajustarLotesAStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
                         
-                        // Validar resultado
+                        // Validar resultado (cargar todos los lotes de nuevo para verificar)
                         console.log('🔍 Validando resultado...');
+                        const lotesValidacionSnapshot = await db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('vencimientos_activos')
+                            .get();
+                        
+                        const lotesValidacion = {};
+                        lotesValidacionSnapshot.forEach(doc => {
+                            const data = doc.data();
+                            const codigoRaw = data.productoCodigo || data.codigo || '';
+                            const codigo = codigoRaw.toUpperCase();
+                            if (!lotesValidacion[codigo]) {
+                                lotesValidacion[codigo] = 0;
+                            }
+                            lotesValidacion[codigo] += (data.cantidad || 0);
+                        });
+                        
                         for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
-                            const lotesSnapshot = await db.collection('locales')
-                                .doc(usuario.localId)
-                                .collection('vencimientos_activos')
-                                .where('codigo', '==', productoCodigo.toLowerCase())
-                                .get();
-                            
-                            const sumaLotes = lotesSnapshot.docs.reduce((sum, doc) => {
-                                return sum + (doc.data().cantidad || 0);
-                            }, 0);
+                            const codigoNormalizado = productoCodigo.toUpperCase();
+                            const sumaLotes = lotesValidacion[codigoNormalizado] || 0;
                             
                             if (sumaLotes === stockFinal) {
                                 console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
@@ -6544,7 +6661,7 @@
                         // Guardar estado inicial cuando se carga el ingreso (inicio del día)
                         await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
                     } else if (tipo === 'Stock Final') {
-                        // Si es modificación o recarga, solo guardar estado final
+                        // Si no debe procesar (recarga con datos iguales y lotes coinciden), solo guardar estado final
                         await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
                     }
                     

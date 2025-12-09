@@ -3581,7 +3581,7 @@
                 
                 try {
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getFirebaseAuth();
+                    const auth = FirebaseRegionManager.getAuth();
                     let firebaseAuthUidActualizado = local.firebaseAuthUid;
                     
                     // Gestionar Firebase Auth
@@ -3670,8 +3670,10 @@
                     const usuariosActualizados = { ...local.usuarios };
                     usuariosActualizados[usuarioAdmin.id] = usuarioActualizado;
                     
+                    // Actualizar tanto usuarios como email del local y firebaseAuthUid
                     await db.collection('locales').doc(local.nombre).update({
                         usuarios: usuariosActualizados,
+                        email: emailCompleto, // Actualizar email del local también
                         firebaseAuthUid: firebaseAuthUidActualizado
                     });
                     
@@ -3690,46 +3692,88 @@
                 }
             };
 
-            const mostrarUsuariosYCredenciales = (local) => {
-                const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
-                
-                let mensaje;
-                
-                if (!local.firebaseAuthUid || (usuarioAdmin && !usuarioAdmin.firebaseAuthUid)) {
-                    // No tiene datos en Firebase Auth
-                    mensaje = `🏪 ${local.nombre}\n\n`;
-                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                    mensaje += `⚠️ CREDENCIALES DE FIREBASE AUTH\n`;
-                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-                    mensaje += `❌ No se encontraron datos en Firebase Auth para este local.\n\n`;
-                    mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
-                    mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
-                    mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
-                    mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
-                    mensaje += `ℹ️ Las credenciales de Firebase Auth son necesarias para:\n`;
-                    mensaje += `   • Iniciar sesión en la aplicación\n`;
-                    mensaje += `   • Sincronización con Firestore\n`;
-                    mensaje += `   • Autenticación segura\n`;
+            const mostrarUsuariosYCredenciales = async (local) => {
+                try {
+                    const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
+                    
+                    // Verificar si tiene datos en Firebase Auth (en el local o en el usuario admin)
+                    const tieneFirebaseAuth = local.firebaseAuthUid || (usuarioAdmin && usuarioAdmin.firebaseAuthUid);
+                    
+                    let mensaje;
+                    
+                    if (!tieneFirebaseAuth) {
+                        // No tiene datos en Firebase Auth
+                        mensaje = `🏪 ${local.nombre}\n\n`;
+                        mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                        mensaje += `⚠️ CREDENCIALES DE FIREBASE AUTH\n`;
+                        mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                        mensaje += `❌ No se encontraron datos en Firebase Auth para este local.\n\n`;
+                        mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
+                        mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
+                        mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
+                        mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
+                        mensaje += `ℹ️ Las credenciales de Firebase Auth son necesarias para:\n`;
+                        mensaje += `   • Iniciar sesión en la aplicación\n`;
+                        mensaje += `   • Sincronización con Firestore\n`;
+                        mensaje += `   • Autenticación segura\n`;
                 } else {
-                    // Tiene datos en Firebase Auth
+                    // Tiene datos en Firebase Auth - mostrar email de Firestore
+                    // Si hay firebaseAuthUid, significa que las credenciales están generadas en Firebase Auth
+                    const firebaseAuthUid = local.firebaseAuthUid || (usuarioAdmin && usuarioAdmin.firebaseAuthUid) || '';
+                    // El email está en local.email, no en usuarioAdmin.email
+                    const emailFirestore = local.email || (usuarioAdmin && usuarioAdmin.email) || '';
+                    const contraseñaFirestore = usuarioAdmin?.contraseña || '';
+                    
+                    // Si hay firebaseAuthUid, las credenciales están generadas (el UID solo existe si el usuario está en Firebase Auth)
+                    const credencialesGeneradas = firebaseAuthUid && firebaseAuthUid.length > 0;
+                    
                     mensaje = `🏪 ${local.nombre}\n`;
-                    mensaje += `🔑 Firebase Auth UID: ${local.firebaseAuthUid}\n\n`;
+                    mensaje += `🔑 Firebase Auth UID: ${firebaseAuthUid}\n\n`;
                     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
                     mensaje += `✅ CREDENCIALES DE FIREBASE AUTH\n`;
                     mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
                     if (usuarioAdmin) {
                         mensaje += `👤 Administrador: ${usuarioAdmin.usuario}\n`;
-                        mensaje += `📧 Email (Firebase Auth): ${usuarioAdmin.email || '—'}\n`;
-                        mensaje += `🔑 Contraseña (Firebase Auth): ${usuarioAdmin.contraseña || '—'}\n`;
-                        mensaje += `🔑 Firebase Auth UID: ${usuarioAdmin.firebaseAuthUid || '—'}\n\n`;
-                        mensaje += `ℹ️ Estas son las credenciales almacenadas en Firebase Auth.\n`;
-                        mensaje += `ℹ️ Usa estas credenciales para iniciar sesión en la aplicación.\n`;
+                        mensaje += `🔑 Firebase Auth UID: ${usuarioAdmin.firebaseAuthUid || firebaseAuthUid}\n\n`;
+                        
+                        // Siempre mostrar el email de Firestore (está en local.email)
+                        if (emailFirestore) {
+                            mensaje += `📧 Email (Firestore): ${emailFirestore}\n`;
+                        } else {
+                            mensaje += `📧 Email (Firestore): —\n`;
+                        }
+                        
+                        if (credencialesGeneradas) {
+                            // Credenciales generadas - mostrar contraseña oculta
+                            if (contraseñaFirestore) {
+                                const contraseñaOculta = '*'.repeat(Math.max(contraseñaFirestore.length, 8));
+                                mensaje += `🔑 Contraseña (Firebase Auth): ${contraseñaOculta}\n\n`;
+                            } else {
+                                mensaje += `🔑 Contraseña (Firebase Auth): —\n\n`;
+                            }
+                            mensaje += `✅ Las credenciales de acceso están generadas en Firebase Auth.\n`;
+                            mensaje += `ℹ️ Usa estas credenciales para iniciar sesión en la aplicación.\n\n`;
+                        } else {
+                            // Credenciales no generadas
+                            mensaje += `🔑 Contraseña (Firebase Auth): —\n\n`;
+                            mensaje += `⚠️ Las credenciales de acceso NO están generadas en Firebase Auth.\n\n`;
+                            mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
+                            mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
+                            mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
+                            mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
+                        }
+                        
+                        mensaje += `📋 Para actualizar las credenciales, usa el botón '🔑 CAMBIAR CREDENCIALES'.\n`;
                     } else {
                         mensaje += `⚠️ No se encontró el usuario administrador.\n`;
                     }
                 }
-                
-                alert(`Credenciales Firebase Auth: ${local.nombre}\n\n${mensaje}`);
+                    
+                    alert(`Credenciales Firebase Auth: ${local.nombre}\n\n${mensaje}`);
+                } catch (e) {
+                    console.error('Error mostrando credenciales', e);
+                    alert(`Error mostrando credenciales: ${e.message}`);
+                }
             };
 
             // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt
@@ -3779,7 +3823,7 @@
                 
                 try {
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getFirebaseAuth();
+                    const auth = FirebaseRegionManager.getAuth();
                     let firebaseAuthUidActualizado = supervisor.firebaseAuthUid;
                     
                     // Gestionar Firebase Auth

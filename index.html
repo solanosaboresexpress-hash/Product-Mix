@@ -3692,44 +3692,44 @@
 
             const mostrarUsuariosYCredenciales = (local) => {
                 const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
-                const usuarios = Object.values(local.usuarios);
                 
-                let mensaje = `🏪 ${local.nombre}\n`;
-                mensaje += `📧 Email (local): ${local.email || '—'}\n`;
-                mensaje += `🔑 Firebase Auth UID: ${local.firebaseAuthUid || '—'}\n\n`;
-                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                mensaje += `👥 USUARIOS DEL LOCAL\n`;
-                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                let mensaje;
                 
-                if (usuarios.length === 0) {
-                    mensaje += `⚠️ No hay usuarios registrados en este local.\n\n`;
+                if (!local.firebaseAuthUid || (usuarioAdmin && !usuarioAdmin.firebaseAuthUid)) {
+                    // No tiene datos en Firebase Auth
+                    mensaje = `🏪 ${local.nombre}\n\n`;
+                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                    mensaje += `⚠️ CREDENCIALES DE FIREBASE AUTH\n`;
+                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                    mensaje += `❌ No se encontraron datos en Firebase Auth para este local.\n\n`;
+                    mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
+                    mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
+                    mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
+                    mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
+                    mensaje += `ℹ️ Las credenciales de Firebase Auth son necesarias para:\n`;
+                    mensaje += `   • Iniciar sesión en la aplicación\n`;
+                    mensaje += `   • Sincronización con Firestore\n`;
+                    mensaje += `   • Autenticación segura\n`;
                 } else {
-                    usuarios.forEach((usuario, index) => {
-                        mensaje += `${index + 1}. 👤 ${usuario.usuario}\n`;
-                        mensaje += `   📧 Email: ${usuario.email || '—'}\n`;
-                        mensaje += `   🔑 Contraseña: ${usuario.contraseña || '—'}\n`;
-                        mensaje += `   🔑 Firebase Auth UID: ${usuario.firebaseAuthUid || '—'}\n`;
-                        mensaje += `   📋 Rol: ${usuario.rol}\n`;
-                        mensaje += `   ${usuario.activo ? '✅ Activo' : '❌ Inactivo'}\n`;
-                        if (index < usuarios.length - 1) {
-                            mensaje += `\n`;
-                        }
-                    });
+                    // Tiene datos en Firebase Auth
+                    mensaje = `🏪 ${local.nombre}\n`;
+                    mensaje += `🔑 Firebase Auth UID: ${local.firebaseAuthUid}\n\n`;
+                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                    mensaje += `✅ CREDENCIALES DE FIREBASE AUTH\n`;
+                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                    if (usuarioAdmin) {
+                        mensaje += `👤 Administrador: ${usuarioAdmin.usuario}\n`;
+                        mensaje += `📧 Email (Firebase Auth): ${usuarioAdmin.email || '—'}\n`;
+                        mensaje += `🔑 Contraseña (Firebase Auth): ${usuarioAdmin.contraseña || '—'}\n`;
+                        mensaje += `🔑 Firebase Auth UID: ${usuarioAdmin.firebaseAuthUid || '—'}\n\n`;
+                        mensaje += `ℹ️ Estas son las credenciales almacenadas en Firebase Auth.\n`;
+                        mensaje += `ℹ️ Usa estas credenciales para iniciar sesión en la aplicación.\n`;
+                    } else {
+                        mensaje += `⚠️ No se encontró el usuario administrador.\n`;
+                    }
                 }
                 
-                mensaje += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                mensaje += `ℹ️ INFORMACIÓN IMPORTANTE\n`;
-                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                mensaje += `✅ Las credenciales mostradas (Email y Contraseña) son las de Firestore.\n`;
-                mensaje += `✅ Estas son las credenciales que se usan para INICIAR SESIÓN en la aplicación.\n`;
-                if (usuarioAdmin) {
-                    mensaje += `✅ El usuario '${usuarioAdmin.usuario}' es el administrador del local.\n`;
-                    mensaje += `✅ Para iniciar sesión como este local, usa:\n`;
-                    mensaje += `   📧 Email: ${usuarioAdmin.email || '—'}\n`;
-                    mensaje += `   🔑 Contraseña: ${usuarioAdmin.contraseña || '—'}\n`;
-                }
-                
-                alert(`Usuarios y Credenciales: ${local.nombre}\n\n${mensaje}`);
+                alert(`Credenciales Firebase Auth: ${local.nombre}\n\n${mensaje}`);
             };
 
             // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt

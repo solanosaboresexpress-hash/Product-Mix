@@ -8,14 +8,14 @@
     <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" href="logo_sabores_real.png">
     <link rel="shortcut icon" type="image/png" href="logo_sabores_real.png">
-    <title>Sabores Express - Product Mix V2 Web v4.8</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js?v=4.8"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4.8"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.8"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.8"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.8"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.8"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.8"></script>
+    <title>Sabores Express - Product Mix V2 Web v4.10</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js?v=4.10"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4.10"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
@@ -3543,8 +3543,20 @@
             };
 
             const cambiarContraseña = async (local) => {
-                const contraseñaActual = prompt('Contraseña actual:');
-                if (!contraseñaActual) return;
+                const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
+                if (!usuarioAdmin) {
+                    alert('No se encontró el usuario administrador del local');
+                    return;
+                }
+                
+                const emailAdmin = usuarioAdmin.email || '';
+                const emailSinDominio = emailAdmin.includes('@') ? emailAdmin.split('@')[0] : emailAdmin;
+                
+                const email = prompt(`Email del administrador:\n\n(Se agregará automáticamente @saboresexpress.com.ar)`, emailSinDominio);
+                if (!email) return;
+                
+                // Agregar dominio automáticamente si no lo tiene
+                const emailCompleto = email.includes('@') ? email : `${email}@saboresexpress.com.ar`;
                 
                 const contraseñaNueva = prompt('Nueva contraseña:');
                 if (!contraseñaNueva) return;
@@ -3557,48 +3569,167 @@
                     return;
                 }
                 
+                if (contraseñaNueva.length < 4) {
+                    alert('La nueva contraseña debe tener al menos 4 caracteres');
+                    return;
+                }
+                
+                if (!emailCompleto.includes('@')) {
+                    alert('El email debe ser válido');
+                    return;
+                }
+                
                 try {
-                    // Buscar el usuario administrador del local
-                    const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
-                    if (!usuarioAdmin) {
-                        alert('No se encontró el usuario administrador del local');
-                        return;
-                    }
-                    
-                    // Verificar contraseña actual
-                    if (usuarioAdmin.contraseña !== contraseñaActual) {
-                        alert('❌ Contraseña actual incorrecta');
-                        return;
-                    }
-                    
-                    // Actualizar contraseña
                     const db = FirebaseRegionManager.getFirestore();
-                    const usuarioActualizado = { ...usuarioAdmin, contraseña: contraseñaNueva };
+                    const auth = FirebaseRegionManager.getFirebaseAuth();
+                    let firebaseAuthUidActualizado = local.firebaseAuthUid;
+                    
+                    // Gestionar Firebase Auth
+                    try {
+                        // Si no tiene firebaseAuthUid, crear nuevo usuario
+                        if (!local.firebaseAuthUid) {
+                            console.log('🔨 Creando nuevo usuario en Firebase Auth...');
+                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                            firebaseAuthUidActualizado = authResult.user.uid;
+                            console.log('✅ Usuario creado en Firebase Auth con UID:', firebaseAuthUidActualizado);
+                        } else {
+                            // Intentar actualizar usuario existente
+                            try {
+                                const user = auth.currentUser;
+                                
+                                // Si el usuario actual no es el del local, intentar autenticarnos
+                                if (!user || user.uid !== local.firebaseAuthUid) {
+                                    const emailActual = usuarioAdmin.email;
+                                    const contraseñaParaAuth = usuarioAdmin.contraseña;
+                                    
+                                    if (emailActual && contraseñaParaAuth) {
+                                        try {
+                                            await auth.signInWithEmailAndPassword(emailActual, contraseñaParaAuth);
+                                        } catch (e) {
+                                            console.warn('⚠️ No se pudo autenticar, creando nuevo usuario');
+                                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                            firebaseAuthUidActualizado = authResult.user.uid;
+                                            console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                        }
+                                    }
+                                }
+                                
+                                const currentUser = auth.currentUser;
+                                if (currentUser && currentUser.uid === local.firebaseAuthUid) {
+                                    // Actualizar email si cambió
+                                    if (emailCompleto !== usuarioAdmin.email) {
+                                        await currentUser.updateEmail(emailCompleto);
+                                        console.log('✅ Email actualizado en Firebase Auth');
+                                    }
+                                    
+                                    // Actualizar contraseña
+                                    await currentUser.updatePassword(contraseñaNueva);
+                                    console.log('✅ Contraseña actualizada en Firebase Auth');
+                                } else {
+                                    // Si no se pudo autenticar, crear nuevo usuario
+                                    console.log('🔨 Creando nuevo usuario en Firebase Auth...');
+                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                    firebaseAuthUidActualizado = authResult.user.uid;
+                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                }
+                            } catch (error) {
+                                if (error.code === 'auth/weak-password') {
+                                    alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                                    return;
+                                }
+                                console.error('Error actualizando Firebase Auth, intentando crear nuevo usuario', error);
+                                try {
+                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                    firebaseAuthUidActualizado = authResult.user.uid;
+                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                } catch (e2) {
+                                    if (e2.code === 'auth/weak-password') {
+                                        alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                                        return;
+                                    }
+                                    throw e2;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        if (error.code === 'auth/weak-password') {
+                            alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                            return;
+                        }
+                        console.error('Error gestionando Firebase Auth', error);
+                        alert('⚠️ Advertencia: Error gestionando Firebase Auth: ' + error.message + '. Se actualizará en Firestore.');
+                    }
+                    
+                    // Actualizar en Firestore
+                    const usuarioActualizado = { 
+                        ...usuarioAdmin, 
+                        email: emailCompleto,
+                        contraseña: contraseñaNueva,
+                        firebaseAuthUid: firebaseAuthUidActualizado
+                    };
                     const usuariosActualizados = { ...local.usuarios };
                     usuariosActualizados[usuarioAdmin.id] = usuarioActualizado;
                     
                     await db.collection('locales').doc(local.nombre).update({
-                        usuarios: usuariosActualizados
+                        usuarios: usuariosActualizados,
+                        firebaseAuthUid: firebaseAuthUidActualizado
                     });
                     
                     // Recargar locales
                     cargarLocales();
                     
-                    alert('✅ Contraseña actualizada exitosamente');
+                    const mensajeConfirmacion = firebaseAuthUidActualizado 
+                        ? `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n✅ Usuario sincronizado con Firebase Auth`
+                        : `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n⚠️ Usuario actualizado solo en Firestore`;
+                    
+                    alert(mensajeConfirmacion);
                     
                 } catch (error) {
-                    console.error('Error cambiando contraseña:', error);
-                    alert('Error cambiando contraseña: ' + error.message);
+                    console.error('Error cambiando credenciales:', error);
+                    alert('Error cambiando credenciales: ' + error.message);
                 }
             };
 
-            const mostrarUsuarios = (local) => {
+            const mostrarUsuariosYCredenciales = (local) => {
+                const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
                 const usuarios = Object.values(local.usuarios);
-                const mensaje = usuarios.map(usuario => 
-                    `👤 Usuario: ${usuario.usuario}\n📧 Email: ${usuario.email || local.email || 'No configurado'}\n🔑 Contraseña: ${usuario.contraseña}\n📋 Rol: ${usuario.rol}`
-                ).join('\n\n');
                 
-                alert(`Usuarios de ${local.nombre}\n\n${mensaje}`);
+                let mensaje = `🏪 ${local.nombre}\n`;
+                mensaje += `📧 Email (local): ${local.email || '—'}\n`;
+                mensaje += `🔑 Firebase Auth UID: ${local.firebaseAuthUid || '—'}\n\n`;
+                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                mensaje += `👥 USUARIOS DEL LOCAL\n`;
+                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                
+                if (usuarios.length === 0) {
+                    mensaje += `⚠️ No hay usuarios registrados en este local.\n\n`;
+                } else {
+                    usuarios.forEach((usuario, index) => {
+                        mensaje += `${index + 1}. 👤 ${usuario.usuario}\n`;
+                        mensaje += `   📧 Email: ${usuario.email || '—'}\n`;
+                        mensaje += `   🔑 Contraseña: ${usuario.contraseña || '—'}\n`;
+                        mensaje += `   🔑 Firebase Auth UID: ${usuario.firebaseAuthUid || '—'}\n`;
+                        mensaje += `   📋 Rol: ${usuario.rol}\n`;
+                        mensaje += `   ${usuario.activo ? '✅ Activo' : '❌ Inactivo'}\n`;
+                        if (index < usuarios.length - 1) {
+                            mensaje += `\n`;
+                        }
+                    });
+                }
+                
+                mensaje += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                mensaje += `ℹ️ INFORMACIÓN IMPORTANTE\n`;
+                mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                mensaje += `✅ Las credenciales mostradas (Email y Contraseña) son las de Firestore.\n`;
+                mensaje += `✅ Estas son las credenciales que se usan para INICIAR SESIÓN en la aplicación.\n`;
+                if (usuarioAdmin) {
+                    mensaje += `✅ El usuario '${usuarioAdmin.usuario}' es el administrador del local.\n`;
+                    mensaje += `✅ Para iniciar sesión como este local, usa:\n`;
+                    mensaje += `   📧 Email: ${usuarioAdmin.email || '—'}\n`;
+                    mensaje += `   🔑 Contraseña: ${usuarioAdmin.contraseña || '—'}\n`;
+                }
+                
+                alert(`Usuarios y Credenciales: ${local.nombre}\n\n${mensaje}`);
             };
 
             // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt
@@ -3614,9 +3745,142 @@
                 alert(`Locales de ${supervisor.usuario}\n\n${mensaje}`);
             };
             
-            const mostrarContraseñaSupervisor = (supervisor) => {
-                const mensaje = `👤 Usuario: ${supervisor.usuario}\n📧 Email: ${supervisor.email || 'No configurado'}\n\n🔑 Contraseña: ${supervisor.contraseña}\n\n📅 Creado: ${supervisor.fechaCreacion}`;
-                alert(`Credenciales de ${supervisor.usuario}\n\n${mensaje}`);
+            const mostrarContraseñaSupervisor = async (supervisor) => {
+                const emailSinDominio = supervisor.email && supervisor.email.includes('@') 
+                    ? supervisor.email.split('@')[0] 
+                    : (supervisor.email || '');
+                
+                const email = prompt(`Email del supervisor:\n\n(Se agregará automáticamente @saboresexpress.com.ar)`, emailSinDominio);
+                if (!email) return;
+                
+                // Agregar dominio automáticamente si no lo tiene
+                const emailCompleto = email.includes('@') ? email : `${email}@saboresexpress.com.ar`;
+                
+                const contraseñaNueva = prompt('Nueva contraseña:');
+                if (!contraseñaNueva) return;
+                
+                const confirmarContraseña = prompt('Confirmar nueva contraseña:');
+                if (!confirmarContraseña) return;
+                
+                if (contraseñaNueva !== confirmarContraseña) {
+                    alert('Las contraseñas nuevas no coinciden');
+                    return;
+                }
+                
+                if (contraseñaNueva.length < 4) {
+                    alert('La nueva contraseña debe tener al menos 4 caracteres');
+                    return;
+                }
+                
+                if (!emailCompleto.includes('@')) {
+                    alert('El email debe ser válido');
+                    return;
+                }
+                
+                try {
+                    const db = FirebaseRegionManager.getFirestore();
+                    const auth = FirebaseRegionManager.getFirebaseAuth();
+                    let firebaseAuthUidActualizado = supervisor.firebaseAuthUid;
+                    
+                    // Gestionar Firebase Auth
+                    try {
+                        // Si no tiene firebaseAuthUid, crear nuevo usuario
+                        if (!supervisor.firebaseAuthUid) {
+                            console.log('🔨 Creando nuevo usuario en Firebase Auth...');
+                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                            firebaseAuthUidActualizado = authResult.user.uid;
+                            console.log('✅ Usuario creado en Firebase Auth con UID:', firebaseAuthUidActualizado);
+                        } else {
+                            // Intentar actualizar usuario existente
+                            try {
+                                const user = auth.currentUser;
+                                
+                                // Si el usuario actual no es el del supervisor, intentar autenticarnos
+                                if (!user || user.uid !== supervisor.firebaseAuthUid) {
+                                    const emailActual = supervisor.email;
+                                    const contraseñaParaAuth = supervisor.contraseña;
+                                    
+                                    if (emailActual && contraseñaParaAuth) {
+                                        try {
+                                            await auth.signInWithEmailAndPassword(emailActual, contraseñaParaAuth);
+                                        } catch (e) {
+                                            console.warn('⚠️ No se pudo autenticar, creando nuevo usuario');
+                                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                            firebaseAuthUidActualizado = authResult.user.uid;
+                                            console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                        }
+                                    }
+                                }
+                                
+                                const currentUser = auth.currentUser;
+                                if (currentUser && currentUser.uid === supervisor.firebaseAuthUid) {
+                                    // Actualizar email si cambió
+                                    if (emailCompleto !== supervisor.email) {
+                                        await currentUser.updateEmail(emailCompleto);
+                                        console.log('✅ Email actualizado en Firebase Auth');
+                                    }
+                                    
+                                    // Actualizar contraseña
+                                    await currentUser.updatePassword(contraseñaNueva);
+                                    console.log('✅ Contraseña actualizada en Firebase Auth');
+                                } else {
+                                    // Si no se pudo autenticar, crear nuevo usuario
+                                    console.log('🔨 Creando nuevo usuario en Firebase Auth...');
+                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                    firebaseAuthUidActualizado = authResult.user.uid;
+                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                }
+                            } catch (error) {
+                                if (error.code === 'auth/weak-password') {
+                                    alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                                    return;
+                                }
+                                console.error('Error actualizando Firebase Auth, intentando crear nuevo usuario', error);
+                                try {
+                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
+                                    firebaseAuthUidActualizado = authResult.user.uid;
+                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
+                                } catch (e2) {
+                                    if (e2.code === 'auth/weak-password') {
+                                        alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                                        return;
+                                    }
+                                    throw e2;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        if (error.code === 'auth/weak-password') {
+                            alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
+                            return;
+                        }
+                        console.error('Error gestionando Firebase Auth', error);
+                        alert('⚠️ Advertencia: Error gestionando Firebase Auth: ' + error.message + '. Se actualizará en Firestore.');
+                    }
+                    
+                    // Actualizar en Firestore
+                    const supervisorActualizado = {
+                        ...supervisor,
+                        email: emailCompleto,
+                        contraseña: contraseñaNueva,
+                        firebaseAuthUid: firebaseAuthUidActualizado
+                    };
+                    
+                    await db.collection('supervisores').doc(supervisor.id).set(supervisorActualizado);
+                    
+                    // Recargar supervisores
+                    cargarSupervisores();
+                    
+                    const mensajeConfirmacion = firebaseAuthUidActualizado 
+                        ? `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n✅ Usuario sincronizado con Firebase Auth`
+                        : `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n⚠️ Usuario actualizado solo en Firestore`;
+                    
+                    alert(mensajeConfirmacion);
+                    
+                } catch (error) {
+                    console.error('Error cambiando credenciales del supervisor:', error);
+                    alert('Error cambiando credenciales: ' + error.message);
+                }
             };
             
             const mostrarDialogoAsignarLocales = async (supervisor) => {
@@ -4199,13 +4463,13 @@
                                     width: '100%'
                                 }}>
                                     <button
-                                        onClick={() => mostrarUsuarios(local)}
+                                        onClick={() => mostrarUsuariosYCredenciales(local)}
                                         style={{
-                                            flex: '1 1 calc(33.333% - 4px)',
-                                            minWidth: '80px',
+                                            flex: '1 1 calc(50% - 4px)',
+                                            minWidth: '120px',
                                             color: '#FFFFFF',
                                             fontWeight: 'bold',
-                                            fontSize: 'clamp(9px, 2.5vw, 11px)',
+                                            fontSize: 'clamp(9px, 2.5vw, 10px)',
                                             backgroundColor: '#2196F3',
                                             border: '2px solid #1976D2',
                                             borderRadius: '12px',
@@ -4217,13 +4481,13 @@
                                             textOverflow: 'ellipsis'
                                         }}
                                     >
-                                        👥 USUARIOS
+                                        👥 USUARIOS Y CREDENCIALES
                                     </button>
                                     
                                     <button
                                         onClick={() => cambiarContraseña(local)}
                                         style={{
-                                            flex: '1 1 calc(33.333% - 4px)',
+                                            flex: '1 1 calc(50% - 4px)',
                                             minWidth: '80px',
                                             color: '#FFFFFF',
                                             fontWeight: 'bold',
@@ -4233,7 +4497,6 @@
                                             borderRadius: '12px',
                                             padding: 'max(6px, 8px)',
                                             marginLeft: 'max(2px, 4px)',
-                                            marginRight: 'max(2px, 4px)',
                                             cursor: 'pointer',
                                             textAlign: 'center',
                                             whiteSpace: 'nowrap',
@@ -4241,7 +4504,7 @@
                                             textOverflow: 'ellipsis'
                                         }}
                                     >
-                                        🔑 CONTRASEÑA
+                                        🔑 CAMBIAR CREDENCIALES
                                     </button>
                                     
                                     {/* Solo mostrar botón Eliminar para usuarios maestro */}
@@ -4472,7 +4735,7 @@
                                                     textOverflow: 'ellipsis'
                                                 }}
                                             >
-                                                🔑 CONTRASEÑA
+                                                🔑 CAMBIAR CREDENCIALES
                                             </button>
                                             
                                             <button
@@ -6012,7 +6275,7 @@
                                 return { debeProcesar: true, esPrimeraVez: false };
                             } else {
                                 console.log(`🔍 Stock Final para ${fecha}: EXISTE con MISMOS DATOS y LOTES COINCIDEN (recarga)`);
-                                return { debeProcesar: false, esPrimeraVez: false };
+                            return { debeProcesar: false, esPrimeraVez: false };
                             }
                         }
                     }
@@ -6370,26 +6633,26 @@
                     
                     // ✅ Cargar TODOS los lotes una vez (igual que Android)
                     const todosLotesSnapshot = await db.collection('locales')
-                        .doc(localId)
-                        .collection('vencimientos_activos')
-                        .get();
-                    
+                            .doc(localId)
+                            .collection('vencimientos_activos')
+                            .get();
+                        
                     const todosLosLotes = [];
                     todosLotesSnapshot.forEach(doc => {
-                        const data = doc.data();
+                            const data = doc.data();
                         // 🔥 FIX: Los lotes en Firebase tienen 'productoCodigo' (igual que Android)
                         // Si no existe, intentar con 'codigo' (compatibilidad)
                         const codigoRaw = data.productoCodigo || data.codigo || '';
                         const codigo = codigoRaw.toUpperCase(); // Normalizar a mayúsculas
                         todosLosLotes.push({
-                            id: doc.id,
+                                id: doc.id,
                             productoCodigo: codigo,
-                            cantidad: data.cantidad || 0,
-                            fechaVencimiento: data.fechaVencimiento || '',
+                                cantidad: data.cantidad || 0,
+                                fechaVencimiento: data.fechaVencimiento || '',
                             productoNombre: data.productoNombre || data.nombre || ''
+                            });
                         });
-                    });
-                    
+                        
                     console.log(`📦 Lotes totales cargados: ${todosLosLotes.length}`);
                     
                     // ✅ Agrupar por producto (igual que Android)
@@ -6603,9 +6866,9 @@
                     //    - NO calcular "venta" - solo ajustar lotes al stock final usando FIFO
                     if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar) {
                         if (resultadoVerificacion.esPrimeraVez) {
-                            console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
-                            // Guardar estado inicial ANTES de ajustar lotes
-                            await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                        console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
+                        // Guardar estado inicial ANTES de ajustar lotes
+                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
                         } else {
                             console.log('✅ Modificación/Reajuste - Reajustará lotes al nuevo Stock Final (FIFO)');
                         }
@@ -6627,10 +6890,10 @@
                         // Validar resultado (cargar todos los lotes de nuevo para verificar)
                         console.log('🔍 Validando resultado...');
                         const lotesValidacionSnapshot = await db.collection('locales')
-                            .doc(usuario.localId)
-                            .collection('vencimientos_activos')
-                            .get();
-                        
+                                .doc(usuario.localId)
+                                .collection('vencimientos_activos')
+                                .get();
+                            
                         const lotesValidacion = {};
                         lotesValidacionSnapshot.forEach(doc => {
                             const data = doc.data();

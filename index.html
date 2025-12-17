@@ -6879,112 +6879,157 @@
                     const idDocumento = `${fechaString}_${tipo.replace(/\s+/g, '_')}`;
                     console.log('🆔 ID del documento:', idDocumento);
                     
-                    // Mostrar mensaje de sincronización - NO CERRAR NAVEGADOR
+                    // Función helper para actualizar progreso
+                    const pasosTotales = tipo === 'Stock Final' ? 8 : 4;
+                    let pasoActual = 0;
+                    let mensajeProgreso = null;
+                    let barraProgreso = null;
+                    let textoProgreso = null;
+                    
+                    const actualizarProgreso = (paso, total, mensaje) => {
+                        pasoActual = paso;
+                        const porcentaje = Math.min((paso * 100 / total), 100);
+                        if (barraProgreso) {
+                            barraProgreso.style.width = porcentaje + '%';
+                        }
+                        if (textoProgreso) {
+                            textoProgreso.textContent = mensaje;
+                        }
+                        console.log('📊 Progreso: ' + paso + '/' + total + ' (' + porcentaje + '%) - ' + mensaje);
+                    };
+                    
+                    // Mostrar mensaje de sincronización con barra de progreso - NO CERRAR NAVEGADOR
                     const mensajeSincronizacion = document.createElement('div');
                     mensajeSincronizacion.id = 'mensajeSincronizacion';
                     mensajeSincronizacion.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;';
                     mensajeSincronizacion.innerHTML = `
-                        <div style="background:white;padding:30px;border-radius:12px;text-align:center;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="background:white;padding:30px;border-radius:12px;text-align:center;max-width:500px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
                             <div style="font-size:48px;margin-bottom:15px;">⏳</div>
-                            <h2 style="color:#333;margin:0 0 10px 0;">Sincronizando con la nube...</h2>
+                            <h2 style="color:#333;margin:0 0 10px 0;">Guardando datos...</h2>
                             <p style="color:#dc2626;font-weight:bold;font-size:18px;margin:15px 0;">🚨 NO CIERRES EL NAVEGADOR</p>
-                            <p style="color:#666;margin:0;">Los datos se están guardando.<br>Espera a que termine la sincronización.</p>
-                            <div style="margin-top:20px;"><div style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;"></div></div>
+                            <div id="textoProgreso" style="color:#666;margin:15px 0;font-size:14px;min-height:20px;">Iniciando...</div>
+                            <div style="width:100%;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin:15px 0;">
+                                <div id="barraProgreso" style="width:0%;height:100%;background:#3b82f6;transition:width 0.3s ease;"></div>
+                            </div>
+                            <div style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:15px auto 0;"></div>
                         </div>
                         <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
                     `;
                     document.body.appendChild(mensajeSincronizacion);
                     
-                    // Guardar en Firebase
-                    await db.collection('locales')
-                        .doc(usuario.localId)
-                        .collection('registros')
-                        .doc(idDocumento)
-                        .set(documento);
+                    // Obtener referencias a elementos de progreso
+                    barraProgreso = document.getElementById('barraProgreso');
+                    textoProgreso = document.getElementById('textoProgreso');
                     
-                    console.log('✅ Datos guardados exitosamente');
-                    
-                    // 🚀 OPTIMIZACIÓN: Si es Stock Final, actualizar promedio general acumulado
-                    // EXACTO como Android CargaActivity.kt líneas 1772-1802
-                    // (Nota: La actualización de promedios se puede hacer en background, no bloquea)
-                    if (tipo === 'Stock Final') {
-                        // Ejecutar en background para no bloquear el guardado
-                        actualizarPromedioGeneral(usuario.localId, fechaString, productos, db).catch(error => {
-                            console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
-                        });
-                    }
-                    
-                    // 🔥 Si es Stock Final y debe procesar, ajustar lotes al stock final
-                    // ✅ LÓGICA SIMPLE Y DIRECTA (igual a Android CargaActivity.kt líneas 1700-1745):
-                    //    - NO calcular "venta" - solo ajustar lotes al stock final usando FIFO
-                    if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar) {
-                        if (resultadoVerificacion.esPrimeraVez) {
-                        console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
-                        // Guardar estado inicial ANTES de ajustar lotes
-                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
-                        } else {
-                            console.log('✅ Modificación/Reajuste - Reajustará lotes al nuevo Stock Final (FIFO)');
+                    try {
+                        // Paso 1: Verificar datos existentes
+                        actualizarProgreso(++pasoActual, pasosTotales, 'Verificando datos existentes...');
+                        
+                        // Paso 2: Guardar en Firebase
+                        actualizarProgreso(++pasoActual, pasosTotales, 'Guardando en Firebase...');
+                        await db.collection('locales')
+                            .doc(usuario.localId)
+                            .collection('registros')
+                            .doc(idDocumento)
+                            .set(documento);
+                        
+                        console.log('✅ Datos guardados exitosamente');
+                        
+                        // Paso 3: Actualizar promedios generales (solo Stock Final)
+                        if (tipo === 'Stock Final') {
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Actualizando promedios generales...');
+                            // Ejecutar en background para no bloquear el guardado
+                            actualizarPromedioGeneral(usuario.localId, fechaString, productos, db).catch(error => {
+                                console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
+                            });
                         }
                         
-                        // ✅ LÓGICA SIMPLE Y DIRECTA:
-                        // Ajustar lotes para que sumen exactamente el Stock Final (descuento FIFO)
-                        // NO calcular "venta" - solo ajustar lotes al stock final
-                        console.log('🔥 Ajustando lotes al Stock Final (FIFO)');
-                        const stockFinalPorProducto = {};
-                        productos.forEach(producto => {
-                            const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
-                            const codigoNormalizado = normalizarCodigoProducto(codigo);
-                            stockFinalPorProducto[codigoNormalizado] = producto.cantidad;
-                        });
-                        
-                        console.log('📊 Stock Final por producto (normalizado):', stockFinalPorProducto);
-                        await ajustarLotesAStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
-                        
-                        // Validar resultado (cargar todos los lotes de nuevo para verificar)
-                        console.log('🔍 Validando resultado...');
-                        const lotesValidacionSnapshot = await db.collection('locales')
-                                .doc(usuario.localId)
-                                .collection('vencimientos_activos')
-                                .get();
-                            
-                        const lotesValidacion = {};
-                        lotesValidacionSnapshot.forEach(doc => {
-                            const data = doc.data();
-                            const codigoRaw = data.productoCodigo || data.codigo || '';
-                            const codigo = codigoRaw.toUpperCase();
-                            if (!lotesValidacion[codigo]) {
-                                lotesValidacion[codigo] = 0;
-                            }
-                            lotesValidacion[codigo] += (data.cantidad || 0);
-                        });
-                        
-                        for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
-                            const codigoNormalizado = productoCodigo.toUpperCase();
-                            const sumaLotes = lotesValidacion[codigoNormalizado] || 0;
-                            
-                            if (sumaLotes === stockFinal) {
-                                console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
+                        // 🔥 Si es Stock Final y debe procesar, ajustar lotes al stock final
+                        if (tipo === 'Stock Final' && resultadoVerificacion && resultadoVerificacion.debeProcesar) {
+                            if (resultadoVerificacion.esPrimeraVez) {
+                                console.log('✅ Primera vez guardando Stock Final - Ajustará lotes al Stock Final (FIFO)');
+                                // Paso 4: Guardar estado inicial (solo si es primera vez)
+                                actualizarProgreso(++pasoActual, pasosTotales, 'Guardando estado inicial de vencimientos...');
+                                await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
                             } else {
-                                console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                                console.log('✅ Modificación/Reajuste - Reajustará lotes al nuevo Stock Final (FIFO)');
                             }
+                            
+                            // Paso 5: Procesar descuentos FIFO
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Procesando descuentos FIFO...');
+                            const stockFinalPorProducto = {};
+                            productos.forEach(producto => {
+                                const codigo = producto.nombre.split(' - ')[0] || producto.nombre;
+                                const codigoNormalizado = normalizarCodigoProducto(codigo);
+                                stockFinalPorProducto[codigoNormalizado] = producto.cantidad;
+                            });
+                            
+                            console.log('📊 Stock Final por producto (normalizado):', stockFinalPorProducto);
+                            await ajustarLotesAStockFinal(usuario.localId, fechaString, stockFinalPorProducto, db);
+                            
+                            // Validar resultado
+                            console.log('🔍 Validando resultado...');
+                            const lotesValidacionSnapshot = await db.collection('locales')
+                                    .doc(usuario.localId)
+                                    .collection('vencimientos_activos')
+                                    .get();
+                                
+                            const lotesValidacion = {};
+                            lotesValidacionSnapshot.forEach(doc => {
+                                const data = doc.data();
+                                const codigoRaw = data.productoCodigo || data.codigo || '';
+                                const codigo = codigoRaw.toUpperCase();
+                                if (!lotesValidacion[codigo]) {
+                                    lotesValidacion[codigo] = 0;
+                                }
+                                lotesValidacion[codigo] += (data.cantidad || 0);
+                            });
+                            
+                            for (const [productoCodigo, stockFinal] of Object.entries(stockFinalPorProducto)) {
+                                const codigoNormalizado = productoCodigo.toUpperCase();
+                                const sumaLotes = lotesValidacion[codigoNormalizado] || 0;
+                                
+                                if (sumaLotes === stockFinal) {
+                                    console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
+                                } else {
+                                    console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                                }
+                            }
+                            
+                            console.log('✅ Ajuste FIFO completado exitosamente');
+                            
+                            // Paso 6: Guardar estado final
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Guardando estado final de vencimientos...');
+                            await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
+                        } else if (tipo === 'Ingreso de Mercadería') {
+                            // Paso 4: Guardar estado inicial cuando se carga el ingreso
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Guardando estado inicial de vencimientos...');
+                            await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
+                        } else if (tipo === 'Stock Final') {
+                            // Si no debe procesar (recarga con datos iguales y lotes coinciden), solo guardar estado final
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Guardando estado final de vencimientos...');
+                            await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
                         }
                         
-                        console.log('✅ Ajuste FIFO completado exitosamente');
+                        // Paso final: Completado
+                        actualizarProgreso(pasosTotales, pasosTotales, '✅ Completado');
                         
-                        // Guardar estado final DESPUÉS de ajustar lotes
-                        await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
-                    } else if (tipo === 'Ingreso de Mercadería') {
-                        // Guardar estado inicial cuando se carga el ingreso (inicio del día)
-                        await guardarEstadoInicialVencimientos(usuario.localId, fechaString, db);
-                    } else if (tipo === 'Stock Final') {
-                        // Si no debe procesar (recarga con datos iguales y lotes coinciden), solo guardar estado final
-                        await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
-                    }
-                    
-                    // Cerrar mensaje de sincronización
-                    const mensajeExistente = document.getElementById('mensajeSincronizacion');
-                    if (mensajeExistente) {
-                        mensajeExistente.remove();
+                        // Pequeña pausa para mostrar el 100%
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        
+                    } catch (error) {
+                        console.error('❌ Error durante el guardado:', error);
+                        if (textoProgreso) {
+                            textoProgreso.textContent = '❌ Error: ' + error.message;
+                            textoProgreso.style.color = '#dc2626';
+                        }
+                        throw error;
+                    } finally {
+                        // Cerrar mensaje de sincronización
+                        const mensajeExistente = document.getElementById('mensajeSincronizacion');
+                        if (mensajeExistente) {
+                            mensajeExistente.remove();
+                        }
                     }
                     
                     alert(`✅ ${tipo} guardado y sincronizado correctamente para ${fechaString}`);
@@ -12566,30 +12611,69 @@
         // Columna 1: Código del producto
         const codigoDiv = document.createElement('div');
         codigoDiv.style.cssText = 'flex:1;display:flex;flex-direction:column';
+        // Función para abreviar códigos de pizzas
+        const abreviarCodigoProducto = (codigo) => {
+          if (codigo === 'MUZZARE') return 'M';
+          if (codigo === 'JAMON') return 'J';
+          if (codigo === 'PEPPERO') return 'P';
+          return codigo;
+        };
+        
         const codigoSpan = document.createElement('span');
         codigoSpan.id = 'pf-codigo-' + prod.codigo;
         codigoSpan.style.cssText = 'font-size:13px;font-weight:700;color:#7b2cbf';
-        codigoSpan.textContent = prod.codigo;
+        const codigoMostrar = abreviarCodigoProducto(prod.codigo);
+        codigoSpan.textContent = codigoMostrar;
+        
+        // Variables para almacenar estado de iconos
+        let tieneStockBajo = false;
+        let historialStockBajo = [];
+        let tieneTendencia = false;
+        let tendenciaValor = 0;
+        
+        // Función helper para actualizar el texto del código con ambos iconos
+        const actualizarTextoConIconos = () => {
+          let texto = codigoMostrar;
+          
+          // Agregar icono de stock bajo si existe
+          if (tieneStockBajo) {
+            texto += ' <span style="color:#dc2626;cursor:pointer" data-tipo="stock-bajo">⚠️</span>';
+          }
+          
+          // Agregar icono de tendencia si existe
+          if (tieneTendencia) {
+            const icono = tendenciaValor >= 10.0 ? '📈' : 
+                         tendenciaValor >= 5.0 ? '⬆️' : 
+                         tendenciaValor <= -10.0 ? '📉' : '⬇️';
+            const porcentaje = Math.abs(tendenciaValor).toFixed(0);
+            texto += ' <span style="display:inline-block;margin-left:4px;font-size:12px;cursor:pointer" data-tipo="tendencia">' + icono + porcentaje + '%</span>';
+          }
+          
+          codigoSpan.innerHTML = texto;
+          
+          // Configurar click listeners - cada icono es independiente, no mostrar menú
+          const stockBajoSpan = codigoSpan.querySelector('[data-tipo="stock-bajo"]');
+          const tendenciaSpan = codigoSpan.querySelector('[data-tipo="tendencia"]');
+          
+          if (stockBajoSpan) {
+            stockBajoSpan.onclick = () => mostrarReporteStockBajo(prod.codigo, prod.nombre, historialStockBajo);
+          }
+          if (tendenciaSpan) {
+            tendenciaSpan.onclick = () => {
+              const nombreProd = obtenerNombreProducto(prod.codigo);
+              const promediosProd = promediosVenta[prod.codigo] || {};
+              window.mostrarGraficoTendenciaGlobal(prod.codigo, tendenciaValor, nombreProd, promediosProd, localId);
+            };
+          }
+        };
         
         // 📈 Agregar tendencia del cache si está disponible (instantáneo)
         if (cacheTendencias !== null) {
-          const tendencia = cacheTendencias[prod.codigo] || 0;
-          if (Math.abs(tendencia) >= 5.0) {
-            const icono = tendencia >= 10.0 ? '📈' : 
-                         tendencia >= 5.0 ? '⬆️' : 
-                         tendencia <= -10.0 ? '📉' : '⬇️';
-            const porcentaje = Math.abs(tendencia).toFixed(0);
-            const tendenciaSpan = document.createElement('span');
-            tendenciaSpan.style.cssText = 'display:inline-block;margin-left:6px;font-size:12px;cursor:pointer';
-            tendenciaSpan.textContent = icono + porcentaje + '%';
-            tendenciaSpan.title = 'Click para ver gráfico de tendencia';
-            tendenciaSpan.onclick = function() {
-              const nombreProd = obtenerNombreProducto(prod.codigo);
-              const promediosProd = promediosVenta[prod.codigo] || {};
-              window.mostrarGraficoTendenciaGlobal(prod.codigo, tendencia, nombreProd, promediosProd, localId);
-            };
-            codigoSpan.appendChild(tendenciaSpan);
-            console.log('⚡ Tendencia desde cache: ' + prod.codigo + ' → ' + icono + porcentaje + '%');
+          tendenciaValor = cacheTendencias[prod.codigo] || 0;
+          tieneTendencia = Math.abs(tendenciaValor) >= 5.0;
+          if (tieneTendencia) {
+            actualizarTextoConIconos();
+            console.log('⚡ Tendencia desde cache: ' + prod.codigo + ' → ' + Math.abs(tendenciaValor).toFixed(0) + '%');
           }
         }
         
@@ -12677,15 +12761,9 @@
 
         // Cargar historial de stock bajo de forma asíncrona
         obtenerHistorialStockBajo(prod.codigo).then(historial => {
-          if (historial.length > 0) {
-            codigoSpan.innerHTML = prod.codigo + ' <span style="color:#dc2626;cursor:pointer" data-codigo="' + prod.codigo + '">⚠️</span>';
-            const iconoAlerta = codigoSpan.querySelector('[data-codigo="' + prod.codigo + '"]');
-            if (iconoAlerta) {
-              iconoAlerta.addEventListener('click', () => {
-                mostrarReporteStockBajo(prod.codigo, prod.nombre, historial);
-              });
-            }
-          }
+          tieneStockBajo = historial.length > 0;
+          historialStockBajo = historial;
+          actualizarTextoConIconos();
         });
       }
 
@@ -12724,6 +12802,35 @@
       }
     }
 
+    // Función para mostrar opciones cuando hay tendencia y stock bajo
+    function mostrarOpcionesTendenciaYStock(codigo, tendencia, historial, nombre) {
+      const opciones = [
+        '📈 Ver Tendencia de Ventas',
+        '⚠️ Ver Historial de Stock Bajo'
+      ];
+      
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000';
+      const modal = document.createElement('div');
+      modal.style.cssText = 'background:#fff;width:90%;max-width:400px;border-radius:8px;padding:24px';
+      
+      modal.innerHTML = '<div style="font-weight:700;font-size:18px;margin-bottom:16px;text-align:center">' + codigo + ' - Información Disponible</div>' +
+        opciones.map((opcion, index) => 
+          '<div style="padding:12px;margin:8px 0;background:#f3f4f6;border-radius:6px;cursor:pointer;text-align:center;font-weight:600" onclick="this.parentElement.parentElement.parentElement.remove(); ' +
+          (index === 0 ? 
+            'const nombreProd = obtenerNombreProducto(\'' + codigo + '\'); const promediosProd = promediosVenta[\'' + codigo + '\'] || {}; window.mostrarGraficoTendenciaGlobal(\'' + codigo + '\', ' + tendencia + ', nombreProd, promediosProd, \'' + localId + '\');' :
+            'mostrarReporteStockBajo(\'' + codigo + '\', \'' + nombre + '\', ' + JSON.stringify(historial) + ');'
+          ) + '">' + opcion + '</div>'
+        ).join('') +
+        '<button style="width:100%;padding:10px;margin-top:16px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer" onclick="this.closest(\'div[style*=\\\'position:fixed\\\']\').remove()">Cancelar</button>';
+      
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      overlay.onclick = function(e) {
+        if (e.target === overlay) overlay.remove();
+      };
+    }
+    
     // Función para mostrar reporte de stock bajo
     function mostrarReporteStockBajo(codigo, nombre, historial) {
       const overlayReporte = document.createElement('div');
@@ -12736,14 +12843,14 @@
         return d + '/' + m + '/' + y;
       };
 
-      modalReporte.innerHTML = '<div style="font-weight:700;font-size:18px;color:#dc2626;text-align:center;margin-bottom:16px">⚠️ Stock Bajo Detectado</div>' +
-        '<div style="font-weight:700;font-size:16px;text-align:center;margin-bottom:16px">' + codigo + ' - ' + nombre + '</div>' +
-        '<div style="font-size:14px;margin-bottom:16px;text-align:center">En los últimos 7 días, este producto quedó con stock bajo (≤ 15 unidades):</div>' +
+      modalReporte.innerHTML = '<div style="font-weight:700;font-size:20px;color:#dc2626;text-align:center;margin-bottom:16px">⚠️ Stock Bajo Detectado</div>' +
+        '<div style="font-weight:700;font-size:18px;text-align:center;margin-bottom:16px;color:#1f2937">' + codigo + ' - ' + nombre + '</div>' +
+        '<div style="font-size:16px;margin-bottom:16px;text-align:center;color:#1f2937">En los últimos 7 días, este producto quedó con stock bajo (≤ 15 unidades):</div>' +
         '<div style="max-height:300px;overflow-y:auto;margin-bottom:16px">' +
-        (historial.length > 0 ? historial.map(h => '<div style="padding:12px;background:#f5f5f5;border-radius:4px;margin-bottom:8px">📅 ' + fechaFormateada(h.fecha) + ' → ' + h.stock + ' unidades restantes</div>').join('') : '<div style="text-align:center;color:#6b7280;padding:16px">No se encontraron registros de stock bajo</div>') +
+        (historial.length > 0 ? historial.map(h => '<div style="padding:12px 16px;background:#f5f5f5;border-radius:6px;margin-bottom:8px;font-size:16px;color:#1f2937;border:1px solid #e5e7eb">📅 ' + fechaFormateada(h.fecha) + ' → ' + h.stock + ' unidades restantes</div>').join('') : '<div style="text-align:center;color:#1f2937;padding:16px;font-size:16px">No se encontraron registros de stock bajo</div>') +
         '</div>' +
-        '<div style="font-weight:700;font-size:14px;color:#f57c00;text-align:center;margin-bottom:16px">💡 Considera reforzar el pedido para evitar quedarte sin stock.</div>' +
-        '<button style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:700">Entendido</button>';
+        '<div style="font-weight:700;font-size:16px;color:#f57c00;text-align:center;margin-bottom:16px">💡 Considera reforzar el pedido para evitar quedarte sin stock.</div>' +
+        '<button style="width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:700;font-size:16px;cursor:pointer" onclick="this.closest(\'div[style*=\\\'position:fixed\\\']\').remove()">Entendido</button>';
       
       overlayReporte.appendChild(modalReporte);
       document.body.appendChild(overlayReporte);

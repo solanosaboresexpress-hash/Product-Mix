@@ -5873,14 +5873,15 @@
                 }
             };
             
-            // Verificar días faltantes en los últimos 7 días (versión web de verificarDiasFaltantes)
+            // Verificar días faltantes en TODOS los registros históricos (versión web de verificarDiasFaltantes)
+            // Actualizado para mostrar TODAS las alertas desde el primer registro, sin límite de días
             const verificarDiasFaltantesWeb = async (localId, fechaHoy, problemas) => {
-                console.log('🔍 Verificando días faltantes en los últimos 7 días para local:', localId);
+                console.log('🔍 Verificando días faltantes en TODOS los registros históricos para local:', localId);
                 
                 try {
                     const db = FirebaseRegionManager.getFirestore();
                     
-                    // Primero verificar si el local tiene algún registro histórico
+                    // Obtener TODOS los registros históricos del local
                     const snapshotTotal = await db.collection('locales')
                         .doc(localId)
                         .collection('registros')
@@ -5894,53 +5895,45 @@
                     
                     console.log('📊 Total de registros históricos encontrados:', snapshotTotal.size);
                     
-                    const fechaHoyDate = new Date(fechaHoy);
+                    // Agrupar registros por fecha (excluyendo hoy)
+                    const registrosPorFecha = {};
                     
-                    // Verificar los últimos 7 días (excluyendo hoy)
-                    for (let i = 1; i <= 7; i++) {
-                        const fechaCheck = new Date(fechaHoyDate);
-                        fechaCheck.setDate(fechaCheck.getDate() - i);
-                        const fechaCheckStr = fechaCheck.toISOString().split('T')[0];
-                        
-                        console.log('🔍 Verificando fecha:', fechaCheckStr);
-                        
-                        // Verificar si existe registro de "Ingreso de Mercadería" para esta fecha
-                        const snapshotIngreso = await db.collection('locales')
-                            .doc(localId)
-                            .collection('registros')
-                            .doc(`${fechaCheckStr}_Ingreso_de_Mercadería`)
-                            .get();
-                        
-                        // Verificar si existe registro de "Stock Final" para esta fecha
-                        const snapshotStock = await db.collection('locales')
-                            .doc(localId)
-                            .collection('registros')
-                            .doc(`${fechaCheckStr}_Stock_Final`)
-                            .get();
-                        
-                        const faltantes = [];
-                        if (!snapshotIngreso.exists) {
-                            faltantes.push('Ingreso de Mercadería');
-                            console.log('⚠️ Falta Ingreso de Mercadería para', fechaCheckStr);
+                    snapshotTotal.forEach(doc => {
+                        const registro = doc.data();
+                        if (registro.fecha && registro.fecha !== fechaHoy) { // Excluir hoy
+                            if (!registrosPorFecha[registro.fecha]) {
+                                registrosPorFecha[registro.fecha] = new Set();
+                            }
+                            registrosPorFecha[registro.fecha].add(registro.tipo);
                         }
-                        if (!snapshotStock.exists) {
+                    });
+                    
+                    console.log('📊 Fechas con datos (excluyendo hoy):', Object.keys(registrosPorFecha).sort());
+                    
+                    // Verificar cada fecha histórica
+                    Object.entries(registrosPorFecha).forEach(([fecha, tiposExistentes]) => {
+                        const faltantes = [];
+                        
+                        if (!tiposExistentes.has('Ingreso de Mercadería')) {
+                            faltantes.push('Ingreso de Mercadería');
+                            console.log('⚠️ Falta Ingreso de Mercadería para', fecha);
+                        }
+                        if (!tiposExistentes.has('Stock Final')) {
                             faltantes.push('Stock Final');
-                            console.log('⚠️ Falta Stock Final para', fechaCheckStr);
+                            console.log('⚠️ Falta Stock Final para', fecha);
                         }
                         
                         if (faltantes.length > 0) {
                             // Parsear fecha correctamente usando zona horaria de Argentina
-                            const fechaParts = fechaCheckStr.split('-');
-                            const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
-                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
-                            const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                            const fechaParts = fecha.split('-');
+                            const fechaObj = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
+                            const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaObj.getDay()];
+                            const fechaFormateada = fechaObj.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
                             const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`;
                             problemas.push(problemaTexto);
-                            console.log('📅 Agregado problema para', fechaCheckStr, ':', faltantes.join(', '));
-                        } else {
-                            console.log('✅ Fecha', fechaCheckStr, 'tiene todos los datos necesarios');
+                            console.log('📅 Agregado problema para', fecha, ':', faltantes.join(', '));
                         }
-                    }
+                    });
                     
                     console.log('✅ Verificación completada. Problemas encontrados:', problemas.length);
                 } catch (e) {
@@ -6886,6 +6879,22 @@
                     const idDocumento = `${fechaString}_${tipo.replace(/\s+/g, '_')}`;
                     console.log('🆔 ID del documento:', idDocumento);
                     
+                    // Mostrar mensaje de sincronización - NO CERRAR NAVEGADOR
+                    const mensajeSincronizacion = document.createElement('div');
+                    mensajeSincronizacion.id = 'mensajeSincronizacion';
+                    mensajeSincronizacion.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;';
+                    mensajeSincronizacion.innerHTML = `
+                        <div style="background:white;padding:30px;border-radius:12px;text-align:center;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                            <div style="font-size:48px;margin-bottom:15px;">⏳</div>
+                            <h2 style="color:#333;margin:0 0 10px 0;">Sincronizando con la nube...</h2>
+                            <p style="color:#dc2626;font-weight:bold;font-size:18px;margin:15px 0;">🚨 NO CIERRES EL NAVEGADOR</p>
+                            <p style="color:#666;margin:0;">Los datos se están guardando.<br>Espera a que termine la sincronización.</p>
+                            <div style="margin-top:20px;"><div style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;"></div></div>
+                        </div>
+                        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+                    `;
+                    document.body.appendChild(mensajeSincronizacion);
+                    
                     // Guardar en Firebase
                     await db.collection('locales')
                         .doc(usuario.localId)
@@ -6972,7 +6981,13 @@
                         await guardarEstadoFinalVencimientos(usuario.localId, fechaString, db);
                     }
                     
-                    alert(`✅ ${tipo} guardado exitosamente para ${fechaString}`);
+                    // Cerrar mensaje de sincronización
+                    const mensajeExistente = document.getElementById('mensajeSincronizacion');
+                    if (mensajeExistente) {
+                        mensajeExistente.remove();
+                    }
+                    
+                    alert(`✅ ${tipo} guardado y sincronizado correctamente para ${fechaString}`);
                     
                     // Actualizar estados de botones
                     if (tipo === 'Ingreso de Mercadería') {
@@ -7031,6 +7046,11 @@
                     
                 } catch (error) {
                     console.error('❌ Error guardando datos:', error);
+                    // Cerrar mensaje de sincronización si existe
+                    const mensajeExistente = document.getElementById('mensajeSincronizacion');
+                    if (mensajeExistente) {
+                        mensajeExistente.remove();
+                    }
                     alert(`❌ Error guardando datos: ${error.message}`);
                 }
             };

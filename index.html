@@ -9,14 +9,15 @@
     <link rel="icon" type="image/png" href="logo_sabores_real.png">
     <link rel="shortcut icon" type="image/png" href="logo_sabores_real.png">
     <title>Sabores Express - Product Mix V2 Web v4.10</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js?v=4.10"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js?v=4.10"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js?v=4.10"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js?v=4.10"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.10"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.10"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.10"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.10"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="admin_local.js?v=4.10"></script>
     
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
     <script>
@@ -91,6 +92,40 @@
       window.getTimestampArgentina = function() {
         const fechaArg = window.getFechaArgentina();
         return fechaArg.toISOString();
+      };
+
+      window.escapeHtml = function(valor) {
+        return String(valor ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+
+      window.saveLoginPreferences = function(data) {
+        const payload = {
+          email: data?.email || '',
+          recordar: !!data?.recordar
+        };
+        localStorage.setItem('loginData', JSON.stringify(payload));
+      };
+
+      window.loadLoginPreferences = function() {
+        try {
+          const raw = localStorage.getItem('loginData');
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && 'password' in parsed) {
+            delete parsed.password;
+            localStorage.setItem('loginData', JSON.stringify(parsed));
+          }
+          return parsed;
+        } catch (error) {
+          console.warn('No se pudieron leer las preferencias de login:', error);
+          localStorage.removeItem('loginData');
+          return null;
+        }
       };
     </script>
     
@@ -898,12 +933,12 @@
                 maestroNombre: "",
                 activo: true,
                 firebaseConfig: {
-                    apiKey: "TU_API_KEY_REGION2",
+                    apiKey: "AIzaSyAk9mtBJWjg5WhiGjmECqfMlynvjPgCLqM",
                     authDomain: "region2-99f04.firebaseapp.com",
                     projectId: "region2-99f04",
                     storageBucket: "region2-99f04.firebasestorage.app",
-                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-                    appId: "TU_APP_ID"
+                    messagingSenderId: "689595151038",
+                    appId: "1:689595151038:web:region2"
                 }
             },
             {
@@ -913,12 +948,12 @@
                 maestroNombre: "",
                 activo: true,
                 firebaseConfig: {
-                    apiKey: "TU_API_KEY_REGION3",
+                    apiKey: "AIzaSyB6OEVhO4VdHNHy81ooJvFjmDUJer8YpmU",
                     authDomain: "region3-e704a.firebaseapp.com",
                     projectId: "region3-e704a",
                     storageBucket: "region3-e704a.firebasestorage.app",
-                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-                    appId: "TU_APP_ID"
+                    messagingSenderId: "112972656304",
+                    appId: "1:112972656304:web:region3"
                 }
             },
             {
@@ -928,12 +963,12 @@
                 maestroNombre: "",
                 activo: true,
                 firebaseConfig: {
-                    apiKey: "TU_API_KEY_REGION4",
+                    apiKey: "AIzaSyDxHTk3iZbv1ONxQWMdDdHID0_qNTERR5Q",
                     authDomain: "region4-30c0d.firebaseapp.com",
                     projectId: "region4-30c0d",
                     storageBucket: "region4-30c0d.firebasestorage.app",
-                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-                    appId: "TU_APP_ID"
+                    messagingSenderId: "635206370436",
+                    appId: "1:635206370436:web:region4"
                 }
             },
             {
@@ -943,12 +978,12 @@
                 maestroNombre: "",
                 activo: true,
                 firebaseConfig: {
-                    apiKey: "TU_API_KEY_REGION5",
+                    apiKey: "AIzaSyCvekx0hAasjPvsu003kwm5C7Tvh1iDu0M",
                     authDomain: "region5-41627.firebaseapp.com",
                     projectId: "region5-41627",
                     storageBucket: "region5-41627.firebasestorage.app",
-                    messagingSenderId: "TU_MESSAGING_SENDER_ID",
-                    appId: "TU_APP_ID"
+                    messagingSenderId: "738165209558",
+                    appId: "1:738165209558:web:region5"
                 }
             }
         ];
@@ -1409,21 +1444,21 @@
 
             const cargarDatosGuardados = (localesLista = null) => {
                 try {
-                    const datosGuardados = localStorage.getItem('loginData');
-                    console.log('🔍 cargarDatosGuardados - datosGuardados en localStorage:', datosGuardados ? 'EXISTE' : 'NO EXISTE');
-                    if (datosGuardados) {
-                        const parsed = JSON.parse(datosGuardados);
-                        console.log('🔍 Datos parseados:', { email: parsed.email, recordar: parsed.recordar, tienePassword: !!parsed.password });
-                        const { email: savedEmail, password: savedPassword, recordar } = parsed;
+                    const preferenciasGuardadas = window.loadLoginPreferences();
+                    console.log('cargarDatosGuardados - datosGuardados en localStorage:', preferenciasGuardadas ? 'EXISTE' : 'NO EXISTE');
+                    if (preferenciasGuardadas) {
+                        const parsed = preferenciasGuardadas;
+                        console.log('Datos parseados:', { email: parsed.email, recordar: parsed.recordar });
+                        const { email: savedEmail, recordar } = parsed;
                         if (recordar && savedEmail) {
                             // EXACTO como Android: Solo cargar si el campo de email está vacío
                             // Si el usuario ya escribió algo, no sobrescribir (permite cambio de cuenta)
-                            console.log('✅ Restaurando credenciales guardadas...');
+                            console.log('Restaurando preferencias guardadas...');
                             setEmail(savedEmail || '');
-                            setPassword(savedPassword || '');
+                            setPassword('');
                             setRecordarDatos(true);
-                            console.log('✅ Datos restaurados: email =', savedEmail, 'password =', savedPassword ? '***' : '(vacío)');
-                        } else {
+                            console.log('Datos restaurados: email =', savedEmail);
+                            } else {
                             console.log('⚠️ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
                         }
                     } else {
@@ -1693,19 +1728,16 @@
                     localStorage.setItem('usuario', JSON.stringify(usuarioData));
                     localStorage.setItem('region_id', regionSeleccionada.id);
                     
-                    // Guardar datos de login si está marcado recordar
+                    // Guardar solo preferencias no sensibles si est? marcado recordar
                     if (recordarDatos) {
-                        const loginData = {
+                        window.saveLoginPreferences({
                             email: email,
-                            password: password,
                             recordar: true
-                        };
-                        localStorage.setItem('loginData', JSON.stringify(loginData));
-                        console.log('💾 Datos de login guardados:', { email: loginData.email, tienePassword: !!loginData.password, recordar: loginData.recordar });
+                        });
+                        console.log('Preferencias de login guardadas:', { email: email, recordar: true });
                     } else {
-                        // Limpiar datos guardados si no se quiere recordar
                         localStorage.removeItem('loginData');
-                        console.log('🗑️ Datos de login eliminados (recordarDatos = false)');
+                        console.log('Preferencias de login eliminadas (recordarDatos = false)');
                     }
                     
                     onLoginSuccess(usuarioData);
@@ -2109,16 +2141,20 @@
                         
                         if (usuarioInput && usuariosDropdown) {
                             if (usuarios.length > 0) {
-                                usuariosDropdown.innerHTML = usuarios.map(usuario => {
-                                    // Escapar comillas simples para evitar problemas
-                                    const usuarioEscapado = usuario.replace(/'/g, "\\'");
-                                    return `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" 
-                                         onmouseover="this.style.backgroundColor='#f5f5f5'" 
-                                         onmouseout="this.style.backgroundColor='white'"
-                                         onclick="seleccionarUsuario('${usuarioEscapado}')">
-                                        ${usuario}
-                                     </div>`;
-                                }).join('');
+                                usuariosDropdown.innerHTML = '';
+                                usuarios.forEach(usuario => {
+                                    const item = document.createElement('div');
+                                    item.style.cssText = 'padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;';
+                                    item.textContent = usuario;
+                                    item.onmouseover = () => {
+                                        item.style.backgroundColor = '#f5f5f5';
+                                    };
+                                    item.onmouseout = () => {
+                                        item.style.backgroundColor = 'white';
+                                    };
+                                    item.onclick = () => window.seleccionarUsuario(usuario);
+                                    usuariosDropdown.appendChild(item);
+                                });
                             } else {
                                 usuariosDropdown.innerHTML = '<div style="padding: 12px;">No hay usuarios disponibles</div>';
                             }
@@ -2144,13 +2180,12 @@
                             
                             // Cargar credenciales guardadas
                             const savedUsuario = localStorage.getItem('usuario_gestion');
-                            const savedPassword = localStorage.getItem('contraseña_gestion');
                             const rememberCheckbox = dialogContent.querySelector('#rememberPassword');
                             const passwordInput = dialogContent.querySelector('#passwordInput');
                             
-                            if (savedUsuario && savedPassword && rememberCheckbox && passwordInput) {
+                            if (savedUsuario && rememberCheckbox && passwordInput) {
                                 usuarioInput.value = savedUsuario;
-                                passwordInput.value = savedPassword;
+                                passwordInput.value = '';
                                 rememberCheckbox.checked = true;
                             }
                         }
@@ -2206,29 +2241,31 @@
                             .doc('admin')
                             .get();
                         
-                        const passwordMaestro = configDoc.data()?.password || 'admin123';
+                        const passwordMaestro = configDoc.data()?.password;
                         const nombreMaestro = configDoc.exists 
                             ? (configDoc.data().maestro_nombre || 'Maestro')
                             : 'Maestro';
                         
+                        if (usuario === nombreMaestro && !passwordMaestro) {
+                            throw new Error('La contraseña del maestro no está configurada en Firebase.');
+                        }
+
                         if (usuario === nombreMaestro && password === passwordMaestro) {
                             // Es usuario maestro
                             console.log('🔑 CREDENCIALES DE MAESTRO CORRECTAS');
                             
-                            // Guardar credenciales si está marcado el checkbox
-                        if (remember) {
+                            // Guardar solo el usuario si está marcado el checkbox
+                            if (remember) {
                                 localStorage.setItem('usuario_gestion', usuario);
-                            localStorage.setItem('contraseña_gestion', password);
                         } else {
                                 localStorage.removeItem('usuario_gestion');
-                            localStorage.removeItem('contraseña_gestion');
                         }
                             
                             // Guardar datos del usuario maestro en localStorage
                             // EXACTO como Android: incluir regionId para restaurar al volver
                             const regionIdActual = localStorage.getItem('region_id');
                             localStorage.setItem('usuario_actual', JSON.stringify({
-                                metodoLogin: 'admin123',
+                                metodoLogin: 'gestion_maestro',
                                 rol: 'maestro',
                                 usuarioId: 'maestro',
                                 usuario: 'maestro',
@@ -2260,13 +2297,11 @@
                             
                             console.log('🔑 SUPERVISOR AUTENTICADO:', supervisor.usuario);
                             
-                            // Guardar credenciales si está marcado el checkbox
+                            // Guardar solo el usuario si está marcado el checkbox
                             if (remember) {
                                 localStorage.setItem('usuario_gestion', usuario);
-                                localStorage.setItem('contraseña_gestion', password);
-                    } else {
+                            } else {
                                 localStorage.removeItem('usuario_gestion');
-                                localStorage.removeItem('contraseña_gestion');
                             }
                             
                             // Guardar datos del supervisor en localStorage
@@ -2424,12 +2459,12 @@
                                             setEmail(valor);
                                             
                                             // Si el email cambia manualmente y es diferente al guardado en loginData, limpiar loginData
-                                            // Esto permite que el usuario pueda cambiar de cuenta incluso si tiene "Recordar credenciales" activado
+                                            // Esto permite que el usuario pueda cambiar de cuenta incluso si tiene "Recordar email y regi?n" activado
                                             if (valor) {
-                                                const loginDataGuardado = localStorage.getItem('loginData');
+                                                const loginDataGuardado = window.loadLoginPreferences();
                                                 if (loginDataGuardado) {
                                                     try {
-                                                        const loginData = JSON.parse(loginDataGuardado);
+                                                        const loginData = loginDataGuardado;
                                                         const emailCompleto = valor.includes('@') ? valor : valor + '@saboresexpress.com.ar';
                                                         // Si el email es diferente al guardado, limpiar loginData para permitir cambio de cuenta
                                                         if (loginData.email && loginData.email !== emailCompleto) {
@@ -2507,7 +2542,7 @@
                                         }}
                                     />
                                     <label htmlFor="recordarDatos" className="text-sm" style={{color: 'var(--brand-black)'}}>
-                                        Recordar credenciales
+                                        Recordar email y regi?n
                                     </label>
                                 </div>
                                 <button
@@ -2647,7 +2682,8 @@
                 
                 const problemaDiv = document.createElement('div');
                 problemaDiv.style.cssText = 'margin-bottom:12px;padding:12px;background:#f9fafb;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 1px 3px rgba(0,0,0,0.1)';
-                problemaDiv.innerHTML = problema.replace(/\n/g, '<br>');
+                problemaDiv.textContent = problema;
+                problemaDiv.style.whiteSpace = 'pre-line';
                 
                 // Hover effect mejorado - más visible
                 problemaDiv.onmouseenter = () => {
@@ -5290,6 +5326,7 @@
             const [tieneIngreso, setTieneIngreso] = useState(false);
             const [tieneStock, setTieneStock] = useState(false);
             const [tieneVencimientosCoincidentes, setTieneVencimientosCoincidentes] = useState(false);
+            const [tienePedidoFabrica, setTienePedidoFabrica] = useState(false);
             const [ultimoEstadoIngreso, setUltimoEstadoIngreso] = useState(null);
             const [ultimoEstadoStock, setUltimoEstadoStock] = useState(null);
             const [downloadUrl, setDownloadUrl] = useState('https://github.com/solanosaboresexpress-hash/inventario-app-updates/raw/main/inventario_app.apk'); // URL por defecto
@@ -5464,6 +5501,9 @@
                     
                     // Verificar vencimientos coincidentes
                     verificarVencimientosCoinciden();
+                    
+                    // Verificar si existe pedido a fábrica
+                    verificarPedidoFabrica();
                     
                 } catch (error) {
                     console.error('❌ Error verificando registros existentes:', error);
@@ -5685,6 +5725,38 @@
                     setTieneVencimientosCoincidentes(false);
                 }
             };
+            
+            // Función para verificar si existe pedido a fábrica para la fecha seleccionada
+            const verificarPedidoFabrica = async () => {
+                try {
+                    if (!usuario || !usuario.localId) return;
+                    
+                    const fechaString = formatearFechaCorta(fechaSeleccionada);
+                    let db;
+                    try {
+                        db = FirebaseRegionManager.getFirestore();
+                    } catch (e) {
+                        console.error('Firestore no disponible:', e);
+                        return;
+                    }
+                    
+                    // Verificar si existe pedido a fábrica para esta fecha
+                    const pedidoDoc = await db.collection('locales')
+                        .doc(usuario.localId)
+                        .collection('pedidos_fabrica')
+                        .doc(fechaString)
+                        .get();
+                    
+                    const existePedido = pedidoDoc.exists;
+                    setTienePedidoFabrica(existePedido);
+                    
+                    console.log(`📦 Pedido a fábrica para ${fechaString}: ${existePedido ? 'EXISTE' : 'NO EXISTE'}`);
+                    
+                } catch (error) {
+                    console.error('❌ Error verificando pedido a fábrica:', error);
+                    setTienePedidoFabrica(false);
+                }
+            };
 
             const [pantallaActual, setPantallaActual] = useState('main');
             const [enPantallaCarga, setEnPantallaCarga] = useState(false); // Variable para saber si estamos en Stock Final o Ingreso
@@ -5712,6 +5784,22 @@
                     console.error('   usuario.localId:', usuario?.localId);
                 }
             }, [fechaSeleccionada, usuario]);
+            
+            // Escuchar evento cuando se guarda un pedido a fábrica para actualizar el botón
+            useEffect(() => {
+                const handlePedidoFabricaUpdated = (event) => {
+                    console.log('📦 Evento pedido-fabrica-updated recibido:', event.detail);
+                    if (usuario && usuario.localId) {
+                        verificarPedidoFabrica();
+                    }
+                };
+                
+                window.addEventListener('productmix:pedido-fabrica-updated', handlePedidoFabricaUpdated);
+                
+                return () => {
+                    window.removeEventListener('productmix:pedido-fabrica-updated', handlePedidoFabricaUpdated);
+                };
+            }, [usuario, fechaSeleccionada]);
             
             // Verificar alertas SOLO cuando estamos en el menú principal Y NO estamos en pantalla de carga
             useEffect(() => {
@@ -5959,6 +6047,36 @@
             // Función para cargar datos existentes - EXACTO como CargaActivity.kt
             const cargarDatosExistentes = async (tipo, fechaEspecifica = null) => {
                 setCargandoDatos(true);
+                
+                // 🔥 SKELETON LOADING - Mostrar overlay de carga (líneas 1795-1823)
+                const skeletonOverlay = document.createElement('div');
+                skeletonOverlay.id = 'skeletonLoading';
+                skeletonOverlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                `;
+                skeletonOverlay.innerHTML = `
+                    <div style="width: 50px; height: 50px; border: 4px solid #fff; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="color: white; margin-top: 16px; font-weight: bold;">Cargando datos de Firebase...</p>
+                `;
+                document.body.appendChild(skeletonOverlay);
+                
+                // Timeout de seguridad para skeleton loading (5 segundos) - línea 1818-1823
+                const skeletonTimeout = setTimeout(() => {
+                    console.warn('⏱️ Timeout del skeleton loading - forzando ocultación');
+                    const overlay = document.getElementById('skeletonLoading');
+                    if (overlay) overlay.remove();
+                }, 5000);
+                
                 try {
                     // Usar fecha específica si se proporciona, sino usar fechaSeleccionada
                     const fechaAUsar = fechaEspecifica || fechaSeleccionada;
@@ -6059,6 +6177,13 @@
                     console.error(`Error cargando datos ${tipo}:`, error);
                     return false;
                 } finally {
+                    // 🔥 OCULTAR SKELETON LOADING - Líneas 1827-1841
+                    clearTimeout(skeletonTimeout);
+                    const skeletonOverlay = document.getElementById('skeletonLoading');
+                    if (skeletonOverlay) {
+                        skeletonOverlay.remove();
+                        console.log('✅ Skeleton loading ocultado');
+                    }
                     setCargandoDatos(false);
                 }
             };
@@ -6799,6 +6924,25 @@
             
             // Función para guardar datos - EXACTO como CargaActivity.kt líneas 659-822
             const guardarDatos = async () => {
+                // 🔥 TIMEOUT DE SEGURIDAD - Deshabilitar botón y cambiar texto (líneas 1154-1166)
+                const btnGuardar = document.querySelector('button[onClick*="mostrarPrevisualizacion"]');
+                if (btnGuardar) {
+                    btnGuardar.disabled = true;
+                    btnGuardar.textContent = '💾 Guardando...';
+                    btnGuardar.style.opacity = '0.7';
+                }
+                
+                // Timeout de seguridad - restaurar botón después de 5 segundos si algo falla
+                const timeoutSeguridad = setTimeout(() => {
+                    if (btnGuardar && btnGuardar.disabled) {
+                        console.warn('⏱️ Timeout: Restaurando botón después de 5 segundos');
+                        btnGuardar.disabled = false;
+                        btnGuardar.textContent = '👁️ Previsualizar y Guardar';
+                        btnGuardar.style.opacity = '1';
+                        alert('⚠️ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
+                    }
+                }, 5000);
+                
                 try {
                     console.log('💾 Guardando datos...');
                     
@@ -6935,13 +7079,17 @@
                         
                         console.log('✅ Datos guardados exitosamente');
                         
-                        // Paso 3: Actualizar promedios generales (solo Stock Final)
+                        // Paso 3: Actualizar promedios generales (solo Stock Final) - EXACTO como APK línea 1303
                         if (tipo === 'Stock Final') {
                             actualizarProgreso(++pasoActual, pasosTotales, 'Actualizando promedios generales...');
-                            // Ejecutar en background para no bloquear el guardado
-                            actualizarPromedioGeneral(usuario.localId, fechaString, productos, db).catch(error => {
+                            // 🔥 ESPERAR a que termine el cálculo (no en background) igual que APK
+                            try {
+                                await actualizarPromedioGeneral(usuario.localId, fechaString, productos, db);
+                                console.log('✅ Promedios generales actualizados correctamente');
+                            } catch (error) {
                                 console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
-                            });
+                                // No lanzar error para no interrumpir el flujo
+                            }
                         }
                         
                         // 🔥 Si es Stock Final y debe procesar, ajustar lotes al stock final
@@ -7041,6 +7189,28 @@
                         setTieneStock(true);
                     }
                     
+                    // 🔥 BROADCAST para actualizar menú principal - EXACTO como APK líneas 1366-1388
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('📡 ENVIANDO BROADCAST EXPLÍCITO');
+                    console.log('   Tipo:', tipo);
+                    console.log('   LocalId:', usuario.localId);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    
+                    // Guardar en localStorage para comunicación entre componentes
+                    localStorage.setItem('datos_guardados', 'true');
+                    localStorage.setItem('datos_guardados_tipo', tipo);
+                    localStorage.setItem('datos_guardados_fecha', fechaString);
+                    localStorage.setItem('datos_guardados_timestamp', Date.now().toString());
+                    
+                    // Disparar evento personalizado para actualizar el menú principal
+                    const broadcastEvent = new CustomEvent('actualizarBotonesMenu', {
+                        detail: { tipo, localId: usuario.localId, fecha: fechaString }
+                    });
+                    window.dispatchEvent(broadcastEvent);
+                    
+                    console.log('✅ Broadcast enviado exitosamente (explícito)');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    
                     // Re-verificar alertas después de guardar SOLO si NO estamos en pantalla de carga
                     // (no mostrar cuando estamos arreglando un problema)
                     if (usuario && usuario.localId && usuario.localNombre && !enPantallaCargaRef.current && pantallaActual === 'main') {
@@ -7086,11 +7256,28 @@
                         console.log('⏭️ No se re-verifican alertas - enPantallaCargaRef.current:', enPantallaCargaRef.current, 'pantallaActual:', pantallaActual);
                     }
                     
+                    // ✅ ÉXITO: Limpiar timeout de seguridad y restaurar botón (líneas 1361-1364)
+                    clearTimeout(timeoutSeguridad);
+                    if (btnGuardar) {
+                        btnGuardar.disabled = false;
+                        btnGuardar.textContent = '👁️ Previsualizar y Guardar';
+                        btnGuardar.style.opacity = '1';
+                    }
+                    
                     // Volver al menú principal
                     volverAlMenu();
                     
                 } catch (error) {
                     console.error('❌ Error guardando datos:', error);
+                    
+                    // ❌ ERROR: Limpiar timeout y restaurar botón (líneas 1452-1456)
+                    clearTimeout(timeoutSeguridad);
+                    if (btnGuardar) {
+                        btnGuardar.disabled = false;
+                        btnGuardar.textContent = '👁️ Previsualizar y Guardar';
+                        btnGuardar.style.opacity = '1';
+                    }
+                    
                     // Cerrar mensaje de sincronización si existe
                     const mensajeExistente = document.getElementById('mensajeSincronizacion');
                     if (mensajeExistente) {
@@ -8316,6 +8503,49 @@
                             </button>
                         </div>
 
+                        {/* Pedido a Fabrica */}
+                        <div className="card" style={{
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
+                            }}>
+                                🏭
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (window.openPedidoFabrica) {
+                                        window.openPedidoFabrica();
+                                    } else {
+                                        alert('FunciÃ³n de pedido a fÃ¡brica no disponible');
+                                    }
+                                }}
+                                className={`w-full font-bold fade-in menu-button ${tienePedidoFabrica ? 'btn-completed' : 'btn-primary'}`}
+                                style={{
+                                    height: '72px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}
+                            >
+                                {tienePedidoFabrica ? '✅ Pedido a Fábrica' : 'Pedido a Fábrica'}
+                            </button>
+                        </div>
+
                         {/* Promedio Ventas */}
                         <div className="card" style={{
                             padding: '16px',
@@ -8352,49 +8582,48 @@
                                 Promedio Ventas
                             </button>
                         </div>
-                    </div>
 
-                    {/* Botones adicionales fuera del grid */}
-                    <div className="space-y-3">
-                        <button
-                            onClick={() => {
-                                if (window.openPedidoFabrica) {
-                                    window.openPedidoFabrica();
-                                } else {
-                                    alert('Función de pedido a fábrica no disponible');
-                                }
-                            }}
-                            className="w-full font-bold text-base"
-                            style={{
-                                backgroundColor: '#059669',
-                                color: '#FFFFFF',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #047857'
-                            }}
-                        >
-                            🏭 Pedido a Fábrica
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                if (window.openPedidoPanificadora) {
-                                    window.openPedidoPanificadora();
-                                } else {
-                                    alert('Función de pedido a panificadora no disponible');
-                                }
-                            }}
-                            className="w-full font-bold text-base"
-                            style={{
-                                backgroundColor: '#D97706',
-                                color: '#FFFFFF',
-                                height: '56px',
-                                borderRadius: '12px',
-                                border: '1px solid #B45309'
-                            }}
-                        >
-                            🥖 Pedido a Panificadora
-                        </button>
+                        {/* Administracion del Local */}
+                        <div className="card" style={{
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '120px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '8px',
+                                color: 'var(--brand-gold)'
+                            }}>
+                                🏢
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (window.openAdministracionLocalModal) {
+                                        window.openAdministracionLocalModal();
+                                    } else {
+                                        alert('Funcionalidad de administracion del local no disponible');
+                                    }
+                                }}
+                                className="w-full font-bold btn-primary fade-in menu-button"
+                                style={{
+                                    height: '72px',
+                                    textAlign: 'center',
+                                    whiteSpace: 'normal',
+                                    padding: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                Administracion del Local
+                            </button>
+                        </div>
                     </div>
 
                     {/* Enlace de descarga de la app Android */}
@@ -11725,7 +11954,13 @@
     const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
     let fechaSeleccionada = fechaISO(fechaArgentina);
     let modoSoloLectura = false;
-    let modoAdmin = false; // TODO: Detectar si es admin desde usuario
+    let modoAdmin = false;
+    try {
+      const usuarioActual = JSON.parse(localStorage.getItem('usuario_actual') || '{}');
+      modoAdmin = usuarioActual?.rol === 'maestro' || usuarioActual?.metodoLogin === 'gestion_maestro' || usuarioActual?.metodoLogin === 'admin123';
+    } catch (e) {
+      modoAdmin = false;
+    }
 
     // Crear overlay y modal
     const overlay = document.createElement('div');
@@ -11786,6 +12021,14 @@
     leyendaTendencias.textContent = '📈≥10% | ⬆️5-10% | 📉≤-10% | ⬇️-10 a -5%';
     modal.appendChild(leyendaTendencias);
 
+    // Card de contexto/demanda de mañana (clima + partidos) - igual que Android
+    const cardDemandaManiana = document.createElement('div');
+    cardDemandaManiana.id = 'pf-card-demanda';
+    cardDemandaManiana.style.cssText = 'background:#FFF8E1;padding:12px 16px;border-bottom:1px solid #e5e7eb;display:none;margin:0';
+    cardDemandaManiana.innerHTML = '<div id="pf-demanda-titulo" style="font-weight:700;font-size:14px;color:#8B6914;margin-bottom:8px">📣 Mañana</div>' +
+      '<div id="pf-demanda-cuerpo" style="font-size:13px;color:#5c4a0d;line-height:1.5">Cargando información...</div>';
+    modal.appendChild(cardDemandaManiana);
+
     // Contenido principal
     const body = document.createElement('div');
     body.style.cssText = 'flex:1;overflow-y:auto;padding:16px';
@@ -11817,6 +12060,240 @@
       const date = new Date(y, m - 1, d);
       const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
       return dias[date.getDay()];
+    }
+
+    /**
+     * 📊 Funciones para obtener clima y partidos - Contexto de Demanda Mañana
+     * Replica de PedidoFabricaDemandaContextFetcher.kt de la APK
+     */
+    const DEFAULT_LAT = -34.6037; // Buenos Aires
+    const DEFAULT_LON = -58.3816;
+
+    // Emojis para códigos WMO de clima
+    function emojiClimaWMO(code) {
+      const emojis = {
+        0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+        45: '🌫️', 48: '🌫️',
+        51: '🌧️', 53: '🌧️', 55: '🌧️',
+        56: '🌧️', 57: '🌧️',
+        61: '🌧️', 63: '🌧️', 65: '🌧️',
+        66: '🌨️', 67: '🌨️',
+        71: '🌨️', 73: '🌨️', 75: '🌨️',
+        77: '🌨️',
+        80: '🌦️', 81: '🌦️', 82: '🌦️',
+        85: '🌨️', 86: '🌨️',
+        95: '⛈️', 96: '⛈️', 99: '⛈️'
+      };
+      return emojis[code] || '🌡️';
+    }
+
+    // Descripción para códigos WMO
+    function descripcionClimaWMO(code) {
+      const desc = {
+        0: 'Despejado',
+        1: 'Mayormente despejado', 2: 'Parcialmente nublado', 3: 'Nublado',
+        45: 'Niebla', 48: 'Niebla con escarcha',
+        51: 'Llovizna ligera', 53: 'Llovizna moderada', 55: 'Llovizna intensa',
+        56: 'Llovizna helada ligera', 57: 'Llovizna helada intensa',
+        61: 'Lluvia ligera', 63: 'Lluvia moderada', 65: 'Lluvia intensa',
+        66: 'Lluvia helada ligera', 67: 'Lluvia helada intensa',
+        71: 'Nieve ligera', 73: 'Nieve moderada', 75: 'Nieve intensa',
+        77: 'Granizo de nieve',
+        80: 'Chubascos ligeros', 81: 'Chubascos moderados', 82: 'Chubascos violentos',
+        85: 'Chubascos de nieve ligeros', 86: 'Chubascos de nieve intensos',
+        95: 'Tormenta eléctrica', 96: 'Tormenta con granizo ligero', 99: 'Tormenta con granizo intenso'
+      };
+      return desc[code] || `Condición ${code}`;
+    }
+
+    // Verificar si club es argentino
+    function esClubArgentino(nombre) {
+      if (!nombre) return false;
+      const n = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const clubesArgentinos = [
+        'boca juniors', 'boca', 'river plate', 'river', 'racing', 'independiente', 'san lorenzo',
+        'estudiantes', 'gimnasia', 'rosario central', 'newell', 'talleres', 'belgrano',
+        'instituto', 'lanus', 'banfield', 'argentinos', 'velez', 'defensa', 'godoy cruz',
+        'huracan', 'platense', 'sarmiento', 'union', 'tigre', 'barracas', 'central cordoba',
+        'atletico tucuman', 'deportivo riestra', 'independiente rivadavia', 'aldosivi',
+        'san martin', 'patronato', 'colon', 'arsenal'
+      ];
+      return clubesArgentinos.some(club => n.includes(club));
+    }
+
+    // Formatear hora desde ISO
+    function formatearHoraArgentina(isoDate) {
+      if (!isoDate) return '';
+      try {
+        const date = new Date(isoDate);
+        return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // Obtener clima desde Open-Meteo
+    async function fetchOpenMeteoDia(fechaIso) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${DEFAULT_LAT}&longitude=${DEFAULT_LON}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&timezone=America%2FArgentina%2FBuenos_Aires&start_date=${fechaIso}&end_date=${fechaIso}`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        const daily = data.daily;
+        if (!daily || !daily.time || daily.time.length === 0) return null;
+        return {
+          code: daily.weathercode[0],
+          tMin: daily.temperature_2m_min[0],
+          tMax: daily.temperature_2m_max[0],
+          probLluvia: daily.precipitation_probability_max[0],
+          precipMm: daily.precipitation_sum[0]
+        };
+      } catch (e) {
+        console.warn('Error obteniendo clima:', e);
+        return null;
+      }
+    }
+
+    // Obtener partidos desde ESPN
+    async function fetchPartidosESPN(fechaIso, liga) {
+      try {
+        const datesParam = fechaIso.replace(/-/g, '');
+        const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${liga}/scoreboard?dates=${datesParam}`;
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const data = await response.json();
+        const events = data.events || [];
+        const partidos = [];
+        for (const ev of events) {
+          const comps = ev.competitions || [];
+          if (comps.length === 0) continue;
+          const comp = comps[0];
+          const competitors = comp.competitors || [];
+          let homeName = '', awayName = '';
+          for (const c of competitors) {
+            const team = c.team || {};
+            const name = team.shortDisplayName || team.displayName || '?';
+            if (c.homeAway === 'home') homeName = name;
+            if (c.homeAway === 'away') awayName = name;
+          }
+          if (!homeName || !awayName) continue;
+          // Solo incluir si alguno es argentino (excepto para selección argentina)
+          if (liga !== 'arg.1' && !esClubArgentino(homeName) && !esClubArgentino(awayName)) continue;
+          const hora = formatearHoraArgentina(comp.date || ev.date);
+          const ligaNombre = liga === 'conmebol.libertadores' ? 'Libertadores' : 
+                           liga === 'conmebol.sudamericana' ? 'Sudamericana' : 
+                           liga === 'arg.1' ? 'Primera' : '';
+          const linea = hora ? `⚽ ${homeName} vs ${awayName}  ${hora} (${ligaNombre})` : `⚽ ${homeName} vs ${awayName} (${ligaNombre})`;
+          partidos.push(linea);
+          if (partidos.length >= 8) break;
+        }
+        return partidos;
+      } catch (e) {
+        console.warn(`Error obteniendo partidos ${liga}:`, e);
+        return [];
+      }
+    }
+
+    // Combinar clima y partidos
+    async function fetchContextoDemandaManiana(fechaManianaIso) {
+      try {
+        const [clima, partidosPrimera, partidosLibertadores, partidosSudamericana] = await Promise.all([
+          fetchOpenMeteoDia(fechaManianaIso),
+          fetchPartidosESPN(fechaManianaIso, 'arg.1'),
+          fetchPartidosESPN(fechaManianaIso, 'conmebol.libertadores'),
+          fetchPartidosESPN(fechaManianaIso, 'conmebol.sudamericana')
+        ]);
+        const todosLosPartidos = [...partidosPrimera, ...partidosLibertadores, ...partidosSudamericana];
+        // Formatear fecha para mostrar
+        const fechaMostrar = fechaManianaIso.split('-').slice(1).reverse().join('/');
+        // Construir línea de clima
+        let lineaClima = '';
+        if (clima) {
+          const emoji = emojiClimaWMO(clima.code);
+          const desc = descripcionClimaWMO(clima.code);
+          const tempTxt = clima.tMin !== null && clima.tMax !== null ? `${Math.round(clima.tMin)}° / ${Math.round(clima.tMax)}°` : '';
+          let lluvia = '';
+          if (clima.probLluvia > 0) lluvia = `  prob. lluvia ${clima.probLluvia}%`;
+          else if (clima.precipMm > 0) lluvia = `  lluvia ~${clima.precipMm.toFixed(1)} mm`;
+          lineaClima = `${emoji} ${desc}${tempTxt ? ' (' + tempTxt + ')' : ''}${lluvia}`;
+        } else {
+          lineaClima = '🌡️ No se pudo cargar el clima.';
+        }
+        // Construir líneas de fútbol
+        const lineasFutbol = todosLosPartidos.length > 0 ? todosLosPartidos : ['⚽ No hay partidos para esa fecha.'];
+        // Verificar alertas
+        const alertaLluvia = clima && ((clima.probLluvia >= 55) || (clima.precipMm >= 5) || 
+          [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(clima.code));
+        const alertaTemperatura = clima && ((clima.tMax >= 35) || (clima.tMin <= 8));
+        const hayAlertaFuerte = alertaLluvia || alertaTemperatura || todosLosPartidos.length > 0;
+        return {
+          fechaIso: fechaManianaIso,
+          fechaMostrar: fechaMostrar,
+          lineaClima: lineaClima,
+          lineasFutbol: lineasFutbol,
+          hayAlertaFuerte: hayAlertaFuerte
+        };
+      } catch (e) {
+        console.error('Error obteniendo contexto demanda:', e);
+        return null;
+      }
+    }
+
+    // Mostrar contexto de demanda en la UI
+    let demandaManianaCacheKey = null;
+    let demandaManianaCache = null;
+    async function solicitarContextoDemandaManiana() {
+      const cardDemanda = document.getElementById('pf-card-demanda');
+      const txtTitulo = document.getElementById('pf-demanda-titulo');
+      const txtCuerpo = document.getElementById('pf-demanda-cuerpo');
+      if (!cardDemanda || !txtTitulo || !txtCuerpo) return;
+      // Verificar si es hoy (Argentina UTC-3)
+      const hoy = new Date();
+      const offsetArgentina = -3 * 60;
+      const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
+      const hoyStr = fechaISO(fechaArgentina);
+      if (fechaSeleccionada !== hoyStr || modoSoloLectura) {
+        cardDemanda.style.display = 'none';
+        return;
+      }
+      // Calcular mañana
+      const maniana = new Date(fechaArgentina);
+      maniana.setDate(maniana.getDate() + 1);
+      const manianaStr = fechaISO(maniana);
+      // Verificar cache
+      if (demandaManianaCacheKey === manianaStr && demandaManianaCache) {
+        aplicarDemandaManianaUI(demandaManianaCache);
+        cardDemanda.style.display = 'block';
+        return;
+      }
+      // Cargar datos
+      txtTitulo.textContent = '📣 Mañana · cargando...';
+      txtCuerpo.textContent = 'Obteniendo pronóstico del clima y partidos...';
+      cardDemanda.style.display = 'block';
+      const ctx = await fetchContextoDemandaManiana(manianaStr);
+      if (ctx) {
+        demandaManianaCacheKey = manianaStr;
+        demandaManianaCache = ctx;
+        aplicarDemandaManianaUI(ctx);
+      } else {
+        txtTitulo.textContent = '📣 Mañana · sin datos';
+        txtCuerpo.textContent = 'No se pudo cargar el clima ni los partidos. Revisá la conexión.';
+      }
+    }
+
+    function aplicarDemandaManianaUI(ctx) {
+      const txtTitulo = document.getElementById('pf-demanda-titulo');
+      const txtCuerpo = document.getElementById('pf-demanda-cuerpo');
+      const cardDemanda = document.getElementById('pf-card-demanda');
+      if (!txtTitulo || !txtCuerpo || !cardDemanda) return;
+      txtTitulo.textContent = `📣 Mañana (${ctx.fechaMostrar})`;
+      txtCuerpo.innerHTML = ctx.lineaClima + '<br><br>' + ctx.lineasFutbol.join('<br>');
+      // Color según alerta
+      if (ctx.hayAlertaFuerte) {
+        cardDemanda.style.backgroundColor = '#FFECB3'; // Amarillo más intenso para alertas
+      } else {
+        cardDemanda.style.backgroundColor = '#FFF8E1'; // Color normal
+      }
     }
 
     /**
@@ -11957,7 +12434,7 @@
       actualizarInformacionDiasExtra();
     }
 
-    // Función para cargar promedios de ventas
+    // Función para cargar promedios de ventas (REPLICA EXACTA de calcularPromediosPorDia de la APK)
     async function cargarPromediosVenta() {
       try {
         let db;
@@ -11967,7 +12444,112 @@
           console.warn('Firebase no inicializado en cargarPromediosVenta');
           return;
         }
-        const registrosSnap = await db.collection('locales').doc(localId).collection('registros').orderBy('fecha', 'desc').limit(100).get();
+        
+        // 🔥 NUEVO: Primero intentar cargar promedios pre-calculados de Firebase (igual que APK)
+        // La APK guarda promedios en: locales/{localId}/promedios_generales/promedios
+        const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+        let promediosCargados = false;
+        
+        try {
+          // Intentar cargar desde promedios_generales/promedios (formato de la APK)
+          console.log('🔍 DEBUG: Intentando cargar desde promedios_generales/promedios para localId:', localId);
+          const promediosDoc = await db.collection('locales').doc(localId).collection('promedios_generales').doc('promedios').get();
+          
+          console.log('🔍 DEBUG: promediosDoc.exists =', promediosDoc.exists);
+          
+          if (promediosDoc.exists) {
+            console.log('🔍 DEBUG: Cargando promedios pre-calculados desde promedios_generales/promedios...');
+            const data = promediosDoc.data();
+            console.log('🔍 DEBUG: Estructura de datos recibida:', Object.keys(data));
+            
+            // La APK guarda los promedios en data.promedios[dia], no directamente en data[dia]
+            const promediosData = data.promedios || data;
+            console.log('🔍 DEBUG: Estructura de promedios:', Object.keys(promediosData));
+            
+            ordenProductos.forEach(codigo => {
+              promediosVenta[codigo] = {};
+              const nombreCompleto = obtenerNombreProducto(codigo);
+              
+              diasSemana.forEach(dia => {
+                const diaData = promediosData[dia];
+                if (diaData) {
+                  // Buscar el producto en los datos del día
+                  // El formato es: dia -> { producto: { suma, cantidad, promedio } }
+                  const productoData = diaData[codigo] || diaData[nombreCompleto] || diaData[codigo + ' - ' + nombreCompleto];
+                  
+                  if (productoData && typeof productoData === 'object') {
+                    // Formato PromedioData: { suma, cantidad, promedio }
+                    promediosVenta[codigo][dia] = productoData.promedio || 0;
+                    console.log(`🔍 DEBUG: Cargado ${codigo} ${dia}: promedio=${productoData.promedio}`);
+                  } else if (typeof productoData === 'number') {
+                    // Formato simple: solo el número
+                    promediosVenta[codigo][dia] = productoData;
+                    console.log(`🔍 DEBUG: Cargado ${codigo} ${dia}: promedio=${productoData}`);
+                  }
+                }
+              });
+            });
+            
+            // Verificar si se cargaron promedios
+            const tienePromedios = ordenProductos.some(codigo => 
+              Object.values(promediosVenta[codigo] || {}).some(p => p > 0)
+            );
+            
+            console.log('🔍 DEBUG: tienePromedios =', tienePromedios);
+            
+            if (tienePromedios) {
+              console.log('✅ Promedios pre-calculados cargados desde promedios_generales:', promediosVenta);
+              return; // Salir si se cargaron promedios
+            }
+          } else {
+            console.log('🔍 DEBUG: No existe el documento promedios_generales/promedios');
+          }
+          
+          // Fallback: intentar cargar desde colección 'promedios' (formato antiguo)
+          const promediosSnap = await db.collection('locales').doc(localId).collection('promedios').get();
+          if (!promediosSnap.empty) {
+            console.log('🔍 DEBUG: Cargando promedios desde colección promedios (formato antiguo)...');
+            
+            ordenProductos.forEach(codigo => {
+              promediosVenta[codigo] = {};
+              const nombreCompleto = obtenerNombreProducto(codigo);
+              const claveCompleta = codigo + ' - ' + nombreCompleto;
+              
+              promediosSnap.forEach(doc => {
+                const dia = doc.id.toUpperCase();
+                if (diasSemana.includes(dia)) {
+                  const data = doc.data();
+                  // Buscar por clave completa primero
+                  let promedio = data[claveCompleta];
+                  // Si no, buscar por nombre
+                  if (promedio === undefined) promedio = data[nombreCompleto];
+                  // Si no, buscar por código
+                  if (promedio === undefined) promedio = data[codigo];
+                  
+                  if (promedio !== undefined) {
+                    promediosVenta[codigo][dia] = promedio;
+                  }
+                }
+              });
+            });
+            
+            const tienePromedios = ordenProductos.some(codigo => 
+              Object.values(promediosVenta[codigo] || {}).some(p => p > 0)
+            );
+            
+            if (tienePromedios) {
+              console.log('✅ Promedios cargados desde colección promedios:', promediosVenta);
+              return;
+            }
+          }
+        } catch (e) {
+          console.log('🔍 DEBUG: No se encontraron promedios pre-calculados en Firebase:', e.message);
+        }
+        
+        // Obtener registros igual que la APK - CARGAR TODOS los registros históricos
+        // La APK usa todos los registros, no solo 100
+        console.log('🔍 DEBUG: Cargando TODOS los registros históricos...');
+        const registrosSnap = await db.collection('locales').doc(localId).collection('registros').get();
         const registros = [];
         registrosSnap.forEach(d => {
           const data = d.data();
@@ -11977,84 +12559,122 @@
             productos: data.productos || [] 
           });
         });
-
-        // Agrupar por día de la semana
-        const ventasPorDia = { LUNES: {}, MARTES: {}, MIERCOLES: {}, JUEVES: {}, VIERNES: {}, SABADO: {}, DOMINGO: {} };
         
-        // Procesar cada fecha
-        const fechasProcesadas = new Set();
-        registros.forEach(registro => {
-          if (fechasProcesadas.has(registro.fecha)) return;
-          fechasProcesadas.add(registro.fecha);
+        console.log('🔍 DEBUG: Iniciando cálculo de promedios con', registros.length, 'registros (todos los históricos)');
+
+        // Inicializar estructura igual que la APK
+        const promediosPorDia = {};
+        diasSemana.forEach(dia => {
+          promediosPorDia[dia] = {};
+        });
+        
+        // 🚀 OPTIMIZACIÓN: Usar registros de "Venta Diaria" pre-calculados si existen (igual que APK)
+        const registrosVentaDiaria = registros.filter(r => r.tipo === 'Venta Diaria');
+        console.log('🔍 DEBUG: Registros Venta Diaria encontrados:', registrosVentaDiaria.length);
+        
+        const ventasPorDia = {};
+        
+        if (registrosVentaDiaria.length > 0) {
+          // ✅ Usar ventas diarias pre-calculadas (igual que PromedioVentasActivity.kt líneas 230-244)
+          console.log('🔍 DEBUG: Usando ventas diarias pre-calculadas');
           
-          const dia = obtenerDiaSemana(registro.fecha);
-          if (!(dia in ventasPorDia)) return;
-          
-          const ingreso = registros.find(r => r.fecha === registro.fecha && r.tipo === 'Ingreso de Mercadería');
-          const stockFinal = registros.find(r => r.fecha === registro.fecha && r.tipo === 'Stock Final');
-          
-          if (!stockFinal || !stockFinal.productos) return;
-          
-          // Calcular fecha anterior
-          const [y, m, d] = registro.fecha.split('-').map(Number);
-          const fechaAnterior = new Date(y, m - 1, d);
-          fechaAnterior.setDate(fechaAnterior.getDate() - 1);
-          const fechaAnteriorStr = fechaISO(fechaAnterior);
-          const stockAnterior = registros.find(r => r.fecha === fechaAnteriorStr && r.tipo === 'Stock Final');
-          
-          // Calcular ventas por producto
-          stockFinal.productos.forEach(p => {
-            const ingresoCant = (ingreso?.productos || []).find(ip => ip.nombre === p.nombre)?.cantidad || 0;
-            const stockAntCant = (stockAnterior?.productos || []).find(sp => sp.nombre === p.nombre)?.cantidad || 0;
-            const venta = stockAntCant + ingresoCant - p.cantidad;
+          registrosVentaDiaria.forEach(registro => {
+            const diaSemana = obtenerDiaSemana(registro.fecha);
+            // Crear map de ventas: nombre -> cantidad
+            const ventasDia = {};
+            (registro.productos || []).forEach(p => {
+              ventasDia[p.nombre] = p.cantidad;
+            });
             
-            if (venta > 0) {
-              if (!ventasPorDia[dia][p.nombre]) {
-                ventasPorDia[dia][p.nombre] = [];
+            if (Object.keys(ventasDia).length > 0) {
+              console.log(`🔍 DEBUG: Ventas pre-calculadas para ${registro.fecha}:`, ventasDia);
+              if (!ventasPorDia[diaSemana]) {
+                ventasPorDia[diaSemana] = [];
               }
-              ventasPorDia[dia][p.nombre].push(venta);
+              ventasPorDia[diaSemana].push(ventasDia);
             }
           });
+        } else {
+          // 🔙 FALLBACK: Calcular desde registros históricos (método más lento)
+          console.log('🔍 DEBUG: No hay ventas pre-calculadas, calculando desde registros históricos');
+          
+          // Obtener todas las fechas ordenadas (igual que PromedioVentasActivity en APK)
+          const fechasOrdenadas = [...new Set(registros.map(r => r.fecha))].sort();
+          console.log('🔍 DEBUG: Fechas únicas encontradas:', fechasOrdenadas);
+          
+          if (fechasOrdenadas.length === 0) {
+            return;
+          }
+          
+          fechasOrdenadas.forEach(fecha => {
+            const dia = obtenerDiaSemana(fecha);
+            if (diasSemana.includes(dia)) {
+              const ventasDia = calcularVentasDiaExacto(fecha, registros);
+              if (Object.keys(ventasDia).length > 0) {
+                console.log(`🔍 DEBUG: Ventas calculadas para ${fecha}:`, ventasDia);
+                if (!ventasPorDia[dia]) {
+                  ventasPorDia[dia] = [];
+                }
+                // Agregar el map de ventas de esta fecha a la lista del día
+                ventasPorDia[dia].push(ventasDia);
+              }
+            }
+          });
+        }
+        
+        // Calcular promedios - LÓGICA EXACTA DE LA APK
+        Object.keys(ventasPorDia).forEach(dia => {
+          const listaVentas = ventasPorDia[dia]; // Lista de maps, uno por fecha
+          if (listaVentas && listaVentas.length > 0) {
+            console.log(`🔍 DEBUG: Calculando promedios para ${dia} con ${listaVentas.length} días de datos`);
+            
+            // Obtener todos los productos que aparecen en alguna fecha
+            const productosSet = new Set();
+            listaVentas.forEach(ventasMap => {
+              Object.keys(ventasMap).forEach(prod => productosSet.add(prod));
+            });
+            
+            productosSet.forEach(producto => {
+              // Filtrar solo los días donde este producto tiene ventas > 0
+              // LÓGICA EXACTA: listaVentas.mapNotNull { it[producto] }.filter { it > 0 }
+              const ventasConDatos = listaVentas
+                .map(ventasMap => ventasMap[producto])
+                .filter(v => v !== undefined && v > 0);
+              
+              if (ventasConDatos.length > 0) {
+                const suma = ventasConDatos.reduce((a, b) => a + b, 0);
+                const promedio = suma / ventasConDatos.length;
+                promediosPorDia[dia][producto] = promedio;
+                console.log(`🔍 DEBUG:   ${producto}: suma=${suma}, promedio=${promedio}`);
+              } else {
+                promediosPorDia[dia][producto] = 0;
+              }
+            });
+          }
         });
-
-        // Calcular promedios por código de producto (replica de calcularPromediosPorDia de la APK)
+        
+        // Convertir a estructura promediosVenta por código (para uso en la UI)
         ordenProductos.forEach(codigo => {
-          promediosVenta[codigo] = {};
           const nombreCompleto = obtenerNombreProducto(codigo);
           const claveCompleta = codigo + ' - ' + nombreCompleto;
           
-          ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].forEach(dia => {
-            const ventas = [];
+          promediosVenta[codigo] = {};
+          
+          diasSemana.forEach(dia => {
+            // Buscar el promedio por nombre completo primero
+            let promedio = promediosPorDia[dia]?.[claveCompleta];
             
-            // Buscar ventas que coincidan con este producto (igual que la APK)
-            Object.keys(ventasPorDia[dia] || {}).forEach(nombreProducto => {
-              // Buscar por clave completa "CÓDIGO - Nombre"
-              if (nombreProducto === claveCompleta) {
-                ventas.push(...(ventasPorDia[dia][nombreProducto] || []));
-              }
-              // Si no se encuentra, intentar con nombre del producto
-              else if (nombreProducto === nombreCompleto) {
-                ventas.push(...(ventasPorDia[dia][nombreProducto] || []));
-              }
-              // Si no se encuentra, intentar con el código directamente
-              else if (nombreProducto === codigo) {
-                ventas.push(...(ventasPorDia[dia][nombreProducto] || []));
-              }
-              // También buscar por formato "CÓDIGO -"
-              else if (nombreProducto.startsWith(codigo + ' -')) {
-                ventas.push(...(ventasPorDia[dia][nombreProducto] || []));
-              }
-            });
-            
-            // Filtrar solo los días donde este producto tiene ventas > 0
-            const ventasConDatos = ventas.filter(v => v > 0);
-            
-            if (ventasConDatos.length > 0) {
-              const suma = ventasConDatos.reduce((sum, v) => sum + v, 0);
-              promediosVenta[codigo][dia] = suma / ventasConDatos.length;
-            } else {
-              promediosVenta[codigo][dia] = 0;
+            // Si no, buscar por nombre solo
+            if (promedio === undefined) {
+              promedio = promediosPorDia[dia]?.[nombreCompleto];
             }
+            
+            // Si no, buscar por código
+            if (promedio === undefined) {
+              promedio = promediosPorDia[dia]?.[codigo];
+            }
+            
+            promediosVenta[codigo][dia] = promedio || 0;
           });
         });
         
@@ -12062,6 +12682,86 @@
       } catch (e) {
         console.error('Error cargando promedios:', e);
       }
+    }
+    
+    // Función calcularVentasDia EXACTA a la APK
+    function calcularVentasDiaExacto(fecha, registros) {
+      const registrosFecha = registros.filter(r => r.fecha === fecha);
+      const ingreso = registrosFecha.find(r => r.tipo === 'Ingreso de Mercadería')?.productos || [];
+      const stockFinal = registrosFecha.find(r => r.tipo === 'Stock Final')?.productos || [];
+      
+      // Obtener stock final del día anterior
+      const fechaAnterior = obtenerFechaAnterior(fecha);
+      const stockAnterior = registros
+        .filter(r => r.fecha === fechaAnterior)
+        .find(r => r.tipo === 'Stock Final')?.productos || [];
+      
+      const ventas = {};
+      
+      console.log(`🔍 DEBUG calcularVentasDia: ${fecha} - Ingreso: ${ingreso.length}, StockFinal: ${stockFinal.length}, StockAnt: ${stockAnterior.length}`);
+      
+      // Si no hay stock final del día actual, no podemos calcular ventas
+      if (stockFinal.length === 0) {
+        return ventas;
+      }
+      
+      // Solo calcular ventas para productos de fábrica
+      const productosFabrica = [
+        'JQ', 'PB', 'CS', 'PO', 'CP', 'HU', 'ES', 'CQ', 'RJ', 'QC', 'CB', 'CH',
+        'MUZZARE', 'JAMON', 'PEPPERO',
+        'BATATA', 'MEMBRIL'
+      ];
+      
+      stockFinal.forEach(productoStock => {
+        const nombreProducto = productoStock.nombre;
+        
+        // Verificar si es un producto de fábrica
+        const esProductoFabrica = productosFabrica.some(codigo => {
+          const nombreLower = nombreProducto.toLowerCase();
+          return nombreProducto.startsWith(codigo + ' -') ||
+            nombreProducto.startsWith(codigo) ||
+            nombreProducto.includes(' - ' + codigo) ||
+            (codigo === 'JQ' && nombreLower.includes('jamon y queso')) ||
+            (codigo === 'PB' && nombreLower.includes('pollo bbq')) ||
+            (codigo === 'CS' && nombreLower.includes('carne suave')) ||
+            (codigo === 'PO' && nombreLower.includes('pollo') && !nombreLower.includes('bbq')) ||
+            (codigo === 'CP' && nombreLower.includes('carne picante')) ||
+            (codigo === 'HU' && nombreLower.includes('humita')) ||
+            (codigo === 'ES' && nombreLower.includes('espinaca')) ||
+            (codigo === 'CQ' && nombreLower.includes('calabaza')) ||
+            (codigo === 'RJ' && nombreLower.includes('roquefort')) ||
+            (codigo === 'QC' && nombreLower.includes('queso y cebolla')) ||
+            (codigo === 'CB' && nombreLower.includes('cerdo')) ||
+            (codigo === 'CH' && nombreLower.includes('cheeseburger')) ||
+            (codigo === 'MUZZARE' && nombreLower.includes('muzzarella')) ||
+            (codigo === 'JAMON' && nombreLower.includes('jamon') && !nombreLower.includes('y queso')) ||
+            (codigo === 'PEPPERO' && nombreLower.includes('pepperoni')) ||
+            (codigo === 'BATATA' && nombreLower.includes('batata')) ||
+            (codigo === 'MEMBRIL' && nombreLower.includes('membrillo'));
+        });
+        
+        if (esProductoFabrica) {
+          const ingresoCant = ingreso.find(p => p.nombre === nombreProducto)?.cantidad || 0;
+          const stockFinalCant = productoStock.cantidad;
+          const stockAnteriorCant = stockAnterior.find(p => p.nombre === nombreProducto)?.cantidad || 0;
+          
+          const venta = stockAnteriorCant + ingresoCant - stockFinalCant;
+          
+          if (venta > 0) {
+            ventas[nombreProducto] = venta;
+          }
+        }
+      });
+      
+      return ventas;
+    }
+    
+    // Helper para obtener fecha anterior (formato YYYY-MM-DD)
+    function obtenerFechaAnterior(fecha) {
+      const [y, m, d] = fecha.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setDate(date.getDate() - 1);
+      return fechaISO(date);
     }
 
     // Función para obtener nombre del producto (replica de obtenerNombreProducto de la APK)
@@ -12261,15 +12961,26 @@
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       const diaSiguiente = obtenerDiaSiguiente(diaActual);
       
+      console.log(`🔍 DEBUG obtenerPromediosHastaProximaEntrega [${codigo}]:`);
+      console.log(`  - diaActual: ${diaActual}, diaSiguiente: ${diaSiguiente}`);
+      console.log(`  - promedio diaSiguiente (${diaSiguiente}): ${promediosVenta[codigo]?.[diaSiguiente] || 0}`);
+      
       // Siempre incluir el día siguiente
       let suma = promediosVenta[codigo]?.[diaSiguiente] || 0;
+      console.log(`  - suma inicial (solo diaSiguiente): ${suma}`);
       
       // Obtener días extra según configuración
       const diasExtra = obtenerDiasExtraSegunTexto();
+      console.log(`  - diasExtra: ${JSON.stringify(diasExtra)}`);
+      console.log(`  - diasEntrega: ${JSON.stringify(diasEntrega)}`);
+      
       diasExtra.forEach(dia => {
-        suma += promediosVenta[codigo]?.[dia] || 0;
+        const promedioDia = promediosVenta[codigo]?.[dia] || 0;
+        console.log(`  - sumando ${dia}: ${promedioDia}`);
+        suma += promedioDia;
       });
       
+      console.log(`  - suma FINAL: ${suma}`);
       return suma;
     }
 
@@ -12387,63 +13098,72 @@
       return variantes.some(v => textoLower.includes(v));
     }
 
-    // Función para calcular sugerencia de pedido (replica exacta de calcularSugerenciaPedido de la APK)
+    // Función para calcular sugerencia de pedido (REPLICA EXACTA de calcularPedidoSugerido de la APK - líneas 470-501)
     async function calcularSugerencia(codigo, stockActual) {
       try {
         const diaActual = obtenerDiaSemana(fechaSeleccionada);
-        const promedioHoy = promediosVenta[codigo]?.[diaActual] || 0;
+        const promedioDiaActual = promediosVenta[codigo]?.[diaActual] || 0;
+        const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
         
-        if (promedioHoy <= 0) return 0;
-
-        // Obtener datos de venta parcial
-        const [stockAnterior, ingresoHoy] = await obtenerDatosVentaParcial(codigo);
+        console.log(`🔍 DEBUG calcularSugerencia APK [${codigo}]:`);
+        console.log(`  - diaActual: ${diaActual}, promedioDiaActual: ${promedioDiaActual}`);
+        console.log(`  - stockActual: ${stockActual}, porcentajeExtra: ${porcentajeExtra}`);
         
-        // Calcular venta parcial y venta restante
-        let ventaRestanteHoy, ventaParcial;
-        
-        if (stockAnterior > 0 || ingresoHoy > 0) {
-          // HAY datos históricos - usar lógica completa
-          ventaParcial = stockAnterior + ingresoHoy - stockActual;
-          const porcentajeAvance = promedioHoy > 0 ? Math.min(1, Math.max(0, ventaParcial / promedioHoy)) : 0;
-          ventaRestanteHoy = promedioHoy * (1 - porcentajeAvance);
-        } else {
-          // NO hay datos históricos - NO sugerir pedidos
+        if (promedioDiaActual <= 0) {
+          console.log(`  - RETURN 0: promedioDiaActual <= 0`);
           return 0;
         }
 
-        // Porcentaje extra configurado
-        const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
-
-        // Sumar todos los promedios hasta la próxima entrega
-        let sumaPromedios = obtenerPromediosHastaProximaEntrega(codigo);
-
-        // 🔥 NUEVO: Detectar tendencia de ventas (aumento/disminución)
-        const tendenciaVentas = detectarTendenciaVentas(codigo);
-
-        // 🔥 NUEVO: Aplicar ajuste de tendencia a los promedios
-        if (tendenciaVentas !== 0) {
-          const factorTendencia = 1.0 + (tendenciaVentas / 100.0);
-          sumaPromedios = sumaPromedios * factorTendencia;
-          console.log('📈 ' + codigo + ': Ajustando promedios por tendencia ' + tendenciaVentas.toFixed(1) + '% (factor: ' + factorTendencia.toFixed(2) + ')');
+        let pedido = 0;
+        
+        if (diaActual === 'VIERNES') {
+          // 🔥 Lógica especial para VIERNES (incluye sábado y domingo) - igual que APK línea 474
+          const promedioSabado = promediosVenta[codigo]?.['SABADO'] || 0;
+          const promedioDomingo = promediosVenta[codigo]?.['DOMINGO'] || 0;
+          
+          const ventaRestanteHoy = (promedioDiaActual / 2.0);
+          const ventaSabado = promedioSabado;
+          const ventaDomingo = promedioDomingo * (1 + porcentajeExtra);
+          
+          const totalNecesario = ventaRestanteHoy + ventaSabado + ventaDomingo;
+          const stockDisponible = stockActual - ventaRestanteHoy;
+          
+          pedido = Math.max(0.0, totalNecesario - stockDisponible);
+          
+          console.log(`  - VIERNES: ventaRestanteHoy=${ventaRestanteHoy}, ventaSabado=${ventaSabado}, ventaDomingo=${ventaDomingo}`);
+          console.log(`  - totalNecesario=${totalNecesario}, stockDisponible=${stockDisponible}, pedido=${pedido}`);
+        } else {
+          // 🔥 Lógica para OTROS DÍAS - igual que APK línea 488-501
+          const diaSiguiente = obtenerDiaSiguiente(diaActual);
+          const promedioDiaSiguiente = promediosVenta[codigo]?.[diaSiguiente] || 0;
+          
+          const ventaRestanteHoy = (promedioDiaActual / 2.0);
+          const ventaDiaSiguiente = promedioDiaSiguiente * (1 + porcentajeExtra);
+          
+          const totalNecesario = ventaRestanteHoy + ventaDiaSiguiente;
+          const stockDisponible = stockActual - ventaRestanteHoy;
+          
+          pedido = Math.max(0.0, totalNecesario - stockDisponible);
+          
+          console.log(`  - ${diaActual}: diaSiguiente=${diaSiguiente}, promedioDiaSiguiente=${promedioDiaSiguiente}`);
+          console.log(`  - ventaRestanteHoy=${ventaRestanteHoy}, ventaDiaSiguiente=${ventaDiaSiguiente}`);
+          console.log(`  - totalNecesario=${totalNecesario}, stockDisponible=${stockDisponible}, pedido=${pedido}`);
         }
 
-        // Calcular stock al final de hoy
-        const stockFinalHoy = stockActual - ventaRestanteHoy;
-
-        // Fórmula correcta: necesito cubrir los próximos días MENOS lo que me va a quedar hoy
-        const porcentajeExtraValor = sumaPromedios * porcentajeExtra;
-        const sugerenciaBase = sumaPromedios - stockFinalHoy;
-        const sugerenciaFinal = sugerenciaBase + porcentajeExtraValor;
-
-        // Evitar negativos
-        const sugerenciaPositiva = Math.max(0, sugerenciaFinal);
-
-        // Redondear según tipo de producto (replica exacta de redondearSugerencia de la APK)
-        return redondearSugerencia(sugerenciaPositiva, codigo);
+        // Redondear a múltiplo de 50 - igual que APK redondearAMultiploDe50 línea 510-511
+        const resultado = redondearAMultiploDe50(pedido);
+        console.log(`  - resultado FINAL (redondeado): ${resultado}`);
+        
+        return resultado;
       } catch (e) {
         console.error('Error calculando sugerencia:', e);
         return 0;
       }
+    }
+    
+    // Función para redondear a múltiplo de 50 (REPLICA EXACTA de la APK - línea 510-511)
+    function redondearAMultiploDe50(valor) {
+      return ((Math.ceil(valor / 50.0)) * 50);
     }
 
     // Función para mostrar contenido del pedido (replica exacta de la APK)
@@ -12546,6 +13266,9 @@
           mostrarCategoriaIntegrada(categoria, productosCategoria);
         }
       });
+
+      // 📊 Solicitar contexto de demanda de mañana (clima + partidos) - igual que Android
+      solicitarContextoDemandaManiana();
 
       // Botón de WhatsApp
       const btnWhatsApp = document.createElement('button');
@@ -12909,6 +13632,9 @@
 
         const db = obtenerFirestore();
         await db.collection('locales').doc(localId).collection('pedidos_fabrica').doc(fechaSeleccionada).set(pedidoData);
+        window.dispatchEvent(new CustomEvent('productmix:pedido-fabrica-updated', {
+          detail: { localId, fecha: fechaSeleccionada }
+        }));
         console.log('✅ Pedido guardado exitosamente');
       } catch (e) {
         console.error('Error guardando pedido:', e);
@@ -13479,6 +14205,12 @@
     let fechaSeleccionada = fechaISO(fechaArgentina);
     let modoSoloLectura = false;
     let modoAdmin = false;
+    try {
+      const usuarioActual = JSON.parse(localStorage.getItem('usuario_actual') || '{}');
+      modoAdmin = usuarioActual?.rol === 'maestro' || usuarioActual?.metodoLogin === 'gestion_maestro' || usuarioActual?.metodoLogin === 'admin123';
+    } catch (e) {
+      modoAdmin = false;
+    }
 
     // Crear overlay y modal
     const overlay = document.createElement('div');

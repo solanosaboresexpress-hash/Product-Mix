@@ -639,19 +639,19 @@
 
     const db = await ensureFirebaseReady(usuario);
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10001;padding:20px';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10001;padding:8px';
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:95%;max-width:1100px;max-height:92vh;overflow:hidden;border-radius:12px;display:flex;flex-direction:column';
+    modal.style.cssText = 'background:#fff;width:100%;max-width:1100px;max-height:95vh;overflow:hidden;border-radius:12px;display:flex;flex-direction:column';
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#f8fafc;border-bottom:1px solid #e5e7eb';
-    header.innerHTML = `<div style="font-weight:700;font-size:20px">Administracion del Local · ${esc(usuario.localNombre || 'Local')}</div><div style="display:flex;gap:8px"><button id="admin-refresh" style="padding:10px 14px;background:#059669;color:#fff;border:none;border-radius:8px;font-weight:700">Recargar</button><button id="admin-close" style="padding:10px 14px;background:#6b7280;color:#fff;border:none;border-radius:8px;font-weight:700">Cerrar</button></div>`;
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:8px';
+    header.innerHTML = `<div style="font-weight:700;font-size:18px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Administracion · ${esc(usuario.localNombre || 'Local')}</div><div style="display:flex;gap:6px;flex-shrink:0"><button id="admin-refresh" style="padding:8px 12px;background:#059669;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:13px">↻ Recargar</button><button id="admin-close" style="padding:8px 12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:13px">✕ Cerrar</button></div>`;
     modal.appendChild(header);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:20px;overflow:auto;background:#e5e7eb;flex:1';
+    body.style.cssText = 'padding:12px;overflow:auto;background:#e5e7eb;flex:1;-webkit-overflow-scrolling:touch';
     modal.appendChild(body);
 
     const state = { section: 'documentos', documentos: [], personal: [], notificaciones: [] };
@@ -940,8 +940,8 @@
           }
           .fab-button {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 16px;
+            right: 16px;
             width: 56px;
             height: 56px;
             border-radius: 50%;
@@ -953,7 +953,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: 300;
             transition: all 0.2s ease;
             z-index: 1000;
           }
@@ -961,18 +962,51 @@
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(197, 155, 52, 0.5);
           }
+          .fab-button:active {
+            transform: scale(0.95);
+          }
+          /* Responsive para móviles */
+          @media (max-width: 768px) {
+            .admin-stats-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .admin-stats-grid > button {
+              flex-direction: row !important;
+              justify-content: flex-start !important;
+              padding: 12px 16px !important;
+              text-align: left !important;
+            }
+            .admin-stats-grid > button > div:first-child {
+              font-size: 28px !important;
+            }
+            .admin-stats-grid > button > div:nth-child(2) {
+              font-size: 24px !important;
+              margin-left: auto !important;
+            }
+            .admin-stats-grid > button > div:last-child {
+              display: none !important;
+            }
+            .section-header {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              gap: 8px !important;
+            }
+            .section-title {
+              font-size: 18px !important;
+            }
+          }
         </style>
         
         <!-- Tarjetas de estadísticas -->
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:24px">
+        <div class="admin-stats-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:24px">
           ${statCard('Documentos', state.documentos.length, '#16a34a', 'documentos', '📄')}
           ${statCard('Personal', state.personal.length, '#2563eb', 'personal', '👤')}
           ${statCard('Alertas', state.notificaciones.length, '#f59e0b', 'alertas', '🔔')}
         </div>
         
         <!-- Header de sección -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e5e7eb">
-          <div style="font-size:22px;font-weight:800;color:#111827;display:flex;align-items:center;gap:10px">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e5e7eb">
+          <div class="section-title" style="font-size:22px;font-weight:800;color:#111827;display:flex;align-items:center;gap:10px">
             ${sectionTitle}
           </div>
           <div style="font-size:14px;color:#6b7280;font-weight:500">

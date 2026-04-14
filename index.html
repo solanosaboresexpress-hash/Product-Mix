@@ -13098,57 +13098,115 @@
       return variantes.some(v => textoLower.includes(v));
     }
 
-    // Función para calcular sugerencia de pedido (REPLICA EXACTA de calcularPedidoSugerido de la APK - líneas 470-501)
+    // Función para obtener días extra según configuración de entrega (lógica APK)
+    function obtenerDiasExtraSegunTexto() {
+      const fechaActual = new Date(fechaSeleccionada);
+      const diaSemana = fechaActual.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+      const diasExtra = [];
+      
+      // Mapeo de días con su configuración de entrega
+      const diasMap = {
+        0: { nombre: 'DOMINGO', tieneEntrega: diasEntrega.domingo },
+        1: { nombre: 'LUNES', tieneEntrega: diasEntrega.lunes },
+        2: { nombre: 'MARTES', tieneEntrega: diasEntrega.martes },
+        3: { nombre: 'MIERCOLES', tieneEntrega: diasEntrega.miercoles },
+        4: { nombre: 'JUEVES', tieneEntrega: diasEntrega.jueves },
+        5: { nombre: 'VIERNES', tieneEntrega: diasEntrega.viernes },
+        6: { nombre: 'SABADO', tieneEntrega: diasEntrega.sabado }
+      };
+      
+      // Obtener los próximos días (mañana + siguientes, hasta 6 días)
+      const proximosDias = [];
+      for (let i = 1; i <= 6; i++) {
+        const diaIdx = (diaSemana + i) % 7;
+        proximosDias.push(diasMap[diaIdx]);
+      }
+      
+      if (proximosDias.length === 0) {
+        console.log(`❌ No hay días configurados`);
+        return diasExtra;
+      }
+      
+      // 1. Verificar que el PRIMER día (mañana) tenga entrega
+      const primerDia = proximosDias[0];
+      if (!primerDia.tieneEntrega) {
+        console.log(`❌ MAÑANA (${primerDia.nombre}) NO tiene entrega - No se puede hacer pedido`);
+        return diasExtra;
+      }
+      
+      console.log(`✅ MAÑANA (${primerDia.nombre}) tiene entrega - Se puede hacer pedido`);
+      
+      // 2. Revisar los días DESPUÉS de mañana
+      for (let i = 1; i < proximosDias.length; i++) {
+        const dia = proximosDias[i];
+        
+        if (!dia.tieneEntrega) {
+          // Este día NO tiene entrega, agregarlo y continuar
+          diasExtra.push(dia.nombre);
+          console.log(`➕ ${dia.nombre} sin entrega, agregarlo`);
+        } else {
+          // Este día SÍ tiene entrega, PARAR aquí
+          console.log(`🛑 ${dia.nombre} tiene entrega, parar`);
+          break;
+        }
+      }
+      
+      console.log(`📋 Días extra finales: ${diasExtra}`);
+      return diasExtra;
+    }
+
+    // Función para calcular sugerencia de pedido (con cálculo real de ventas y días extra)
     async function calcularSugerencia(codigo, stockActual) {
       try {
         const diaActual = obtenerDiaSemana(fechaSeleccionada);
         const promedioDiaActual = promediosVenta[codigo]?.[diaActual] || 0;
         const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
         
-        console.log(`🔍 DEBUG calcularSugerencia APK [${codigo}]:`);
+        // Obtener datos reales de venta parcial del día
+        const [stockAnterior, ingresoHoy] = await obtenerDatosVentaParcial(codigo);
+        const stockInicialHoy = stockAnterior + ingresoHoy;
+        const ventaActualHoy = Math.max(0, stockInicialHoy - stockActual);
+        const ventaRestanteHoy = Math.max(0, promedioDiaActual - ventaActualHoy);
+        
+        console.log(`🔍 DEBUG calcularSugerencia REAL [${codigo}]:`);
         console.log(`  - diaActual: ${diaActual}, promedioDiaActual: ${promedioDiaActual}`);
         console.log(`  - stockActual: ${stockActual}, porcentajeExtra: ${porcentajeExtra}`);
+        console.log(`  - stockAnterior: ${stockAnterior}, ingresoHoy: ${ingresoHoy}`);
+        console.log(`  - stockInicialHoy: ${stockInicialHoy}, ventaActualHoy: ${ventaActualHoy}`);
+        console.log(`  - ventaRestanteHoy (real): ${ventaRestanteHoy}`);
         
         if (promedioDiaActual <= 0) {
           console.log(`  - RETURN 0: promedioDiaActual <= 0`);
           return 0;
         }
 
-        let pedido = 0;
+        // Obtener días extra según configuración (lógica APK)
+        const diasExtra = obtenerDiasExtraSegunTexto();
         
-        if (diaActual === 'VIERNES') {
-          // 🔥 Lógica especial para VIERNES (incluye sábado y domingo) - igual que APK línea 474
-          const promedioSabado = promediosVenta[codigo]?.['SABADO'] || 0;
-          const promedioDomingo = promediosVenta[codigo]?.['DOMINGO'] || 0;
-          
-          const ventaRestanteHoy = (promedioDiaActual / 2.0);
-          const ventaSabado = promedioSabado;
-          const ventaDomingo = promedioDomingo * (1 + porcentajeExtra);
-          
-          const totalNecesario = ventaRestanteHoy + ventaSabado + ventaDomingo;
-          const stockDisponible = stockActual - ventaRestanteHoy;
-          
-          pedido = Math.max(0.0, totalNecesario - stockDisponible);
-          
-          console.log(`  - VIERNES: ventaRestanteHoy=${ventaRestanteHoy}, ventaSabado=${ventaSabado}, ventaDomingo=${ventaDomingo}`);
-          console.log(`  - totalNecesario=${totalNecesario}, stockDisponible=${stockDisponible}, pedido=${pedido}`);
-        } else {
-          // 🔥 Lógica para OTROS DÍAS - igual que APK línea 488-501
-          const diaSiguiente = obtenerDiaSiguiente(diaActual);
-          const promedioDiaSiguiente = promediosVenta[codigo]?.[diaSiguiente] || 0;
-          
-          const ventaRestanteHoy = (promedioDiaActual / 2.0);
-          const ventaDiaSiguiente = promedioDiaSiguiente * (1 + porcentajeExtra);
-          
-          const totalNecesario = ventaRestanteHoy + ventaDiaSiguiente;
-          const stockDisponible = stockActual - ventaRestanteHoy;
-          
-          pedido = Math.max(0.0, totalNecesario - stockDisponible);
-          
-          console.log(`  - ${diaActual}: diaSiguiente=${diaSiguiente}, promedioDiaSiguiente=${promedioDiaSiguiente}`);
-          console.log(`  - ventaRestanteHoy=${ventaRestanteHoy}, ventaDiaSiguiente=${ventaDiaSiguiente}`);
-          console.log(`  - totalNecesario=${totalNecesario}, stockDisponible=${stockDisponible}, pedido=${pedido}`);
-        }
+        // Calcular suma de promedios: mañana + días extra
+        const diaSiguiente = obtenerDiaSiguiente(diaActual);
+        const promedioDiaSiguiente = promediosVenta[codigo]?.[diaSiguiente] || 0;
+        let sumaPromedios = promedioDiaSiguiente;
+        
+        console.log(`  - diaSiguiente: ${diaSiguiente}, promedio: ${promedioDiaSiguiente}`);
+        
+        // Sumar promedios de días extra
+        diasExtra.forEach(diaExtra => {
+          const promedioExtra = promediosVenta[codigo]?.[diaExtra] || 0;
+          sumaPromedios += promedioExtra;
+          console.log(`  - día extra ${diaExtra}: promedio ${promedioExtra}`);
+        });
+        
+        console.log(`  - SUMA PROMEDIOS (mañana + extras): ${sumaPromedios}`);
+        
+        // Calcular necesidad total con % extra
+        const necesidadTotal = sumaPromedios * (1 + porcentajeExtra);
+        
+        // La sugerencia es la necesidad total menos lo que me falta vender hoy
+        const pedido = Math.max(0.0, necesidadTotal - ventaRestanteHoy);
+        
+        console.log(`  - necesidadTotal (con ${configuracion.porcentajeExtra}% extra): ${necesidadTotal}`);
+        console.log(`  - pedido (necesidad - ventaRestante): ${pedido}`);
 
         // Redondear a múltiplo de 50 - igual que APK redondearAMultiploDe50 línea 510-511
         const resultado = redondearAMultiploDe50(pedido);

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -8,16 +8,16 @@
     <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" href="logo_sabores_real.png">
     <link rel="shortcut icon" type="image/png" href="logo_sabores_real.png">
-    <title>Sabores Express - Product Mix V2 Web v4.10</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js?v=4.10"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js?v=4.10"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.10"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.10"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.10"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.10"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.10"></script>
+    <title>Sabores Express - Product Mix V2 Web v4.12</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js?v=4.12"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js?v=4.12"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.12"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.12"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.12"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.12"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.12"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="admin_local.js?v=4.10"></script>
+    <script src="admin_local.js?v=4.12"></script>
     
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
     <script>
@@ -36,14 +36,14 @@
           hour12: false
         });
         const partes = formatter.formatToParts(ahora);
-        const año = parseInt(partes.find(p => p.type === 'year').value);
+        const anio = parseInt(partes.find(p => p.type === 'year').value);
         const mes = parseInt(partes.find(p => p.type === 'month').value) - 1; // Mes es 0-indexed
         const dia = parseInt(partes.find(p => p.type === 'day').value);
         const hora = parseInt(partes.find(p => p.type === 'hour').value);
         const minuto = parseInt(partes.find(p => p.type === 'minute').value);
         const segundo = parseInt(partes.find(p => p.type === 'second').value);
         // Crear nueva fecha con los valores de Argentina (en UTC, pero representando la hora de Argentina)
-        return new Date(Date.UTC(año, mes, dia, hora, minuto, segundo));
+        return new Date(Date.UTC(anio, mes, dia, hora, minuto, segundo));
       };
 
       // Función para obtener la fecha actual en formato ISO (YYYY-MM-DD) en zona horaria de Argentina
@@ -56,10 +56,10 @@
           day: '2-digit'
         });
         const partes = formatter.formatToParts(ahora);
-        const año = partes.find(p => p.type === 'year').value;
+        const anio = partes.find(p => p.type === 'year').value;
         const mes = partes.find(p => p.type === 'month').value;
         const dia = partes.find(p => p.type === 'day').value;
-        return `${año}-${mes}-${dia}`;
+        return `${anio}-${mes}-${dia}`;
       };
 
       // Función para formatear fecha en zona horaria de Argentina
@@ -79,13 +79,13 @@
           hour12: false
         });
         const partes = formatter.formatToParts(fecha);
-        const año = parseInt(partes.find(p => p.type === 'year').value);
+        const anio = parseInt(partes.find(p => p.type === 'year').value);
         const mes = parseInt(partes.find(p => p.type === 'month').value) - 1;
         const dia = parseInt(partes.find(p => p.type === 'day').value);
         const hora = parseInt(partes.find(p => p.type === 'hour').value);
         const minuto = parseInt(partes.find(p => p.type === 'minute').value);
         const segundo = parseInt(partes.find(p => p.type === 'second').value);
-        return new Date(Date.UTC(año, mes, dia, hora, minuto, segundo));
+        return new Date(Date.UTC(anio, mes, dia, hora, minuto, segundo));
       };
 
       // Función para obtener timestamp ISO en zona horaria de Argentina
@@ -764,7 +764,7 @@
         
         /* ============================================
            RESPONSIVE LAYOUT FOR PROMEDIO DE VENTAS
-           PC: Tamaños normales, Móvil: Compacto como Android
+           PC: Tamanios normales, Móvil: Compacto como Android
            ============================================ */
         .ventas-scroll { 
             overflow-x: visible; 
@@ -778,7 +778,7 @@
             display: flex;
             flex-direction: column;
         }
-        /* Tamaños para PC (por defecto) - Como estaba originalmente */
+        /* Tamanios para PC (por defecto) - Como estaba originalmente */
         .ventas-header {
             font-size: 12px !important;
             padding: 8px 4px !important;
@@ -1021,7 +1021,7 @@
                         throw new Error('Formato inválido en regiones.json');
                     }
                 } catch (error) {
-                    console.warn('⚠️ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
+                    console.warn('âš ï¸ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
                     // Usar fallback
                     REGIONES_CONFIG_CACHE = REGIONES_CONFIG_FALLBACK;
                     return REGIONES_CONFIG_FALLBACK.filter(function(r) { return r.activo; });
@@ -1277,7 +1277,7 @@
                         }
                     }
                 } catch (error) {
-                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    console.warn('âš ï¸ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
                     // Mantener la URL por defecto si falla
                 }
             };
@@ -1292,7 +1292,91 @@
                 cargarDownloadUrl(); // Cargar URL de descarga
             }, []);
 
-            // Ya no se cargan locales en el login - se usa email/password con Firebase Auth
+            const PASSWORD_INICIAL_LOCAL = 'Inicial2026';
+
+            const obtenerAdminLocalDesdeDoc = (localDocId, localData) => {
+                const usuarios = localData?.usuarios || {};
+                const admin = Object.values(usuarios).find((u) => u?.rol === 'admin_local');
+
+                if (admin) {
+                    return {
+                        id: admin.id || ('admin_' + String(localDocId || localData?.nombre || '').toLowerCase()),
+                        usuario: admin.usuario || ('admin_' + String(localDocId || localData?.nombre || '').toLowerCase()),
+                        email: admin.email || localData?.email || '',
+                        contraseña: admin.contraseña || '',
+                        rol: 'admin_local',
+                        activo: admin.activo !== false,
+                        debeCambiarContraseña: admin.debeCambiarContraseña === true,
+                        primerIngreso: admin.primerIngreso === true
+                    };
+                }
+
+                return {
+                    id: 'admin_' + String(localDocId || localData?.nombre || '').toLowerCase(),
+                    usuario: 'admin_' + String(localDocId || localData?.nombre || '').toLowerCase(),
+                    email: localData?.email || '',
+                    contraseña: '',
+                    rol: 'admin_local',
+                    activo: true,
+                    debeCambiarContraseña: true,
+                    primerIngreso: true
+                };
+            };
+
+            const persistirAdminLocal = async (db, localDocId, localData, adminActualizado) => {
+                const usuariosActuales = { ...(localData?.usuarios || {}) };
+                const adminId = adminActualizado.id || ('admin_' + String(localDocId || localData?.nombre || '').toLowerCase());
+                usuariosActuales[adminId] = {
+                    ...usuariosActuales[adminId],
+                    ...adminActualizado
+                };
+
+                await db.collection('locales').doc(localDocId).update({
+                    usuarios: usuariosActuales,
+                    email: adminActualizado.email || localData?.email || ''
+                });
+            };
+
+            const forzarCambioContraseñaPrimerIngreso = async (db, localDocId, localData, adminActual) => {
+                const requiereCambio = adminActual.debeCambiarContraseña || adminActual.primerIngreso || adminActual.contraseña === PASSWORD_INICIAL_LOCAL;
+                if (!requiereCambio) return adminActual;
+
+                alert('Primer ingreso detectado. Debes cambiar la contraseña para continuar.');
+
+                let nuevaContraseña = '';
+                while (true) {
+                    nuevaContraseña = prompt('Ingresa tu nueva contraseña (mínimo 6 caracteres):', '');
+                    if (!nuevaContraseña) throw new Error('Debes cambiar la contraseña para ingresar.');
+                    if (nuevaContraseña.length < 6) {
+                        alert('La contraseña debe tener al menos 6 caracteres.');
+                        continue;
+                    }
+                    if (nuevaContraseña === PASSWORD_INICIAL_LOCAL) {
+                        alert('La nueva contraseña no puede ser la inicial.');
+                        continue;
+                    }
+                    const confirmar = prompt('Confirma la nueva contraseña:', '');
+                    if (!confirmar) throw new Error('Debes confirmar la nueva contraseña.');
+                    if (confirmar !== nuevaContraseña) {
+                        alert('Las contraseñas no coinciden.');
+                        continue;
+                    }
+                    break;
+                }
+
+                const adminActualizado = {
+                    ...adminActual,
+                    contraseña: nuevaContraseña,
+                    debeCambiarContraseña: false,
+                    primerIngreso: false,
+                    passwordUpdatedAt: new Date().toISOString()
+                };
+
+                await persistirAdminLocal(db, localDocId, localData, adminActualizado);
+                return adminActualizado;
+            };
+
+            // Login por Firestore (sin Firebase Auth)
             // Cargar datos guardados al montar el componente
             useEffect(() => {
                 if (regionCargada) {
@@ -1459,10 +1543,10 @@
                             setRecordarDatos(true);
                             console.log('Datos restaurados: email =', savedEmail);
                             } else {
-                            console.log('⚠️ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
+                            console.log('âš ï¸ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
                         }
                     } else {
-                        console.log('⚠️ No hay datos guardados en localStorage');
+                        console.log('âš ï¸ No hay datos guardados en localStorage');
                     }
                 } catch (error) {
                     console.error('❌ Error cargando datos guardados:', error);
@@ -1519,169 +1603,62 @@
                         }
                     }
                     
-                    const auth = FirebaseRegionManager.getAuth();
-                    
-                    // Si hay un usuario actual de Firebase Auth y el email es diferente, cerrar sesión primero
-                    // Esto es necesario después de hacer logout para poder iniciar sesión con otro usuario
-                    const currentUser = auth.currentUser;
-                    if (currentUser && currentUser.email && currentUser.email !== emailCompleto) {
-                        console.log('🔄 Usuario diferente detectado, cerrando sesión anterior antes de login');
-                        try {
-                            await auth.signOut();
-                            console.log('✅ Sesión anterior cerrada');
-                            // Pequeño delay para asegurar que Firebase procese el signOut
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        } catch (signOutError) {
-                            console.warn('⚠️ Error cerrando sesión anterior (continuando con login):', signOutError);
-                            // Continuar con el login aunque falle el signOut
-                        }
-                    }
-                    
-                    // Limpiar usuario guardado si el email es diferente
-                    const usuarioGuardado = localStorage.getItem('usuario');
-                    if (usuarioGuardado) {
-                        try {
-                            const usuarioData = JSON.parse(usuarioGuardado);
-                            // Verificar si el email del usuario guardado es diferente
-                            // (los locales no tienen email en usuarioData, pero supervisores/maestros sí)
-                            if (usuarioData.email && usuarioData.email !== emailCompleto) {
-                                console.log('🗑️ Limpiando usuario guardado (email diferente)');
-                                localStorage.removeItem('usuario');
-                                localStorage.removeItem('usuario_actual');
-                            }
-                        } catch (e) {
-                            console.warn('Error verificando usuario guardado:', e);
-                        }
-                    }
-                    
-                    // Intentar autenticar con Firebase Auth
-                    // Si falla, intentar con todas las regiones (detección automática de región)
-                    let userCredential = null;
-                    let uid = null;
-                    let regionCorrecta = regionSeleccionada;
-                    let authCorrecto = null;
-                    
-                    try {
-                        // Intentar primero con la región seleccionada
-                        userCredential = await auth.signInWithEmailAndPassword(emailCompleto, password);
-                        uid = userCredential.user.uid;
-                        authCorrecto = auth;
-                        console.log('✅ Firebase Auth exitoso con región seleccionada. UID:', uid);
-                    } catch (firstError) {
-                        // Si falla con error de API key o auth, intentar con todas las regiones
-                        if (firstError.code === 'auth/api-key-not-valid' || 
-                            firstError.code === 'auth/invalid-api-key' ||
-                            firstError.code === 'auth/network-request-failed' ||
-                            firstError.message?.includes('api-key')) {
-                            console.log('🔄 Login falló con región seleccionada, intentando con todas las regiones...');
-                            
-                            // Intentar con cada región hasta encontrar la correcta
-                            for (const region of regiones) {
-                                if (region.id === regionSeleccionada.id) {
-                                    continue; // Ya intentamos con esta
-                                }
-                                
-                                try {
-                                    console.log(`🔄 Intentando login con región: ${region.nombre} (${region.id})`);
-                                    
-                                    // Inicializar Firebase con esta región
-                                    const exito = FirebaseRegionManager.initializeFirebase(region);
-                                    if (!exito) {
-                                        console.warn(`⚠️ No se pudo inicializar Firebase para ${region.nombre}`);
-                                        continue;
-                                    }
-                                    
-                                    // Intentar login con esta región
-                                    const tempAuth = FirebaseRegionManager.getAuth();
-                                    
-                                    // Cerrar sesión si hay un usuario actual
-                                    if (tempAuth.currentUser) {
-                                        await tempAuth.signOut();
-                                        await new Promise(resolve => setTimeout(resolve, 100));
-                                    }
-                                    
-                                    userCredential = await tempAuth.signInWithEmailAndPassword(emailCompleto, password);
-                                    uid = userCredential.user.uid;
-                                    authCorrecto = tempAuth;
-                                    regionCorrecta = region;
-                                    
-                                    // Actualizar región seleccionada
-                                    setRegionSeleccionada(region);
-                                    localStorage.setItem('region_id', region.id);
-                                    FirebaseRegionManager.guardarRegionActual(region);
-                                    
-                                    console.log(`✅ Firebase Auth exitoso con región: ${region.nombre}. UID: ${uid}`);
-                                    break; // Encontramos la región correcta
-                                } catch (regionError) {
-                                    console.log(`❌ Login falló con región ${region.nombre}:`, regionError.code || regionError.message);
-                                    // Continuar con la siguiente región
-                                    continue;
-                                }
-                            }
-                            
-                            // Si no encontramos ninguna región válida, lanzar el error original
-                            if (!uid || !userCredential) {
-                                throw firstError;
-                            }
-                        } else {
-                            // Si es otro tipo de error (contraseña incorrecta, usuario no encontrado, etc.), lanzarlo
-                            throw firstError;
-                        }
-                    }
-                    
-                    // Asegurar que estamos usando el auth correcto
-                    if (authCorrecto && authCorrecto !== auth) {
-                        // Reinicializar Firebase con la región correcta si cambió
-                        FirebaseRegionManager.initializeFirebase(regionCorrecta);
-                    }
-                    
-                    const authFinal = authCorrecto || auth;
-                    uid = userCredential.user.uid;
-                    
-                    console.log('✅ Firebase Auth exitoso. UID:', uid, 'Región:', regionCorrecta.nombre);
-                    
-                    // Buscar el usuario en Firestore por firebaseAuthUid
+                    const regionCorrecta = regionSeleccionada;
+                    localStorage.setItem('region_id', regionCorrecta.id);
+                    FirebaseRegionManager.guardarRegionActual(regionCorrecta);
+
+                    // Buscar usuario en Firestore por email + contraseña
                     const db = FirebaseRegionManager.getFirestore();
                     
-                    // Buscar en locales
                     let localDoc = null;
                     let local = null;
                     const localesSnapshot = await db.collection('locales')
-                        .where('firebaseAuthUid', '==', uid)
+                        .where('email', '==', emailCompleto)
                         .limit(1)
                         .get();
                     
                     if (!localesSnapshot.empty) {
                         localDoc = localesSnapshot.docs[0];
                         local = localDoc.data();
+                        const adminLocal = obtenerAdminLocalDesdeDoc(localDoc.id, local);
+                        if (adminLocal.contraseña !== password) {
+                            throw new Error('Contraseña incorrecta');
+                        }
+
+                        await forzarCambioContraseñaPrimerIngreso(db, localDoc.id, local, adminLocal);
                         console.log('✅ Usuario encontrado como LOCAL:', local.nombre);
                     }
                     
-                    // Buscar en supervisores
                     let supervisor = null;
                     if (!local) {
                         const supervisoresSnapshot = await db.collection('supervisores')
-                            .where('firebaseAuthUid', '==', uid)
+                            .where('email', '==', emailCompleto)
                             .limit(1)
                             .get();
                         
                         if (!supervisoresSnapshot.empty) {
                             const supervisorDoc = supervisoresSnapshot.docs[0];
-                            supervisor = { id: supervisorDoc.id, ...supervisorDoc.data() };
+                            const data = supervisorDoc.data();
+                            if (data.contraseña !== password) {
+                                throw new Error('Contraseña incorrecta');
+                            }
+                            supervisor = { id: supervisorDoc.id, ...data };
                             console.log('✅ Usuario encontrado como SUPERVISOR:', supervisor.usuario);
                         }
                     }
                     
-                    // Buscar en maestros
                     let maestro = null;
                     if (!local && !supervisor) {
                         const configDoc = await db.collection('configuracion').doc('admin').get();
-                        const firebaseAuthUid = configDoc.data()?.firebaseAuthUid;
-                        if (firebaseAuthUid === uid) {
+                        const data = configDoc.data() || {};
+                        const emailMaestro = (data.email || '').toLowerCase();
+                        const emailInput = String(emailCompleto || '').toLowerCase();
+                        const passwordMaestro = data.password || '';
+                        if (passwordMaestro && passwordMaestro === password && (!emailMaestro || emailMaestro === emailInput)) {
                             maestro = {
                                 id: 'maestro',
-                                usuario: configDoc.data()?.maestro_nombre || 'Maestro',
-                                email: configDoc.data()?.email || '',
+                                usuario: data.maestro_nombre || 'Maestro',
+                                email: data.email || '',
                                 rol: 'maestro'
                             };
                             console.log('✅ Usuario encontrado como MAESTRO:', maestro.usuario);
@@ -1726,7 +1703,7 @@
                     }
 
                     localStorage.setItem('usuario', JSON.stringify(usuarioData));
-                    localStorage.setItem('region_id', regionSeleccionada.id);
+                    localStorage.setItem('region_id', regionCorrecta.id);
                     
                     // Guardar solo preferencias no sensibles si est? marcado recordar
                     if (recordarDatos) {
@@ -1744,9 +1721,7 @@
                     
                 } catch (error) {
                     console.error('Error en login:', error);
-                    if (error.code === 'auth/user-not-found') {
-                        setError('Email no registrado');
-                    } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    if ((error.message || '').toLowerCase().includes('contraseña incorrecta')) {
                         setError('Contraseña incorrecta');
                     } else {
                         setError(error.message || 'Error en el login');
@@ -1884,6 +1859,10 @@
                             alert('El email debe ser @saboresexpress.com.ar');
                             return;
                         }
+
+                        alert('La recuperación automática por email está deshabilitada.\n\nSolicita al administrador el cambio de contraseña desde Gestión de Locales.');
+                        document.body.removeChild(modal);
+                        return;
                         
                         // Cargar todas las regiones disponibles
                         const todasLasRegiones = await FirebaseRegionManager.cargarRegiones();
@@ -1938,12 +1917,12 @@
                                 // Verificar si es error de usuario no encontrado
                                 if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
                                     // Usuario no existe en esta región, continuar con la siguiente
-                                    console.log('⚠️ Usuario no encontrado en región', region.nombre, ', intentando siguiente...');
+                                    console.log('âš ï¸ Usuario no encontrado en región', region.nombre, ', intentando siguiente...');
                                     ultimoError = error;
                                     continue;
                                 } else {
                                     // Otro error, guardar pero continuar
-                                    console.warn('⚠️ Error en región', region.nombre, ':', error.message);
+                                    console.warn('âš ï¸ Error en región', region.nombre, ':', error.message);
                                     if (!ultimoError) {
                                         ultimoError = error;
                                     }
@@ -2639,7 +2618,7 @@
             // Header
             const header = document.createElement('div');
             header.style.cssText = 'background:#F44336;color:#fff;padding:16px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center';
-            header.innerHTML = `⚠️ Alertas - ${nombreLocal}`;
+            header.innerHTML = `âš ï¸ Alertas - ${nombreLocal}`;
             dialog.appendChild(header);
             
             // Body con scroll
@@ -2649,7 +2628,7 @@
             // Mensaje introductorio
             const intro = document.createElement('div');
             intro.style.cssText = 'margin-bottom:16px;padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;font-size:14px;color:#856404';
-            intro.innerHTML = '<strong>⚠️ Se encontraron los siguientes problemas:</strong><br><br>Hacé clic en cada problema para ir directamente a completarlo.';
+            intro.innerHTML = '<strong>âš ï¸ Se encontraron los siguientes problemas:</strong><br><br>Hacé clic en cada problema para ir directamente a completarlo.';
             body.appendChild(intro);
             
             // Lista de problemas (formato original - click directo en el error)
@@ -2659,15 +2638,15 @@
                 let tipo = null;
                 
                 try {
-                    // Buscar fecha en formato "día/mes/año" (ej: "5/11/2025" o "24/11/2025")
+                    // Buscar fecha en formato "día/mes/anio" (ej: "5/11/2025" o "24/11/2025")
                     const regexFecha = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
                     const matchFecha = problema.match(regexFecha);
                     
                     if (matchFecha) {
                         const dia = matchFecha[1].padStart(2, '0');
                         const mes = matchFecha[2].padStart(2, '0');
-                        const año = matchFecha[3];
-                        fecha = `${año}-${mes}-${dia}`;
+                        const anio = matchFecha[3];
+                        fecha = `${anio}-${mes}-${dia}`;
                     }
                     
                     // Detectar tipo
@@ -2791,6 +2770,7 @@
             const [pestanaActiva, setPestanaActiva] = useState('locales');
             const [usuarioActual, setUsuarioActual] = useState(null);
             const [esUsuarioMaestro, setEsUsuarioMaestro] = useState(false);
+            const [supervisoresContraidos, setSupervisoresContraidos] = useState({});
             const [nuevoLocal, setNuevoLocal] = useState({
                 nombre: '',
                 email: '',
@@ -2813,14 +2793,19 @@
             }, []);
 
             useEffect(() => {
-                if (usuarioActual) {
+                const cargarDatosGestion = async () => {
+                    if (!usuarioActual) return;
+
                     if (esUsuarioMaestro) {
+                        await aplicarPasswordInicialLocalesSiPendiente();
                         cargarLocales();
                         cargarSupervisores();
                     } else {
                         cargarLocalesAsignados();
                     }
-                }
+                };
+
+                cargarDatosGestion();
             }, [usuarioActual, esUsuarioMaestro]);
             
             // Cargar badges y verificar problemas cuando cambian los locales
@@ -2843,12 +2828,46 @@
                             usuario.localesAsignados = [];
                         }
                         
+                        const rolNormalizado = (usuario.rol || '').toLowerCase().replace(/\s+/g, '_');
+                        const puedeGestionarTodo = rolNormalizado === 'maestro' || rolNormalizado === 'asistente_regional';
+
                         setUsuarioActual(usuario);
-                        setEsUsuarioMaestro(usuario.rol === 'maestro');
-                        console.log('Usuario cargado:', usuario.usuario, 'Rol:', usuario.rol, 'EsMaestro:', usuario.rol === 'maestro', 'LocalesAsignados:', usuario.localesAsignados);
+                        setEsUsuarioMaestro(puedeGestionarTodo);
+                        console.log('Usuario cargado:', usuario.usuario, 'Rol:', usuario.rol, 'GestionCompleta:', puedeGestionarTodo, 'LocalesAsignados:', usuario.localesAsignados);
                     }
                 } catch (error) {
                     console.error('Error cargando usuario actual:', error);
+                }
+            };
+
+            const ensureDbGestion = async () => {
+                try {
+                    return FirebaseRegionManager.getFirestore();
+                } catch (error) {
+                    let regionId = localStorage.getItem('region_id') || '';
+
+                    if (!regionId) {
+                        try {
+                            const rawUsuario = localStorage.getItem('usuario_actual');
+                            const parsedUsuario = rawUsuario ? JSON.parse(rawUsuario) : null;
+                            regionId = parsedUsuario?.regionId || '';
+                        } catch (_) {
+                            regionId = '';
+                        }
+                    }
+
+                    if (!regionId) throw error;
+
+                    const regiones = await FirebaseRegionManager.cargarRegiones();
+                    const region = regiones.find((item) => item.id === regionId);
+                    if (!region) throw error;
+
+                    const inicializado = FirebaseRegionManager.initializeFirebase(region);
+                    if (!inicializado) {
+                        throw new Error('No se pudo inicializar Firebase para la región seleccionada.');
+                    }
+
+                    return FirebaseRegionManager.getFirestore();
                 }
             };
 
@@ -2858,7 +2877,7 @@
                     setError('');
                     
                     // Cargar TODOS los locales sin filtro
-                    const db = FirebaseRegionManager.getFirestore();
+                    const db = await ensureDbGestion();
                     const snapshot = await db.collection('locales').get();
                     const localesData = [];
                     
@@ -2909,6 +2928,11 @@
                     }
                     
                     const localesAsignados = usuarioActual.localesAsignados;
+                    const localesAsignadosNormalizados = new Set(
+                        localesAsignados
+                            .map((item) => String(item || '').trim().toLowerCase())
+                            .filter(Boolean)
+                    );
                     
                     if (localesAsignados.length === 0) {
                         setError('No tienes locales asignados');
@@ -2918,13 +2942,14 @@
                     }
                     
                     // Cargar solo los locales asignados
-                    const db = FirebaseRegionManager.getFirestore();
+                    const db = await ensureDbGestion();
                     const snapshot = await db.collection('locales').get();
                     const localesData = [];
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        if (localesAsignados.includes(doc.id)) {
+                        const nombreLocal = String(data.nombre || '').trim().toLowerCase();
+                        if (localesAsignadosNormalizados.has(String(doc.id).toLowerCase()) || (nombreLocal && localesAsignadosNormalizados.has(nombreLocal))) {
                             // CRÍTICO: Asegurar que el ID del documento siempre esté presente
                             const localData = {
                                 ...data,
@@ -2956,7 +2981,7 @@
                     setCargando(true);
                     setError('');
                     
-                    const db = FirebaseRegionManager.getFirestore();
+                    const db = await ensureDbGestion();
                     const snapshot = await db.collection('supervisores').get();
                     const supervisoresData = [];
                     
@@ -2979,6 +3004,87 @@
                     setError('Error cargando supervisores: ' + error.message);
                 } finally {
                     setCargando(false);
+                }
+            };
+
+            const normalizarIdsLocalesAsignados = (localesAsignados = []) => {
+                if (!Array.isArray(localesAsignados)) return [];
+
+                const idsUnicos = new Set();
+
+                localesAsignados.forEach((item) => {
+                    const valor = String(item || '').trim();
+                    if (!valor) return;
+
+                    const localPorId = locales.find((local) => local.id === valor);
+                    if (localPorId) {
+                        idsUnicos.add(localPorId.id);
+                        return;
+                    }
+
+                    const localPorNombre = locales.find((local) => String(local.nombre || '').trim().toLowerCase() === valor.toLowerCase());
+                    if (localPorNombre) {
+                        idsUnicos.add(localPorNombre.id);
+                        return;
+                    }
+
+                    idsUnicos.add(valor);
+                });
+
+                return Array.from(idsUnicos);
+            };
+
+            const obtenerLocalesDelSupervisor = (supervisor) => {
+                const idsNormalizados = normalizarIdsLocalesAsignados(supervisor.localesAsignados || []);
+                return idsNormalizados
+                    .map((localId) => locales.find((local) => local.id === localId))
+                    .filter(Boolean);
+            };
+
+            const aplicarPasswordInicialLocalesSiPendiente = async () => {
+                try {
+                    const db = await ensureDbGestion();
+                    const policyRef = db.collection('configuracion').doc('password_locales_policy');
+                    const policyDoc = await policyRef.get();
+                    const versionActual = policyDoc.exists ? policyDoc.data()?.version : null;
+                    const VERSION_OBJETIVO = 'inicial_2026_v1';
+
+                    if (versionActual === VERSION_OBJETIVO) return;
+
+                    const snapshot = await db.collection('locales').get();
+                    const batch = db.batch();
+
+                    snapshot.forEach((doc) => {
+                        const localData = doc.data() || {};
+                        const usuarios = { ...(localData.usuarios || {}) };
+                        const adminExistente = Object.values(usuarios).find((u) => u?.rol === 'admin_local');
+                        const adminId = adminExistente?.id || ('admin_' + String(doc.id).toLowerCase());
+
+                        usuarios[adminId] = {
+                            ...(usuarios[adminId] || {}),
+                            id: adminId,
+                            usuario: usuarios[adminId]?.usuario || ('admin_' + String(doc.id).toLowerCase()),
+                            email: usuarios[adminId]?.email || localData.email || '',
+                            rol: 'admin_local',
+                            activo: true,
+                            contraseña: 'Inicial2026',
+                            primerIngreso: true,
+                            debeCambiarContraseña: true,
+                            passwordResetVersion: VERSION_OBJETIVO
+                        };
+
+                        batch.update(doc.ref, { usuarios });
+                    });
+
+                    batch.set(policyRef, {
+                        version: VERSION_OBJETIVO,
+                        aplicadoEn: new Date().toISOString(),
+                        aplicadoPor: usuarioActual?.usuario || 'sistema'
+                    }, { merge: true });
+
+                    await batch.commit();
+                } catch (error) {
+                    console.error('Error aplicando contraseña inicial de locales:', error);
                 }
             };
 
@@ -3007,7 +3113,6 @@
                     }
                     
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getAuth();
                     
                     // Verificar si el local ya existe
                     const snapshot = await db.collection('locales')
@@ -3029,37 +3134,23 @@
                         return;
                     }
                     
-                    // Usar contraseña personalizada o generar una automáticamente
-                    const contraseñaFinal = nuevoLocal.contraseña || generarContraseña();
-                    
-                    // Crear usuario en Firebase Auth
-                    let userCredential;
-                    try {
-                        userCredential = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaFinal);
-                    } catch (authError) {
-                        if (authError.code === 'auth/email-already-in-use') {
-                            setError('El email ' + emailCompleto + ' ya está registrado en Firebase Auth');
-                            return;
-                        }
-                        throw authError;
-                    }
-                    
-                    const uid = userCredential.user.uid;
-                    console.log('✅ Usuario creado en Firebase Auth con UID:', uid);
+                    // Política solicitada: contraseña inicial fija para todos los locales
+                    const contraseñaFinal = 'Inicial2026';
                     
                     // Obtener la región actual
                     const regionActual = FirebaseRegionManager.getCurrentRegion();
                     const regionId = regionActual?.id || null;
                     
-                    // Crear usuario admin para el nuevo local (mantener para compatibilidad)
+                    // Crear usuario admin del local (gestión por Firestore)
                     const usuarioAdmin = {
                         id: 'admin_' + nuevoLocal.nombre.toLowerCase(),
                         usuario: 'admin_' + nuevoLocal.nombre.toLowerCase(),
                         email: emailCompleto,
-                        contraseña: contraseñaFinal, // Se mantiene temporalmente para migración
+                        contraseña: contraseñaFinal,
                         rol: 'admin_local',
                         activo: true,
-                        firebaseAuthUid: uid
+                        primerIngreso: true,
+                        debeCambiarContraseña: true
                     };
                     
                     // Crear el local
@@ -3071,7 +3162,6 @@
                         usuarios: {
                             [usuarioAdmin.id]: usuarioAdmin
                         },
-                        firebaseAuthUid: uid,
                         regionId: regionId
                     };
 
@@ -3093,7 +3183,7 @@
                     }
                     
                     // Mostrar credenciales
-                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para acceder al local\nUsa el email y contraseña para iniciar sesión`);
+                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n📧 Email: ${emailCompleto}\n🔑 Contraseña inicial: ${contraseñaFinal}\n\nEn el primer ingreso deberá cambiar la contraseña.`);
                     
                 } catch (error) {
                     console.error('Error creando local:', error);
@@ -3131,7 +3221,6 @@
                     }
                     
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getAuth();
                     
                     // Verificar si el supervisor ya existe
                     const snapshot = await db.collection('supervisores')
@@ -3153,23 +3242,8 @@
                         return;
                     }
                     
-                    // Usar contraseña personalizada o generar una automáticamente
+                    // Contraseña para supervisor (Firestore)
                     const contraseñaFinal = nuevoSupervisor.contraseña || generarContraseña();
-                    
-                    // Crear usuario en Firebase Auth
-                    let userCredential;
-                    try {
-                        userCredential = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaFinal);
-                    } catch (authError) {
-                        if (authError.code === 'auth/email-already-in-use') {
-                            setError('El email ' + emailCompleto + ' ya está registrado en Firebase Auth');
-                            return;
-                        }
-                        throw authError;
-                    }
-                    
-                    const uid = userCredential.user.uid;
-                    console.log('✅ Usuario creado en Firebase Auth con UID:', uid);
                     
                     // Obtener la región actual
                     const regionActual = FirebaseRegionManager.getCurrentRegion();
@@ -3185,7 +3259,6 @@
                         activo: true,
                         fechaCreacion: new Date().toISOString().split('T')[0],
                         creadoPor: usuarioActual?.usuarioId || '',
-                        firebaseAuthUid: uid,
                         regionId: regionId
                     };
 
@@ -3205,7 +3278,7 @@
                     cargarSupervisores();
                     
                     // Mostrar credenciales
-                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
+                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\nâš ï¸ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
                     
                 } catch (error) {
                     console.error('Error creando supervisor:', error);
@@ -3218,7 +3291,7 @@
                 try {
                     // Validar que localId no esté vacío
                     if (!localId || localId.trim() === '') {
-                        console.log('⚠️ LocalId vacío, retornando valores por defecto');
+                        console.log('âš ï¸ LocalId vacío, retornando valores por defecto');
                         return { hoy: 0, manana: 0 };
                     }
                     
@@ -3265,7 +3338,7 @@
                             
                             // Validar que la fecha sea válida
                             if (isNaN(fechaVenc.getTime())) {
-                                console.log('⚠️ Fecha inválida para lote:', lote.productoCodigo, 'fechaVencimiento:', lote.fechaVencimiento);
+                                console.log('âš ï¸ Fecha inválida para lote:', lote.productoCodigo, 'fechaVencimiento:', lote.fechaVencimiento);
                                 return;
                             }
                             
@@ -3286,7 +3359,7 @@
                                 console.log('🟡 Producto vence MAÑANA:', lote.productoCodigo || doc.id, 'cantidad:', lote.cantidad || 0);
                             }
                         } else {
-                            console.log('⚠️ Lote sin fechaVencimiento:', lote.productoCodigo || doc.id);
+                            console.log('âš ï¸ Lote sin fechaVencimiento:', lote.productoCodigo || doc.id);
                         }
                     });
                     
@@ -3310,7 +3383,7 @@
                 console.log('🔄 Cargando badges y problemas para', localesConIdValido.length, 'locales (de', localesParaVerificar.length, 'totales)');
                 
                 if (localesConIdValido.length === 0) {
-                    console.log('⚠️ No hay locales con ID válido para verificar');
+                    console.log('âš ï¸ No hay locales con ID válido para verificar');
                     return;
                 }
                 
@@ -3349,7 +3422,7 @@
                 try {
                     // Validar que localId no esté vacío
                     if (!localId || localId.trim() === '') {
-                        console.log('⚠️ LocalId vacío para verificar problemas, retornando array vacío');
+                        console.log('âš ï¸ LocalId vacío para verificar problemas, retornando array vacío');
                         return [];
                     }
                     
@@ -3378,12 +3451,12 @@
                             const fecha = new Date(registro.fecha);
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                             const fechaFormateada = fecha.toLocaleDateString('es-AR');
-                            problemas.push(`📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`);
+                            problemas.push(`📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   âš ï¸ Todos los productos en 0`);
                         } else if (registro.tipo === 'Stock Final' && todosEnCero) {
                             const fecha = new Date(registro.fecha);
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                             const fechaFormateada = fecha.toLocaleDateString('es-AR');
-                            problemas.push(`📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`);
+                            problemas.push(`📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   âš ï¸ Todos los productos en 0`);
                         }
                     });
                     
@@ -3407,7 +3480,7 @@
                         if (faltantes.length > 0) {
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaCheck.getDay()];
                             const fechaFormateada = fechaCheck.toLocaleDateString('es-AR');
-                            problemas.push(`📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`);
+                            problemas.push(`📅 ${diaSemana} ${fechaFormateada}\n   âš ï¸ Faltan: ${faltantes.join(', ')}`);
                         }
                     }
                     
@@ -3423,7 +3496,7 @@
                 try {
                     // Validar que local.id no esté vacío
                     if (!local.id || local.id.trim() === '') {
-                        alert('⚠️ Este local no tiene un ID válido');
+                        alert('âš ï¸ Este local no tiene un ID válido');
                         return;
                     }
                     
@@ -3521,51 +3594,92 @@
                 setSupervisoresFiltrados(filtrados);
             };
 
+            const construirJerarquiaLocales = () => {
+                const localesBase = (localesFiltrados.length > 0 ? localesFiltrados : locales) || [];
+                const supervisoresBase = (supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores) || [];
+                const localesPorId = new Map(localesBase.map((local) => [local.id, local]));
+                const normalizarNombreLocal = (valor) => String(valor || '').trim().toLowerCase();
+
+                const grupos = supervisoresBase.map((supervisor) => {
+                    const ids = normalizarIdsLocalesAsignados(supervisor.localesAsignados || []);
+                    const localesDelSupervisor = [];
+                    const vistos = new Set();
+
+                    ids.forEach((localId) => {
+                        const local = localesPorId.get(localId) || localesBase.find((l) => normalizarNombreLocal(l.nombre) === normalizarNombreLocal(localId));
+                        if (!local) return;
+                        if (vistos.has(local.id)) return;
+                        vistos.add(local.id);
+                        localesDelSupervisor.push(local);
+                    });
+
+                    return {
+                        supervisor,
+                        locales: localesDelSupervisor
+                    };
+                });
+
+                const idsAsignados = new Set();
+                const nombresAsignados = new Set();
+
+                grupos.forEach((grupo) => {
+                    grupo.locales.forEach((local) => {
+                        idsAsignados.add(local.id);
+                        nombresAsignados.add(normalizarNombreLocal(local.nombre));
+                    });
+                });
+
+                const sinSupervisor = localesBase.filter((local) => {
+                    const nombreLocal = normalizarNombreLocal(local.nombre);
+                    return !idsAsignados.has(local.id) && !nombresAsignados.has(nombreLocal);
+                });
+
+                return { grupos, sinSupervisor };
+            };
+
             const eliminarLocal = async (local) => {
-                const contraseña = prompt('Para eliminar el local, ingresa la contraseña del administrador:');
-                if (!contraseña) return;
-                
                 try {
-                    // Buscar el usuario administrador del local
-                    const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
-                    if (!usuarioAdmin) {
-                        alert('No se encontró el usuario administrador del local');
-                        return;
-                    }
-                    
-                    // Verificar contraseña
-                    if (usuarioAdmin.contraseña !== contraseña) {
-                        alert('❌ Contraseña incorrecta. No se puede eliminar el local.');
-                        return;
-                    }
-                    
                     // Confirmación final
-                    if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
+                    if (!confirm(`âš ï¸ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
                         return;
-                    }
-                    
-                    // Si tiene firebaseAuthUid, intentar eliminar de Firebase Auth primero
-                    if (local.firebaseAuthUid) {
-                        try {
-                            const functions = firebase.functions(FirebaseRegionManager.currentApp);
-                            const deleteUser = functions.httpsCallable('deleteUser');
-                            await deleteUser({ uid: local.firebaseAuthUid });
-                            console.log('✅ Usuario de Firebase Auth del local eliminado:', local.firebaseAuthUid);
-                        } catch (authError) {
-                            // Si no se puede eliminar de Firebase Auth, NO eliminar de Firestore
-                            console.error('❌ No se pudo eliminar usuario de Firebase Auth:', authError);
-                            alert('Error: No se pudo eliminar el usuario de Firebase Auth. El local no fue eliminado.');
-                            return;
-                        }
                     }
                     
                     // Eliminar el local de Firestore
                     const db = FirebaseRegionManager.getFirestore();
-                    await db.collection('locales').doc(local.nombre).delete();
+                    const localDocId = local.id || local.nombre;
+                    if (!localDocId) {
+                        alert('Error: no se pudo determinar el ID del local para eliminar.');
+                        return;
+                    }
+                    await db.collection('locales').doc(localDocId).delete();
+
+                    // Limpiar asignaciones de este local en supervisores
+                    const supervisoresSnapshot = await db.collection('supervisores').get();
+                    const batch = db.batch();
+                    let cambiosAsignaciones = 0;
+
+                    supervisoresSnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const asignadosActuales = Array.isArray(data.localesAsignados) ? data.localesAsignados : [];
+                        const asignadosFiltrados = asignadosActuales.filter((item) => {
+                            const valor = String(item || '').trim().toLowerCase();
+                            return valor !== String(localDocId).toLowerCase() && valor !== String(local.nombre || '').trim().toLowerCase();
+                        });
+
+                        if (asignadosFiltrados.length !== asignadosActuales.length) {
+                            batch.update(doc.ref, { localesAsignados: asignadosFiltrados });
+                            cambiosAsignaciones += 1;
+                        }
+                    });
+
+                    if (cambiosAsignaciones > 0) {
+                        await batch.commit();
+                    }
                     
                     // Recargar locales según el tipo de usuario
                     if (esUsuarioMaestro) {
                     cargarLocales();
+                    cargarSupervisores();
                     } else {
                         cargarLocalesAsignados();
                     }
@@ -3617,110 +3731,28 @@
                 
                 try {
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getAuth();
-                    let firebaseAuthUidActualizado = local.firebaseAuthUid;
-                    
-                    // Gestionar Firebase Auth
-                    try {
-                        // Si no tiene firebaseAuthUid, crear nuevo usuario
-                        if (!local.firebaseAuthUid) {
-                            console.log('🔨 Creando nuevo usuario en Firebase Auth...');
-                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                            firebaseAuthUidActualizado = authResult.user.uid;
-                            console.log('✅ Usuario creado en Firebase Auth con UID:', firebaseAuthUidActualizado);
-                        } else {
-                            // Intentar actualizar usuario existente
-                            try {
-                                const user = auth.currentUser;
-                                
-                                // Si el usuario actual no es el del local, intentar autenticarnos
-                                if (!user || user.uid !== local.firebaseAuthUid) {
-                                    const emailActual = usuarioAdmin.email;
-                                    const contraseñaParaAuth = usuarioAdmin.contraseña;
-                                    
-                                    if (emailActual && contraseñaParaAuth) {
-                                        try {
-                                            await auth.signInWithEmailAndPassword(emailActual, contraseñaParaAuth);
-                                        } catch (e) {
-                                            console.warn('⚠️ No se pudo autenticar, creando nuevo usuario');
-                                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                            firebaseAuthUidActualizado = authResult.user.uid;
-                                            console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                        }
-                                    }
-                                }
-                                
-                                const currentUser = auth.currentUser;
-                                if (currentUser && currentUser.uid === local.firebaseAuthUid) {
-                                    // Actualizar email si cambió
-                                    if (emailCompleto !== usuarioAdmin.email) {
-                                        await currentUser.updateEmail(emailCompleto);
-                                        console.log('✅ Email actualizado en Firebase Auth');
-                                    }
-                                    
-                                    // Actualizar contraseña
-                                    await currentUser.updatePassword(contraseñaNueva);
-                                    console.log('✅ Contraseña actualizada en Firebase Auth');
-                                } else {
-                                    // Si no se pudo autenticar, crear nuevo usuario
-                                    console.log('🔨 Creando nuevo usuario en Firebase Auth...');
-                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                    firebaseAuthUidActualizado = authResult.user.uid;
-                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                }
-                            } catch (error) {
-                                if (error.code === 'auth/weak-password') {
-                                    alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                                    return;
-                                }
-                                console.error('Error actualizando Firebase Auth, intentando crear nuevo usuario', error);
-                                try {
-                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                    firebaseAuthUidActualizado = authResult.user.uid;
-                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                } catch (e2) {
-                                    if (e2.code === 'auth/weak-password') {
-                                        alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                                        return;
-                                    }
-                                    throw e2;
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        if (error.code === 'auth/weak-password') {
-                            alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                            return;
-                        }
-                        console.error('Error gestionando Firebase Auth', error);
-                        alert('⚠️ Advertencia: Error gestionando Firebase Auth: ' + error.message + '. Se actualizará en Firestore.');
-                    }
                     
                     // Actualizar en Firestore
                     const usuarioActualizado = { 
                         ...usuarioAdmin, 
                         email: emailCompleto,
                         contraseña: contraseñaNueva,
-                        firebaseAuthUid: firebaseAuthUidActualizado
+                        primerIngreso: false,
+                        debeCambiarContraseña: false,
+                        passwordUpdatedAt: new Date().toISOString()
                     };
                     const usuariosActualizados = { ...local.usuarios };
                     usuariosActualizados[usuarioAdmin.id] = usuarioActualizado;
                     
-                    // Actualizar tanto usuarios como email del local y firebaseAuthUid
-                    await db.collection('locales').doc(local.nombre).update({
+                    // Actualizar usuarios y email en Firestore
+                    await db.collection('locales').doc(local.id || local.nombre).update({
                         usuarios: usuariosActualizados,
-                        email: emailCompleto, // Actualizar email del local también
-                        firebaseAuthUid: firebaseAuthUidActualizado
+                        email: emailCompleto
                     });
                     
                     // Recargar locales
                     cargarLocales();
-                    
-                    const mensajeConfirmacion = firebaseAuthUidActualizado 
-                        ? `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n✅ Usuario sincronizado con Firebase Auth`
-                        : `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n⚠️ Usuario actualizado solo en Firestore`;
-                    
-                    alert(mensajeConfirmacion);
+                    alert(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
                     
                 } catch (error) {
                     console.error('Error cambiando credenciales:', error);
@@ -3731,81 +3763,22 @@
             const mostrarUsuariosYCredenciales = async (local) => {
                 try {
                     const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
-                    
-                    // Verificar si tiene datos en Firebase Auth (en el local o en el usuario admin)
-                    const tieneFirebaseAuth = local.firebaseAuthUid || (usuarioAdmin && usuarioAdmin.firebaseAuthUid);
-                    
-                    let mensaje;
-                    
-                    if (!tieneFirebaseAuth) {
-                        // No tiene datos en Firebase Auth
-                        mensaje = `🏪 ${local.nombre}\n\n`;
-                        mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                        mensaje += `⚠️ CREDENCIALES DE FIREBASE AUTH\n`;
-                        mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-                        mensaje += `❌ No se encontraron datos en Firebase Auth para este local.\n\n`;
-                        mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
-                        mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
-                        mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
-                        mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
-                        mensaje += `ℹ️ Las credenciales de Firebase Auth son necesarias para:\n`;
-                        mensaje += `   • Iniciar sesión en la aplicación\n`;
-                        mensaje += `   • Sincronización con Firestore\n`;
-                        mensaje += `   • Autenticación segura\n`;
-                } else {
-                    // Tiene datos en Firebase Auth - mostrar email de Firestore
-                    // Si hay firebaseAuthUid, significa que las credenciales están generadas en Firebase Auth
-                    const firebaseAuthUid = local.firebaseAuthUid || (usuarioAdmin && usuarioAdmin.firebaseAuthUid) || '';
-                    // El email está en local.email, no en usuarioAdmin.email
-                    const emailFirestore = local.email || (usuarioAdmin && usuarioAdmin.email) || '';
-                    const contraseñaFirestore = usuarioAdmin?.contraseña || '';
-                    
-                    // Si hay firebaseAuthUid, las credenciales están generadas (el UID solo existe si el usuario está en Firebase Auth)
-                    const credencialesGeneradas = firebaseAuthUid && firebaseAuthUid.length > 0;
-                    
-                    mensaje = `🏪 ${local.nombre}\n`;
-                    mensaje += `🔑 Firebase Auth UID: ${firebaseAuthUid}\n\n`;
-                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-                    mensaje += `✅ CREDENCIALES DE FIREBASE AUTH\n`;
-                    mensaje += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-                    if (usuarioAdmin) {
-                        mensaje += `👤 Administrador: ${usuarioAdmin.usuario}\n`;
-                        mensaje += `🔑 Firebase Auth UID: ${usuarioAdmin.firebaseAuthUid || firebaseAuthUid}\n\n`;
-                        
-                        // Siempre mostrar el email de Firestore (está en local.email)
-                        if (emailFirestore) {
-                            mensaje += `📧 Email (Firestore): ${emailFirestore}\n`;
-                        } else {
-                            mensaje += `📧 Email (Firestore): —\n`;
-                        }
-                        
-                        if (credencialesGeneradas) {
-                            // Credenciales generadas - mostrar contraseña oculta
-                            if (contraseñaFirestore) {
-                                const contraseñaOculta = '*'.repeat(Math.max(contraseñaFirestore.length, 8));
-                                mensaje += `🔑 Contraseña (Firebase Auth): ${contraseñaOculta}\n\n`;
-                            } else {
-                                mensaje += `🔑 Contraseña (Firebase Auth): —\n\n`;
-                            }
-                            mensaje += `✅ Las credenciales de acceso están generadas en Firebase Auth.\n`;
-                            mensaje += `ℹ️ Usa estas credenciales para iniciar sesión en la aplicación.\n\n`;
-                        } else {
-                            // Credenciales no generadas
-                            mensaje += `🔑 Contraseña (Firebase Auth): —\n\n`;
-                            mensaje += `⚠️ Las credenciales de acceso NO están generadas en Firebase Auth.\n\n`;
-                            mensaje += `📋 Para generar las credenciales en Firebase Auth:\n`;
-                            mensaje += `   1. Haz clic en '🔑 CAMBIAR CREDENCIALES'\n`;
-                            mensaje += `   2. Ingresa el email y la nueva contraseña\n`;
-                            mensaje += `   3. El sistema creará automáticamente el usuario en Firebase Auth\n\n`;
-                        }
-                        
-                        mensaje += `📋 Para actualizar las credenciales, usa el botón '🔑 CAMBIAR CREDENCIALES'.\n`;
-                    } else {
-                        mensaje += `⚠️ No se encontró el usuario administrador.\n`;
+                    if (!usuarioAdmin) {
+                        alert(`No se encontró usuario administrador para ${local.nombre}`);
+                        return;
                     }
-                }
-                    
-                    alert(`Credenciales Firebase Auth: ${local.nombre}\n\n${mensaje}`);
+
+                    const mensaje = [
+                        `🏪 Local: ${local.nombre}`,
+                        `👤 Usuario: ${usuarioAdmin.usuario || '-'}`,
+                        `📧 Email: ${usuarioAdmin.email || local.email || '-'}`,
+                        `🔑 Contraseña: ${usuarioAdmin.contraseña || '-'}`,
+                        '',
+                        `Primer ingreso: ${usuarioAdmin.primerIngreso ? 'Sí' : 'No'}`,
+                        `Debe cambiar contraseña: ${usuarioAdmin.debeCambiarContraseña ? 'Sí' : 'No'}`
+                    ].join('\n');
+
+                    alert(`Credenciales del Local\n\n${mensaje}`);
                 } catch (e) {
                     console.error('Error mostrando credenciales', e);
                     alert(`Error mostrando credenciales: ${e.message}`);
@@ -3815,13 +3788,12 @@
             // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt
             
             const mostrarLocalesAsignados = (supervisor) => {
-                // Los locales asignados están guardados por nombre, no por ID
-                const nombresLocales = supervisor.localesAsignados || [];
-                
-                const mensaje = nombresLocales.length === 0 
+                const localesAsignadosSupervisor = obtenerLocalesDelSupervisor(supervisor);
+
+                const mensaje = localesAsignadosSupervisor.length === 0
                     ? "Este supervisor no tiene locales asignados"
-                    : "Locales asignados:\n\n" + nombresLocales.map(nombre => `🏪 ${nombre}`).join('\n');
-                
+                    : "Locales asignados:\n\n" + localesAsignadosSupervisor.map(local => `🏪 ${local.nombre}`).join('\n');
+
                 alert(`Locales de ${supervisor.usuario}\n\n${mensaje}`);
             };
             
@@ -3859,103 +3831,19 @@
                 
                 try {
                     const db = FirebaseRegionManager.getFirestore();
-                    const auth = FirebaseRegionManager.getAuth();
-                    let firebaseAuthUidActualizado = supervisor.firebaseAuthUid;
-                    
-                    // Gestionar Firebase Auth
-                    try {
-                        // Si no tiene firebaseAuthUid, crear nuevo usuario
-                        if (!supervisor.firebaseAuthUid) {
-                            console.log('🔨 Creando nuevo usuario en Firebase Auth...');
-                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                            firebaseAuthUidActualizado = authResult.user.uid;
-                            console.log('✅ Usuario creado en Firebase Auth con UID:', firebaseAuthUidActualizado);
-                        } else {
-                            // Intentar actualizar usuario existente
-                            try {
-                                const user = auth.currentUser;
-                                
-                                // Si el usuario actual no es el del supervisor, intentar autenticarnos
-                                if (!user || user.uid !== supervisor.firebaseAuthUid) {
-                                    const emailActual = supervisor.email;
-                                    const contraseñaParaAuth = supervisor.contraseña;
-                                    
-                                    if (emailActual && contraseñaParaAuth) {
-                                        try {
-                                            await auth.signInWithEmailAndPassword(emailActual, contraseñaParaAuth);
-                                        } catch (e) {
-                                            console.warn('⚠️ No se pudo autenticar, creando nuevo usuario');
-                                            const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                            firebaseAuthUidActualizado = authResult.user.uid;
-                                            console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                        }
-                                    }
-                                }
-                                
-                                const currentUser = auth.currentUser;
-                                if (currentUser && currentUser.uid === supervisor.firebaseAuthUid) {
-                                    // Actualizar email si cambió
-                                    if (emailCompleto !== supervisor.email) {
-                                        await currentUser.updateEmail(emailCompleto);
-                                        console.log('✅ Email actualizado en Firebase Auth');
-                                    }
-                                    
-                                    // Actualizar contraseña
-                                    await currentUser.updatePassword(contraseñaNueva);
-                                    console.log('✅ Contraseña actualizada en Firebase Auth');
-                                } else {
-                                    // Si no se pudo autenticar, crear nuevo usuario
-                                    console.log('🔨 Creando nuevo usuario en Firebase Auth...');
-                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                    firebaseAuthUidActualizado = authResult.user.uid;
-                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                }
-                            } catch (error) {
-                                if (error.code === 'auth/weak-password') {
-                                    alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                                    return;
-                                }
-                                console.error('Error actualizando Firebase Auth, intentando crear nuevo usuario', error);
-                                try {
-                                    const authResult = await auth.createUserWithEmailAndPassword(emailCompleto, contraseñaNueva);
-                                    firebaseAuthUidActualizado = authResult.user.uid;
-                                    console.log('✅ Nuevo usuario creado en Firebase Auth');
-                                } catch (e2) {
-                                    if (e2.code === 'auth/weak-password') {
-                                        alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                                        return;
-                                    }
-                                    throw e2;
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        if (error.code === 'auth/weak-password') {
-                            alert('❌ La contraseña es muy débil. Firebase Auth requiere contraseñas más seguras (mínimo 6 caracteres, preferiblemente con letras, números y caracteres especiales).');
-                            return;
-                        }
-                        console.error('Error gestionando Firebase Auth', error);
-                        alert('⚠️ Advertencia: Error gestionando Firebase Auth: ' + error.message + '. Se actualizará en Firestore.');
-                    }
                     
                     // Actualizar en Firestore
                     const supervisorActualizado = {
                         ...supervisor,
                         email: emailCompleto,
-                        contraseña: contraseñaNueva,
-                        firebaseAuthUid: firebaseAuthUidActualizado
+                        contraseña: contraseñaNueva
                     };
                     
                     await db.collection('supervisores').doc(supervisor.id).set(supervisorActualizado);
                     
                     // Recargar supervisores
                     cargarSupervisores();
-                    
-                    const mensajeConfirmacion = firebaseAuthUidActualizado 
-                        ? `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n✅ Usuario sincronizado con Firebase Auth`
-                        : `✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}\n\n⚠️ Usuario actualizado solo en Firestore`;
-                    
-                    alert(mensajeConfirmacion);
+                    alert(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
                     
                 } catch (error) {
                     console.error('Error cambiando credenciales del supervisor:', error);
@@ -3968,17 +3856,22 @@
                     console.log('🔍 Supervisor seleccionado:', supervisor);
                     console.log('🔍 Locales asignados del supervisor:', supervisor.localesAsignados);
                     
-                    // Recargar locales para asegurar datos actualizados
-                    await cargarLocales();
-                    
-                    console.log('🔍 Locales cargados:', locales.map(l => ({id: l.id, nombre: l.nombre})));
-                    
-                    if (locales.length === 0) {
+                    let localesDisponibles = [...locales];
+                    if (localesDisponibles.length === 0) {
+                        const db = FirebaseRegionManager.getFirestore();
+                        const snapshot = await db.collection('locales').get();
+                        localesDisponibles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    }
+
+                    console.log('🔍 Locales cargados:', localesDisponibles.map(l => ({id: l.id, nombre: l.nombre})));
+
+                    if (localesDisponibles.length === 0) {
                         alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
                     return;
                 }
                 
                     const contenido = `Selecciona los locales que quieres asignar a ${supervisor.usuario}:\n\nℹ️ Los locales pueden estar asignados a múltiples supervisores simultáneamente.`;
+                    const localesAsignadosSupervisor = new Set(normalizarIdsLocalesAsignados(supervisor.localesAsignados || []));
                     
                     // Crear modal con checkboxes
                     const modal = document.createElement('div');
@@ -4031,20 +3924,17 @@
                     const checkboxesContainer = dialogContent.querySelector('#checkboxesContainer');
                     const checkboxes = {};
                     
-                    locales.forEach(local => {
+                    localesDisponibles.forEach(local => {
                         // Verificar si el local está asignado a otros supervisores
-                        // Usar local.nombre para la comparación ya que los locales asignados están guardados por nombre
                         const otrosSupervisores = supervisores.filter(s => 
-                            s.id !== supervisor.id && s.localesAsignados?.includes(local.nombre)
+                            s.id !== supervisor.id && normalizarIdsLocalesAsignados(s.localesAsignados || []).includes(local.id)
                         );
                         
                         const textoLocal = otrosSupervisores.length > 0
                             ? `🏪 ${local.nombre} (📋 Asignado a: ${otrosSupervisores.map(s => s.usuario).join(', ')})`
                             : `🏪 ${local.nombre}`;
                         
-                        // Debug: verificar si el local está asignado
-                        // Comparar por nombre ya que los locales asignados están guardados por nombre
-                        const estaAsignado = supervisor.localesAsignados?.includes(local.nombre) || false;
+                        const estaAsignado = localesAsignadosSupervisor.has(local.id);
                         console.log(`🔍 Local: ${local.nombre} (ID: ${local.id}), Asignado: ${estaAsignado}, LocalesAsignados:`, supervisor.localesAsignados);
                         
                         const checkboxDiv = document.createElement('div');
@@ -4094,23 +3984,19 @@
             
             const asignarLocalesASupervisor = async (supervisor, localesAsignados) => {
                 try {
-                    // Convertir IDs de locales a nombres para guardar
-                    const nombresLocalesAsignados = localesAsignados.map(localId => {
-                        const local = locales.find(l => l.id === localId);
-                        return local ? local.nombre : localId;
-                    });
+                    const idsLocalesAsignados = Array.from(new Set((localesAsignados || []).map(id => String(id || '').trim()).filter(Boolean)));
                     
-                    console.log('🔍 Guardando locales por nombre:', nombresLocalesAsignados);
+                    console.log('🔍 Guardando locales por ID:', idsLocalesAsignados);
                     
                     const supervisorActualizado = {
                         ...supervisor,
-                        localesAsignados: nombresLocalesAsignados
+                        localesAsignados: idsLocalesAsignados
                     };
                     
                     // Actualizar en Firebase
                     const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).update({
-                        localesAsignados: nombresLocalesAsignados
+                        localesAsignados: idsLocalesAsignados
                     });
                     
                     // Actualizar en el estado local
@@ -4130,7 +4016,7 @@
             };
             
             const mostrarDialogoEliminarSupervisor = (supervisor) => {
-                if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el supervisor '${supervisor.usuario}'?\n\nEsta acción NO se puede deshacer.`)) {
+                if (!confirm(`âš ï¸ ¿Estás seguro de que quieres eliminar permanentemente el supervisor '${supervisor.usuario}'?\n\nEsta acción NO se puede deshacer.`)) {
                     return;
                 }
                 
@@ -4139,21 +4025,6 @@
             
             const eliminarSupervisor = async (supervisor) => {
                 try {
-                    // Si tiene firebaseAuthUid, intentar eliminar de Firebase Auth primero
-                    if (supervisor.firebaseAuthUid) {
-                        try {
-                            const functions = firebase.functions(FirebaseRegionManager.currentApp);
-                            const deleteUser = functions.httpsCallable('deleteUser');
-                            await deleteUser({ uid: supervisor.firebaseAuthUid });
-                            console.log('✅ Usuario de Firebase Auth del supervisor eliminado:', supervisor.firebaseAuthUid);
-                        } catch (authError) {
-                            // Si no se puede eliminar de Firebase Auth, NO eliminar de Firestore
-                            console.error('❌ No se pudo eliminar usuario de Firebase Auth:', authError);
-                            alert('Error: No se pudo eliminar el usuario de Firebase Auth. El supervisor no fue eliminado.');
-                            return;
-                        }
-                    }
-                    
                     // Eliminar de Firestore
                     const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).delete();
@@ -4167,6 +4038,45 @@
                 } catch (error) {
                     console.error('Error eliminando supervisor:', error);
                     alert('Error eliminando supervisor: ' + error.message);
+                }
+            };
+
+            const ingresarAlLocal = async (local) => {
+                try {
+                    let localId = local.id;
+
+                    if (!localId) {
+                        const db = FirebaseRegionManager.getFirestore();
+                        const snapshot = await db.collection('locales')
+                            .where('nombre', '==', local.nombre)
+                            .limit(1)
+                            .get();
+
+                        if (!snapshot.empty) {
+                            localId = snapshot.docs[0].id;
+                        } else {
+                            throw new Error('No se encontró el local en Firebase');
+                        }
+                    }
+
+                    const usuarioTemporal = {
+                        id: 'temp_' + localId,
+                        usuario: 'admin_' + local.nombre.toLowerCase(),
+                        localId: localId,
+                        localNombre: local.nombre,
+                        rol: 'admin_local',
+                        activo: true
+                    };
+
+                    localStorage.setItem('usuario', JSON.stringify(usuarioTemporal));
+
+                    if (onLoginSuccess && typeof onLoginSuccess === 'function') {
+                        onLoginSuccess(usuarioTemporal);
+                    } else {
+                        window.location.href = window.location.origin + window.location.pathname + '#main';
+                    }
+                } catch (error) {
+                    alert('Error ingresando al local: ' + error.message);
                 }
             };
 
@@ -4287,7 +4197,106 @@
                         onChange={(e) => filtrarLocales(e.target.value)}
                     />
 
+                    {esUsuarioMaestro && (() => {
+                        const { grupos, sinSupervisor } = construirJerarquiaLocales();
+                        return (
+                            <div style={{
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #CFD8DC',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                marginBottom: '16px'
+                            }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#1F2937' }}>
+                                    Estructura jerárquica Supervisor > Locales
+                                </div>
+
+                                {grupos.map(({ supervisor, locales: localesGrupo }) => (
+                                    <div key={`jer-${supervisor.id}`} style={{ marginBottom: '10px' }}>
+                                        <div
+                                            onClick={() => {
+                                                setSupervisoresContraidos((prev) => ({
+                                                    ...prev,
+                                                    [supervisor.id]: !prev[supervisor.id]
+                                                }));
+                                            }}
+                                            style={{
+                                                fontSize: '13px',
+                                                fontWeight: '600',
+                                                color: '#111827',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                userSelect: 'none'
+                                            }}
+                                        >
+                                            <span>{supervisoresContraidos[supervisor.id] ? '▸' : '▾'}</span>
+                                            <span>Supervisor: {supervisor.usuario}</span>
+                                        </div>
+                                        {!supervisoresContraidos[supervisor.id] && localesGrupo.length === 0 && (
+                                            <div style={{ fontSize: '12px', color: '#6B7280', paddingLeft: '12px' }}>
+                                                Sin locales asignados
+                                            </div>
+                                        )}
+                                        {!supervisoresContraidos[supervisor.id] && localesGrupo.map((local) => (
+                                            <div key={`jer-loc-${supervisor.id}-${local.id}`} style={{
+                                                marginTop: '6px',
+                                                marginLeft: '12px',
+                                                backgroundColor: '#F8FAFC',
+                                                border: '1px solid #E2E8F0',
+                                                borderRadius: '10px',
+                                                padding: '8px'
+                                            }}>
+                                                <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>
+                                                    🏪 {local.nombre}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                    <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
+                                                    <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
+                                                    <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
+                                                    <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
+                                                    <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+
+                                {sinSupervisor.length > 0 && (
+                                    <div style={{ marginTop: '8px', borderTop: '1px dashed #E5E7EB', paddingTop: '8px' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400E' }}>
+                                            Locales sin supervisor
+                                        </div>
+                                        {sinSupervisor.map((local) => (
+                                            <div key={`jer-sin-${local.id}`} style={{
+                                                marginTop: '6px',
+                                                marginLeft: '12px',
+                                                backgroundColor: '#FFF7ED',
+                                                border: '1px solid #FED7AA',
+                                                borderRadius: '10px',
+                                                padding: '8px'
+                                            }}>
+                                                <div style={{ fontSize: '12px', color: '#7C2D12', marginBottom: '6px' }}>
+                                                    🏪 {local.nombre}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                    <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
+                                                    <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
+                                                    <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
+                                                    <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
+                                                    <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+
                     {/* Lista de Locales - EXACTO como APK */}
+                    {!esUsuarioMaestro && (
                     <div style={{minHeight: 'calc(100vh - 200px)'}}>
                         {(localesFiltrados.length > 0 ? localesFiltrados : locales).map((local, index) => {
                             console.log('🔍 Renderizando local', index, ':', {
@@ -4308,7 +4317,7 @@
                                         margin: '16px',
                                         color: '#C62828'
                                     }}>
-                                        ⚠️ Error: El local "{local.nombre}" no tiene ID. Por favor, recarga la página.
+                                        ⚠️ Error: el local "{local.nombre}" no tiene ID. Recargá la página.
                                     </div>
                                 );
                             }
@@ -4434,7 +4443,7 @@
                                             let localId = local.id;
                                             
                                             if (!localId) {
-                                                console.warn('⚠️ Local no tiene id, intentando obtenerlo desde Firebase...');
+                                                console.warn('âš ï¸ Local no tiene id, intentando obtenerlo desde Firebase...');
                                                 try {
                                                     const db = FirebaseRegionManager.getFirestore();
                                                     const snapshot = await db.collection('locales')
@@ -4629,6 +4638,7 @@
                             </div>
                         )}
                     </div>
+                    )}
 
                     {/* Texto de estado - EXACTO como líneas 94-97 */}
                     <div 
@@ -4682,11 +4692,11 @@
                             {/* Lista de Supervisores - EXACTO como APK */}
                             <div style={{minHeight: 'calc(100vh - 200px)'}}>
                                 {(supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores).map((supervisor, index) => {
-                                    // Obtener nombres de locales asignados
-                                    const nombresLocales = (supervisor.localesAsignados || []).map(localNombre => {
-                                        const local = locales.find(l => l.nombre === localNombre);
-                                        return local ? local.nombre : localNombre;
-                                    });
+                                    const localesAsignadosSupervisor = obtenerLocalesDelSupervisor(supervisor);
+                                    const idsAsignadosNormalizados = normalizarIdsLocalesAsignados(supervisor.localesAsignados || []);
+                                    const asignacionesNoEncontradas = idsAsignadosNormalizados.filter(localId =>
+                                        !locales.some(local => local.id === localId)
+                                    ).length;
                                     
                                     return (
                                     <div 
@@ -4737,7 +4747,40 @@
                                             textAlign: 'left',
                                             wordBreak: 'break-word'
                                         }}>
-                                            Locales asignados: {nombresLocales.length} {nombresLocales.length > 0 ? `(${nombresLocales.join(', ')})` : ''}
+                                            Locales asignados: {localesAsignadosSupervisor.length}
+                                        </div>
+
+                                        <div style={{
+                                            backgroundColor: '#FFFFFF',
+                                            border: '1px solid #CFD8DC',
+                                            borderRadius: '10px',
+                                            padding: '10px',
+                                            marginBottom: '8px'
+                                        }}>
+                                            {localesAsignadosSupervisor.length === 0 && (
+                                                <div style={{fontSize: '12px', color: '#546E7A'}}>
+                                                    Sin locales asignados
+                                                </div>
+                                            )}
+                                            {localesAsignadosSupervisor.map((localAsignado) => (
+                                                <div key={`${supervisor.id}-${localAsignado.id}`} style={{
+                                                    fontSize: '12px',
+                                                    color: '#000000',
+                                                    padding: '4px 0',
+                                                    borderBottom: '1px dashed #ECEFF1'
+                                                }}>
+                                                    🏪 {localAsignado.nombre}
+                                                </div>
+                                            ))}
+                                            {asignacionesNoEncontradas > 0 && (
+                                                <div style={{
+                                                    fontSize: '11px',
+                                                    color: '#D97706',
+                                                    paddingTop: '6px'
+                                                }}>
+                                                    ⚠️ {asignacionesNoEncontradas} asignación(es) pendientes de sincronización
+                                                </div>
+                                            )}
                                         </div>
                                         
                                         {/* Botones de administración - EXACTO como APK */}
@@ -4936,16 +4979,15 @@
                                             Contraseña inicial del admin
                                         </label>
                                         <input
-                                            type="password"
-                                            value={nuevoLocal.contraseña}
-                                            onChange={(e) => setNuevoLocal({...nuevoLocal, contraseña: e.target.value})}
+                                            type="text"
+                                            value="Inicial2026"
+                                            readOnly
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Contraseña inicial (opcional)"
                                         />
                                     </div>
                                     
                                     <div className="text-sm text-gray-600">
-                                        Si no ingresas contraseña, se generará una automáticamente
+                                        En el primer ingreso, el local deberá cambiar esta contraseña.
                                     </div>
                                     
                                     <div className="flex justify-end space-x-2">
@@ -5122,10 +5164,10 @@
                 // Convertir a zona horaria de Argentina si es necesario
                 if (!fecha) fecha = window.getFechaArgentina ? window.getFechaArgentina() : new Date();
                 const fechaArg = window.formatearFechaArgentina ? window.formatearFechaArgentina(fecha) : fecha;
-                const año = fechaArg.getFullYear();
+                const anio = fechaArg.getFullYear();
                 const mes = String(fechaArg.getMonth() + 1).padStart(2, '0');
                 const dia = String(fechaArg.getDate()).padStart(2, '0');
-                const fechaFormateada = `${año}-${mes}-${dia}`;
+                const fechaFormateada = `${anio}-${mes}-${dia}`;
                 console.log(`📅 formatearFechaCorta: ${fecha.toString()} -> ${fechaFormateada}`);
                 return fechaFormateada;
             };
@@ -5148,7 +5190,7 @@
 
             // Función para crear el grid del mes - EXACTO como MainActivity.kt líneas 495-730
             const crearGridMes = () => {
-                const año = mesActual.getFullYear();
+                const anio = mesActual.getFullYear();
                 const mes = mesActual.getMonth();
                 const primerDia = obtenerPrimerDia(mesActual);
                 const ultimoDia = obtenerUltimoDia(mesActual);
@@ -5175,7 +5217,7 @@
 
                 // Agregar los días del mes
                 for (let dia = 1; dia <= diasEnMes; dia++) {
-                    const fechaString = `${año}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const fechaString = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                     const esHoy = fechaString === formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
                     const esFechaSeleccionada = fechaString === formatearFechaCorta(fechaSeleccionada);
                     
@@ -5201,7 +5243,7 @@
                         <button
                             key={dia}
                             onClick={() => {
-                                const nuevaFecha = new Date(año, mes, dia);
+                                const nuevaFecha = new Date(anio, mes, dia);
                                 setFechaSeleccionada(nuevaFecha);
                                 onCerrar();
                             }}
@@ -5343,7 +5385,7 @@
                         }
                     }
                 } catch (error) {
-                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    console.warn('âš ï¸ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
                     // Mantener la URL por defecto si falla
                 }
             };
@@ -5365,10 +5407,10 @@
                 // Convertir a zona horaria de Argentina si es necesario
                 if (!fecha) fecha = window.getFechaArgentina ? window.getFechaArgentina() : new Date();
                 const fechaArg = window.formatearFechaArgentina ? window.formatearFechaArgentina(fecha) : fecha;
-                const año = fechaArg.getFullYear();
+                const anio = fechaArg.getFullYear();
                 const mes = String(fechaArg.getMonth() + 1).padStart(2, '0');
                 const dia = String(fechaArg.getDate()).padStart(2, '0');
-                const fechaFormateada = `${año}-${mes}-${dia}`;
+                const fechaFormateada = `${anio}-${mes}-${dia}`;
                 console.log(`📅 formatearFechaCorta: ${fecha.toString()} -> ${fechaFormateada}`);
                 return fechaFormateada;
             };
@@ -5831,7 +5873,7 @@
                 }
                 
                 if (!usuario || !usuario.localId || !usuario.localNombre) {
-                    console.log('⚠️ verificarAlertasLocalAutomatico: usuario o datos faltantes, saliendo');
+                    console.log('âš ï¸ verificarAlertasLocalAutomatico: usuario o datos faltantes, saliendo');
                     return;
                 }
                 
@@ -5936,9 +5978,9 @@
                                 const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                                 const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                                 const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                                const problema = `📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`;
+                                const problema = `📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   âš ï¸ Todos los productos en 0`;
                                 problemas.push(problema);
-                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                                console.log('âš ï¸ Problema encontrado:', registro.tipo, '-', registro.fecha);
                             }
                         } else if (registro.tipo === 'Stock Final') {
                             // Para Stock Final solo alertar si todos están en 0 (no hay flag aquí)
@@ -5948,9 +5990,9 @@
                                 const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                                 const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                                 const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                                const problema = `📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`;
+                                const problema = `📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   âš ï¸ Todos los productos en 0`;
                                 problemas.push(problema);
-                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                                console.log('âš ï¸ Problema encontrado:', registro.tipo, '-', registro.fecha);
                             }
                         }
                     });
@@ -6004,11 +6046,11 @@
                         
                         if (!tiposExistentes.has('Ingreso de Mercadería')) {
                             faltantes.push('Ingreso de Mercadería');
-                            console.log('⚠️ Falta Ingreso de Mercadería para', fecha);
+                            console.log('âš ï¸ Falta Ingreso de Mercadería para', fecha);
                         }
                         if (!tiposExistentes.has('Stock Final')) {
                             faltantes.push('Stock Final');
-                            console.log('⚠️ Falta Stock Final para', fecha);
+                            console.log('âš ï¸ Falta Stock Final para', fecha);
                         }
                         
                         if (faltantes.length > 0) {
@@ -6017,7 +6059,7 @@
                             const fechaObj = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaObj.getDay()];
                             const fechaFormateada = fechaObj.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                            const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`;
+                            const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   âš ï¸ Faltan: ${faltantes.join(', ')}`;
                             problemas.push(problemaTexto);
                             console.log('📅 Agregado problema para', fecha, ':', faltantes.join(', '));
                         }
@@ -6085,10 +6127,10 @@
                     let fechaString;
                     if (fechaAUsar instanceof Date) {
                         // Si es un objeto Date, usar los componentes directamente para evitar problemas de zona horaria
-                        const año = fechaAUsar.getFullYear();
+                        const anio = fechaAUsar.getFullYear();
                         const mes = String(fechaAUsar.getMonth() + 1).padStart(2, '0');
                         const dia = String(fechaAUsar.getDate()).padStart(2, '0');
-                        fechaString = `${año}-${mes}-${dia}`;
+                        fechaString = `${anio}-${mes}-${dia}`;
                     } else if (typeof fechaAUsar === 'string' && fechaAUsar.match(/^\d{4}-\d{2}-\d{2}$/)) {
                         // Si ya está en formato yyyy-MM-dd, usarlo directamente
                         fechaString = fechaAUsar;
@@ -6505,7 +6547,7 @@
                         const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
                         
                         if (sumaLotes !== stockFinal) {
-                            console.log(`   ⚠️ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                            console.log(`   âš ï¸ ${productoCodigo}: Lotes (${sumaLotes}) â‰  Stock Final (${stockFinal})`);
                             todosCoinciden = false;
                         }
                     }
@@ -6514,7 +6556,7 @@
                     for (const [productoCodigo, lotes] of Object.entries(lotesPorProducto)) {
                         const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
                         if (sumaLotes > 0 && !stockFinalPorProducto[productoCodigo]) {
-                            console.log(`   ⚠️ ${productoCodigo}: Tiene lotes (${sumaLotes}) pero no está en Stock Final`);
+                            console.log(`   âš ï¸ ${productoCodigo}: Tiene lotes (${sumaLotes}) pero no está en Stock Final`);
                             todosCoinciden = false;
                         }
                     }
@@ -6644,10 +6686,10 @@
                 try {
                     const fechaObj = new Date(fecha + 'T00:00:00');
                     fechaObj.setDate(fechaObj.getDate() - 1);
-                    const año = fechaObj.getFullYear();
+                    const anio = fechaObj.getFullYear();
                     const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
                     const dia = String(fechaObj.getDate()).padStart(2, '0');
-                    return `${año}-${mes}-${dia}`;
+                    return `${anio}-${mes}-${dia}`;
                 } catch (e) {
                     return fecha;
                 }
@@ -6717,7 +6759,7 @@
                     });
                     
                     if (lotes.length === 0) {
-                        console.warn(`⚠️ No hay lotes activos para ${productoCodigo}`);
+                        console.warn(`âš ï¸ No hay lotes activos para ${productoCodigo}`);
                         return;
                     }
                     
@@ -6767,7 +6809,7 @@
                     
                     // 3. Verificar si quedó pendiente por descontar
                     if (pendienteDescontar > 0) {
-                        console.warn(`⚠️ ADVERTENCIA: Quedan ${pendienteDescontar} uds sin descontar de vencimientos`);
+                        console.warn(`âš ï¸ ADVERTENCIA: Quedan ${pendienteDescontar} uds sin descontar de vencimientos`);
                         console.warn(`   Posible causa: Venta registrada mayor a lotes disponibles`);
                     }
                 } catch (error) {
@@ -6909,7 +6951,7 @@
                         // CASO 4: Lotes < Stock Final → Faltan lotes
                         else {
                             const faltante = stockFinal - sumaLotes;
-                            console.warn(`   ⚠️ Faltan ${faltante} uds en lotes`);
+                            console.warn(`   âš ï¸ Faltan ${faltante} uds en lotes`);
                             console.warn(`   💡 Carga los lotes del ingreso en Vencimientos`);
                         }
                     }
@@ -6939,7 +6981,7 @@
                         btnGuardar.disabled = false;
                         btnGuardar.textContent = '👁️ Previsualizar y Guardar';
                         btnGuardar.style.opacity = '1';
-                        alert('⚠️ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
+                        alert('âš ï¸ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
                     }
                 }, 5000);
                 
@@ -7087,7 +7129,7 @@
                                 await actualizarPromedioGeneral(usuario.localId, fechaString, productos, db);
                                 console.log('✅ Promedios generales actualizados correctamente');
                             } catch (error) {
-                                console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
+                                console.warn('âš ï¸ Error actualizando promedios generales (no crítico):', error);
                                 // No lanzar error para no interrumpir el flujo
                             }
                         }
@@ -7140,7 +7182,7 @@
                                 if (sumaLotes === stockFinal) {
                                     console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
                                 } else {
-                                    console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) ≠ Stock Final (${stockFinal})`);
+                                    console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) â‰  Stock Final (${stockFinal})`);
                                 }
                             }
                             
@@ -7236,7 +7278,7 @@
                                 
                                 // Solo mostrar si NO estamos en pantalla de carga (usar referencia)
                                 if (problemas.length > 0 && !enPantallaCargaRef.current && pantallaActual === 'main') {
-                                    console.log('⚠️ Aún hay problemas después de guardar, mostrando alertas actualizadas...');
+                                    console.log('âš ï¸ Aún hay problemas después de guardar, mostrando alertas actualizadas...');
                                     setTimeout(() => {
                                         // Verificar nuevamente usando la REFERENCIA antes de mostrar
                                         if (!enPantallaCargaRef.current && pantallaActual === 'main' && window.mostrarPopupProblemas) {
@@ -7332,7 +7374,7 @@
                         // Validar consistencia (solo loguear, no ajustar automáticamente)
                         else if (sumaLotes !== stockFinal) {
                             const diferencia = stockFinal - sumaLotes;
-                            console.warn(`⚠️ INCONSISTENCIA en ${productoCodigo} después del descuento:`);
+                            console.warn(`âš ï¸ INCONSISTENCIA en ${productoCodigo} después del descuento:`);
                             console.warn(`   Stock Final: ${stockFinal}`);
                             console.warn(`   Suma Lotes: ${sumaLotes}`);
                             console.warn(`   Diferencia: ${diferencia}`);
@@ -7371,7 +7413,7 @@
                     console.log('📊 Total registros históricos:', todosLosRegistros.length);
                     
                     if (todosLosRegistros.length === 0) {
-                        console.warn('⚠️ No hay registros históricos para calcular promedios');
+                        console.warn('âš ï¸ No hay registros históricos para calcular promedios');
                         return;
                     }
                     
@@ -7566,7 +7608,7 @@
                     
                     console.log('✅ Promedios generales guardados en Firebase');
                 } catch (error) {
-                    console.warn('⚠️ Error guardando promedios en Firebase:', error);
+                    console.warn('âš ï¸ Error guardando promedios en Firebase:', error);
                 }
             };
             
@@ -7952,7 +7994,7 @@
                             <div className="bg-white rounded-lg mb-4 p-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-base font-semibold text-black">
-                                        ⚠️ No recibió mercadería
+                                        âš ï¸ No recibió mercadería
                                     </label>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -8525,7 +8567,7 @@
                                     if (window.openPedidoFabrica) {
                                         window.openPedidoFabrica();
                                     } else {
-                                        alert('FunciÃ³n de pedido a fÃ¡brica no disponible');
+                                        alert('Función de pedido a fábrica no disponible');
                                     }
                                 }}
                                 className={`w-full font-bold fade-in menu-button ${tienePedidoFabrica ? 'btn-completed' : 'btn-primary'}`}
@@ -8895,7 +8937,7 @@
                                 console.log('🔍 DOMINGO - Promedios individuales:', promediosPorDia[dia]);
                             }
                     } else {
-                        console.log(`⚠️ No hay datos para ${dia}`);
+                        console.log(`âš ï¸ No hay datos para ${dia}`);
                     }
                 });
 
@@ -9080,10 +9122,10 @@
             // Función helper para convertir fecha a ISO
             const fechaISO = (fecha) => {
                 if (typeof fecha === 'string') return fecha;
-                const año = fecha.getFullYear();
+                const anio = fecha.getFullYear();
                 const mes = String(fecha.getMonth() + 1).padStart(2, '0');
                 const dia = String(fecha.getDate()).padStart(2, '0');
-                return `${año}-${mes}-${dia}`;
+                return `${anio}-${mes}-${dia}`;
             };
 
             // Función para mostrar menú de promedios
@@ -9139,11 +9181,11 @@
             const mostrarPromedioMesActual = async () => {
                 const hoy = getFechaArgentina();
                 const mesActual = hoy.getMonth();
-                const añoActual = hoy.getFullYear();
+                const anioActual = hoy.getFullYear();
                 
                 const registrosFiltrados = registrosCache.filter(registro => {
                     const fechaRegistro = new Date(registro.fecha);
-                    return fechaRegistro.getMonth() === mesActual && fechaRegistro.getFullYear() === añoActual;
+                    return fechaRegistro.getMonth() === mesActual && fechaRegistro.getFullYear() === anioActual;
                 });
                 
                 const nombreMes = hoy.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
@@ -9791,17 +9833,6 @@
             };
 
             const handleLogout = async () => {
-                // Cerrar sesión de Firebase Auth
-                try {
-                    const auth = FirebaseRegionManager.getAuth();
-                    if (auth.currentUser) {
-                        console.log('🚪 Cerrando sesión de Firebase Auth');
-                        await auth.signOut();
-                    }
-                } catch (error) {
-                    console.error('Error cerrando sesión de Firebase Auth:', error);
-                }
-                
                 // EXACTO como Android: Solo limpiar usuario, NO limpiar región ni loginData
                 // La región y los datos de login (si se marcó "Recordar") se mantienen guardados
                 localStorage.removeItem('usuario');
@@ -9886,10 +9917,10 @@
     if (!d) d = getFechaArgentina();
     // Asegurar que trabajamos con fecha en zona horaria de Argentina
     const fechaArg = formatearFechaArgentina(d);
-    const año = fechaArg.getFullYear();
+    const anio = fechaArg.getFullYear();
     const mes = String(fechaArg.getMonth() + 1).padStart(2, '0');
     const dia = String(fechaArg.getDate()).padStart(2, '0');
-    return `${año}-${mes}-${dia}`;
+    return `${anio}-${mes}-${dia}`;
   };
 
   // Orden de productos igual a la APK (lista desplegable de productos del local)
@@ -9917,7 +9948,7 @@
   async function getHistorial(localId, fecha) {
     try {
       if (!localId || !fecha) {
-        console.warn('⚠️ getHistorial: localId o fecha vacíos', { localId, fecha });
+        console.warn('âš ï¸ getHistorial: localId o fecha vacíos', { localId, fecha });
         return { lotesIniciales: [], lotesFinales: [] };
       }
       console.log('🔍 Buscando historial en: locales/' + localId + '/vencimientos_historial_diario/' + fecha);
@@ -10344,7 +10375,7 @@
               
               const mensajeDiv = document.createElement('div');
               mensajeDiv.style.cssText = 'padding:0 32px 16px;font-size:12px;color:#c62828';
-              mensajeDiv.textContent = '   ⚠️ Debes ajustar los lotes para que coincidan con el stock actual';
+              mensajeDiv.textContent = '   âš ï¸ Debes ajustar los lotes para que coincidan con el stock actual';
               prodDiv.appendChild(mensajeDiv);
             }
             
@@ -10382,7 +10413,7 @@
             prodDiv.style.cssText = 'margin:16px 0;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden';
             prodDiv.innerHTML = '<div style="background:#f57c00;color:#fff;font-weight:700;padding:12px 16px;font-size:15px">' + productoNombre + '</div>' +
               '<div style="padding:8px 16px;font-size:14px">   Stock actual: ' + stock + ' uds</div>' +
-              '<div style="padding:4px 16px;font-size:14px;font-weight:700;color:#c62828">   ⚠️ NO HAY VENCIMIENTOS CARGADOS para este producto</div>' +
+              '<div style="padding:4px 16px;font-size:14px;font-weight:700;color:#c62828">   âš ï¸ NO HAY VENCIMIENTOS CARGADOS para este producto</div>' +
               '<div style="padding:0 16px 16px;font-size:12px;color:#6b7280">   💡 Debes cargar los vencimientos desde la sección "Vencimientos"</div>';
             body.appendChild(prodDiv);
           });
@@ -10680,7 +10711,7 @@
         
         // Calcular nueva fecha - usar método directo sin conversiones de zona horaria
         const [y, m, d] = fechaActual.split('-').map(Number);
-        console.log('Componentes de fecha:', { año: y, mes: m, dia: d });
+        console.log('Componentes de fecha:', { anio: y, mes: m, dia: d });
         
         // Crear fecha en UTC para evitar problemas de zona horaria
         const fechaObj = new Date(Date.UTC(y, m - 1, d));
@@ -10691,10 +10722,10 @@
         console.log('Después de setUTCDate:', fechaObj.toISOString(), 'día local:', fechaObj.getUTCDate());
         
         // Formatear manualmente para evitar problemas con fechaISO
-        const nuevoAño = fechaObj.getUTCFullYear();
+        const nuevoAnio = fechaObj.getUTCFullYear();
         const nuevoMes = String(fechaObj.getUTCMonth() + 1).padStart(2, '0');
         const nuevoDia = String(fechaObj.getUTCDate()).padStart(2, '0');
-        fechaVencimientoSeleccionada = `${nuevoAño}-${nuevoMes}-${nuevoDia}`;
+        fechaVencimientoSeleccionada = `${nuevoAnio}-${nuevoMes}-${nuevoDia}`;
         
         console.log('Nueva fecha calculada:', fechaVencimientoSeleccionada);
         
@@ -11021,7 +11052,7 @@
         if (Object.keys(productosConStockSinLotes).length > 0) {
           const advDiv = document.createElement('div');
           advDiv.style.cssText = 'background:#dc2626;color:#fff;padding:12px;border-radius:6px;margin-bottom:16px;font-weight:700;font-size:14px';
-          advDiv.textContent = '⚠️ PRODUCTOS CON STOCK SIN LOTES CARGADOS';
+          advDiv.textContent = 'âš ï¸ PRODUCTOS CON STOCK SIN LOTES CARGADOS';
           list.appendChild(advDiv);
 
           Object.keys(categorias).forEach(categoria => {
@@ -11042,7 +11073,7 @@
                   const prodDiv = document.createElement('div');
                   prodDiv.style.cssText = 'margin:8px 0;border:1px solid #dc2626;border-radius:6px;overflow:hidden';
                   prodDiv.innerHTML = '<div style="background:#dc2626;color:#fff;font-weight:700;padding:8px 12px;font-size:14px">' + (productos[codigo] || codigo) + '</div>' +
-                    '<div style="padding:8px 12px;font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2">⚠️ Stock: ' + stock + ' uds | Lotes: 0 uds | FALTAN CARGAR LOTES</div>';
+                    '<div style="padding:8px 12px;font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2">âš ï¸ Stock: ' + stock + ' uds | Lotes: 0 uds | FALTAN CARGAR LOTES</div>';
                   catDiv.appendChild(prodDiv);
                 }
               });
@@ -11082,10 +11113,10 @@
                   validacionText = '✅ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds (Coincide)';
                   validacionColor = '#059669';
                 } else if (diferencia > 0) {
-                  validacionText = '⚠️ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Faltan: +' + diferencia + ' uds';
+                  validacionText = 'âš ï¸ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Faltan: +' + diferencia + ' uds';
                   validacionColor = '#f57c00';
                 } else {
-                  validacionText = '⚠️ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Sobran: ' + (-diferencia) + ' uds';
+                  validacionText = 'âš ï¸ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Sobran: ' + (-diferencia) + ' uds';
                   validacionColor = '#dc2626';
                 }
                 prodDiv.innerHTML = '<div style="background:#0ea5e9;color:#fff;font-weight:700;padding:8px 12px;font-size:14px">' + lotesProducto[0].productoNombre + '</div>' +
@@ -11251,7 +11282,7 @@
       }
       
       if (vencimientosManana.length > 0) {
-        mensaje += '> *VENCEN MAÑANA* ⚠️:\n';
+        mensaje += '> *VENCEN MAÑANA* âš ï¸:\n';
         vencimientosManana.forEach(v => {
           mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
@@ -11427,7 +11458,7 @@
           
           const alertHeader = document.createElement('div');
           alertHeader.style.cssText = 'background:#ff9800;color:#fff;padding:16px;font-weight:bold;font-size:18px';
-          alertHeader.textContent = '⚠️ Stock Final Pendiente';
+          alertHeader.textContent = 'âš ï¸ Stock Final Pendiente';
           alertDialog.appendChild(alertHeader);
           
           const alertBody = document.createElement('div');
@@ -12109,7 +12140,7 @@
     // Verificar si club es argentino
     function esClubArgentino(nombre) {
       if (!nombre) return false;
-      const n = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const n = nombre.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '');
       const clubesArgentinos = [
         'boca juniors', 'boca', 'river plate', 'river', 'racing', 'independiente', 'san lorenzo',
         'estudiantes', 'gimnasia', 'rosario central', 'newell', 'talleres', 'belgrano',
@@ -12332,10 +12363,10 @@
               console.log('✅ Cache cargado desde Firebase: ' + Object.keys(tendenciasGuardadas).length + ' productos');
               console.log('   Productos con tendencia: ' + Object.keys(tendenciasGuardadas).filter(k => tendenciasGuardadas[k] !== 0).length);
             } else {
-              console.log('⚠️ Documento existe pero no tiene tendencias válidas');
+              console.log('âš ï¸ Documento existe pero no tiene tendencias válidas');
             }
           } else {
-            console.log('⚠️ Documento existe pero está vacío');
+            console.log('âš ï¸ Documento existe pero está vacío');
           }
         } else {
           console.log('ℹ️ No hay cache en Firebase (aún no se cargó Stock Final)');
@@ -13083,7 +13114,7 @@
         if (textoLower.includes(diaLower)) return true;
       }
       
-      // Mapeo de días en español
+      // Mapeo de días en espaniol
       const diasMap = {
         'LUNES': ['lunes', 'lun'],
         'MARTES': ['martes', 'mar'],
@@ -13418,7 +13449,7 @@
           
           // Agregar icono de stock bajo si existe
           if (tieneStockBajo) {
-            texto += ' <span style="color:#dc2626;cursor:pointer" data-tipo="stock-bajo">⚠️</span>';
+            texto += ' <span style="color:#dc2626;cursor:pointer" data-tipo="stock-bajo">âš ï¸</span>';
           }
           
           // Agregar icono de tendencia si existe
@@ -13587,7 +13618,7 @@
     function mostrarOpcionesTendenciaYStock(codigo, tendencia, historial, nombre) {
       const opciones = [
         '📈 Ver Tendencia de Ventas',
-        '⚠️ Ver Historial de Stock Bajo'
+        'âš ï¸ Ver Historial de Stock Bajo'
       ];
       
       const overlay = document.createElement('div');
@@ -13624,7 +13655,7 @@
         return d + '/' + m + '/' + y;
       };
 
-      modalReporte.innerHTML = '<div style="font-weight:700;font-size:20px;color:#dc2626;text-align:center;margin-bottom:16px">⚠️ Stock Bajo Detectado</div>' +
+      modalReporte.innerHTML = '<div style="font-weight:700;font-size:20px;color:#dc2626;text-align:center;margin-bottom:16px">âš ï¸ Stock Bajo Detectado</div>' +
         '<div style="font-weight:700;font-size:18px;text-align:center;margin-bottom:16px;color:#1f2937">' + codigo + ' - ' + nombre + '</div>' +
         '<div style="font-size:16px;margin-bottom:16px;text-align:center;color:#1f2937">En los últimos 7 días, este producto quedó con stock bajo (≤ 15 unidades):</div>' +
         '<div style="max-height:300px;overflow-y:auto;margin-bottom:16px">' +
@@ -13726,7 +13757,7 @@
       const [primerDia, tieneEntregaPrimerDia] = lista[0];
       if (!tieneEntregaPrimerDia) {
         const diasExtraEl = document.getElementById('pf-dias-extra');
-        if (diasExtraEl) diasExtraEl.textContent = '⚠️ No se puede hacer pedido - ' + primerDia + ' sin entrega';
+        if (diasExtraEl) diasExtraEl.textContent = 'âš ï¸ No se puede hacer pedido - ' + primerDia + ' sin entrega';
         return diaSiguiente;
       }
       
@@ -14700,7 +14731,7 @@
       }
       
       // Si no encuentra, retornar el nombre original
-      console.warn('⚠️ [obtenerCodigoProducto] No se encontró mapeo para:', nombreNormalizado);
+      console.warn('âš ï¸ [obtenerCodigoProducto] No se encontró mapeo para:', nombreNormalizado);
       return nombreNormalizado;
     }
 
@@ -15486,3 +15517,10 @@
 })();
 </script>
 </script>
+
+
+
+
+
+
+

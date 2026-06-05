@@ -18,7 +18,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.12"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="admin_local.js?v=4.12"></script>
-    <script src="cambio_contrasena_primer_ingreso.js?v=4.12"></script>
     
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
     <script>
@@ -1342,32 +1341,39 @@
                 const requiereCambio = adminActual.debeCambiarContraseña || adminActual.primerIngreso || adminActual.contraseña === PASSWORD_INICIAL_LOCAL;
                 if (!requiereCambio) return adminActual;
 
-                // Usar modal en lugar de prompt
-                return new Promise((resolve, reject) => {
-                    window.mostrarModalCambioContrasena((nuevaContraseña, cancelado) => {
-                        if (cancelado) {
-                            reject(new Error('Debes cambiar la contraseña para ingresar.'));
-                            return;
-                        }
-                        
-                        if (!nuevaContraseña) {
-                            reject(new Error('Debes cambiar la contraseña para ingresar.'));
-                            return;
-                        }
+                alert('Primer ingreso detectado. Debes cambiar la contraseña para continuar.');
 
-                        const adminActualizado = {
-                            ...adminActual,
-                            contraseña: nuevaContraseña,
-                            debeCambiarContraseña: false,
-                            primerIngreso: false,
-                            passwordUpdatedAt: new Date().toISOString()
-                        };
+                let nuevaContraseña = '';
+                while (true) {
+                    nuevaContraseña = prompt('Ingresa tu nueva contraseña (mínimo 6 caracteres):', '');
+                    if (!nuevaContraseña) throw new Error('Debes cambiar la contraseña para ingresar.');
+                    if (nuevaContraseña.length < 6) {
+                        alert('La contraseña debe tener al menos 6 caracteres.');
+                        continue;
+                    }
+                    if (nuevaContraseña === PASSWORD_INICIAL_LOCAL) {
+                        alert('La nueva contraseña no puede ser la inicial.');
+                        continue;
+                    }
+                    const confirmar = prompt('Confirma la nueva contraseña:', '');
+                    if (!confirmar) throw new Error('Debes confirmar la nueva contraseña.');
+                    if (confirmar !== nuevaContraseña) {
+                        alert('Las contraseñas no coinciden.');
+                        continue;
+                    }
+                    break;
+                }
 
-                        persistirAdminLocal(db, localDocId, localData, adminActualizado)
-                            .then(() => resolve(adminActualizado))
-                            .catch(err => reject(err));
-                    });
-                });
+                const adminActualizado = {
+                    ...adminActual,
+                    contraseña: nuevaContraseña,
+                    debeCambiarContraseña: false,
+                    primerIngreso: false,
+                    passwordUpdatedAt: new Date().toISOString()
+                };
+
+                await persistirAdminLocal(db, localDocId, localData, adminActualizado);
+                return adminActualizado;
             };
 
             // Login por Firestore (sin Firebase Auth)
@@ -2755,7 +2761,6 @@
             
             const [locales, setLocales] = useState([]);
             const [localesFiltrados, setLocalesFiltrados] = useState([]);
-            const [localesPorSupervisor, setLocalesPorSupervisor] = useState({}); // {supervisorId: [locales]}
             const [supervisores, setSupervisores] = useState([]);
             const [supervisoresFiltrados, setSupervisoresFiltrados] = useState([]);
             const [cargando, setCargando] = useState(true);
@@ -2765,9 +2770,7 @@
             const [pestanaActiva, setPestanaActiva] = useState('locales');
             const [usuarioActual, setUsuarioActual] = useState(null);
             const [esUsuarioMaestro, setEsUsuarioMaestro] = useState(false);
-            const [supervisoresContraidos, setSupervisoresContraidos] = useState({}); // {} = todos contraídos por defecto
-            const [localesSinSupervisorContraido, setLocalesSinSupervisorContraido] = useState(true); // true = contraído por defecto
-            const [localesSinSupervisorCargados, setLocalesSinSupervisorCargados] = useState(null); // null = no cargados, [] = cargados
+            const [supervisoresContraidos, setSupervisoresContraidos] = useState({});
             const [nuevoLocal, setNuevoLocal] = useState({
                 nombre: '',
                 email: '',
@@ -2812,7 +2815,7 @@
                 }
             }, [locales, esUsuarioMaestro, usuarioActual]);
 
-            const cargarUsuarioActual = async () => {
+            const cargarUsuarioActual = () => {
                 try {
                     const usuarioData = localStorage.getItem('usuario_actual');
                     if (usuarioData) {
@@ -2825,25 +2828,8 @@
                             usuario.localesAsignados = [];
                         }
                         
-                        let rolNormalizado = (usuario.rol || '').toLowerCase().replace(/\s+/g, '_');
-                        let puedeGestionarTodo = rolNormalizado === 'maestro' || rolNormalizado === 'asistente_regional';
-
-                        // Si es supervisor, verificar si es asistente en Firebase
-                        if (rolNormalizado === 'supervisor' && usuario.usuarioId) {
-                            try {
-                                const db = FirebaseRegionManager.getFirestore();
-                                const supervisorDoc = await db.collection('supervisores').doc(usuario.usuarioId).get();
-                                if (supervisorDoc.exists) {
-                                    const supervisorData = supervisorDoc.data();
-                                    if (supervisorData.esAsistente) {
-                                        puedeGestionarTodo = true;
-                                        console.log('✅ Supervisor es asistente - otorgando permisos de maestro');
-                                    }
-                                }
-                            } catch (e) {
-                                console.warn('Error verificando si es asistente:', e);
-                            }
-                        }
+                        const rolNormalizado = (usuario.rol || '').toLowerCase().replace(/\s+/g, '_');
+                        const puedeGestionarTodo = rolNormalizado === 'maestro' || rolNormalizado === 'asistente_regional';
 
                         setUsuarioActual(usuario);
                         setEsUsuarioMaestro(puedeGestionarTodo);
@@ -2923,102 +2909,6 @@
                     setError('Error cargando locales: ' + error.message);
                 } finally {
                     setCargando(false);
-                }
-            };
-
-            const cargarLocalesDeSupervisor = async (supervisorId) => {
-                // Si ya están cargados, no volver a cargar
-                if (localesPorSupervisor[supervisorId]) {
-                    return;
-                }
-
-                try {
-                    const db = await ensureDbGestion();
-                    const supervisorDoc = await db.collection('supervisores').doc(supervisorId).get();
-                    
-                    if (!supervisorDoc.exists) {
-                        console.warn('Supervisor no encontrado:', supervisorId);
-                        return;
-                    }
-
-                    const supervisor = supervisorDoc.data();
-                    const idsAsignados = supervisor.localesAsignados || [];
-                    
-                    if (idsAsignados.length === 0) {
-                        setLocalesPorSupervisor(prev => ({...prev, [supervisorId]: []}));
-                        return;
-                    }
-
-                    // Cargar solo los locales asignados a este supervisor
-                    const snapshot = await db.collection('locales').get();
-                    const localesData = [];
-                    
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const localData = {
-                            ...data,
-                            id: doc.id
-                        };
-                        
-                        // Verificar si este local está asignado al supervisor
-                        const idsNormalizados = idsAsignados.map(id => String(id || '').trim().toLowerCase());
-                        if (idsNormalizados.includes(String(doc.id).toLowerCase()) || 
-                            idsNormalizados.includes(String(data.nombre || '').trim().toLowerCase())) {
-                            localesData.push(localData);
-                        }
-                    });
-
-                    console.log(`📦 Locales cargados para supervisor ${supervisorId}:`, localesData.length);
-                    setLocalesPorSupervisor(prev => ({...prev, [supervisorId]: localesData}));
-                } catch (error) {
-                    console.error('Error cargando locales del supervisor:', error);
-                }
-            };
-
-            const toggleExpandirSupervisor = async (supervisorId) => {
-                const estaExpandido = supervisoresContraidos[supervisorId] === true;
-                
-                if (estaExpandido) {
-                    // Colapsar
-                    setSupervisoresContraidos(prev => ({...prev, [supervisorId]: false}));
-                } else {
-                    // Expandir - cargar locales primero
-                    await cargarLocalesDeSupervisor(supervisorId);
-                    setSupervisoresContraidos(prev => ({...prev, [supervisorId]: true}));
-                }
-            };
-
-            const toggleExpandirLocalesSinSupervisor = async () => {
-                if (localesSinSupervisorContraido) {
-                    // Expandir - cargar locales primero
-                    if (localesSinSupervisorCargados === null) {
-                        try {
-                            const db = await ensureDbGestion();
-                            const snapshot = await db.collection('locales').get();
-                            const todosLosLocales = [];
-                            snapshot.forEach(doc => {
-                                todosLosLocales.push({ id: doc.id, ...doc.data() });
-                            });
-
-                            // Obtener IDs de todos los locales asignados a supervisores
-                            const idsAsignados = new Set();
-                            supervisores.forEach(s => {
-                                const ids = normalizarIdsLocalesAsignados(s.localesAsignados || []);
-                                ids.forEach(id => idsAsignados.add(id));
-                            });
-
-                            // Filtrar locales sin supervisor
-                            const localesSinSupervisor = todosLosLocales.filter(l => !idsAsignados.has(l.id));
-                            setLocalesSinSupervisorCargados(localesSinSupervisor);
-                        } catch (error) {
-                            console.error('Error cargando locales sin supervisor:', error);
-                            setLocalesSinSupervisorCargados([]);
-                        }
-                    }
-                    setLocalesSinSupervisorContraido(false);
-                } else {
-                    // Colapsar
-                    setLocalesSinSupervisorContraido(true);
                 }
             };
 
@@ -3705,20 +3595,46 @@
             };
 
             const construirJerarquiaLocales = () => {
+                const localesBase = (localesFiltrados.length > 0 ? localesFiltrados : locales) || [];
                 const supervisoresBase = (supervisoresFiltrados.length > 0 ? supervisoresFiltrados : supervisores) || [];
+                const localesPorId = new Map(localesBase.map((local) => [local.id, local]));
+                const normalizarNombreLocal = (valor) => String(valor || '').trim().toLowerCase();
 
                 const grupos = supervisoresBase.map((supervisor) => {
-                    // Usar localesPorSupervisor si está cargado, si no usar array vacío
-                    const localesDelSupervisor = localesPorSupervisor[supervisor.id] || [];
-                    
+                    const ids = normalizarIdsLocalesAsignados(supervisor.localesAsignados || []);
+                    const localesDelSupervisor = [];
+                    const vistos = new Set();
+
+                    ids.forEach((localId) => {
+                        const local = localesPorId.get(localId) || localesBase.find((l) => normalizarNombreLocal(l.nombre) === normalizarNombreLocal(localId));
+                        if (!local) return;
+                        if (vistos.has(local.id)) return;
+                        vistos.add(local.id);
+                        localesDelSupervisor.push(local);
+                    });
+
                     return {
                         supervisor,
                         locales: localesDelSupervisor
                     };
                 });
 
-                // sinSupervisor ya no se calcula aquí, se carga lazy cuando se expande
-                return { grupos, sinSupervisor: [] };
+                const idsAsignados = new Set();
+                const nombresAsignados = new Set();
+
+                grupos.forEach((grupo) => {
+                    grupo.locales.forEach((local) => {
+                        idsAsignados.add(local.id);
+                        nombresAsignados.add(normalizarNombreLocal(local.nombre));
+                    });
+                });
+
+                const sinSupervisor = localesBase.filter((local) => {
+                    const nombreLocal = normalizarNombreLocal(local.nombre);
+                    return !idsAsignados.has(local.id) && !nombresAsignados.has(nombreLocal);
+                });
+
+                return { grupos, sinSupervisor };
             };
 
             const eliminarLocal = async (local) => {
@@ -3938,73 +3854,26 @@
             const mostrarDialogoAsignarLocales = async (supervisor) => {
                 try {
                     console.log('🔍 Supervisor seleccionado:', supervisor);
+                    console.log('🔍 Locales asignados del supervisor:', supervisor.localesAsignados);
                     
-                    // 1. Descargar TODOS los locales activos
-                    const db = FirebaseRegionManager.getFirestore();
-                    const snapshot = await db.collection('locales')
-                        .where('activo', true)
-                        .get();
-                    
-                    const todosLosLocales = [];
-                    snapshot.forEach(doc => {
-                        const local = { id: doc.id, ...doc.data() };
-                        todosLosLocales.push(local);
-                    });
-                    
-                    // Función local para normalizar IDs usando los locales cargados
-                    const normalizarIdsLocalesAsignadosLocal = (localesAsignados) => {
-                        const idsUnicos = new Set();
-                        localesAsignados.forEach((item) => {
-                            const valor = String(item || '').trim();
-                            if (!valor) return;
-
-                            const localPorId = todosLosLocales.find((local) => local.id === valor);
-                            if (localPorId) {
-                                idsUnicos.add(localPorId.id);
-                                return;
-                            }
-
-                            const localPorNombre = todosLosLocales.find((local) => String(local.nombre || '').trim().toLowerCase() === valor.toLowerCase());
-                            if (localPorNombre) {
-                                idsUnicos.add(localPorNombre.id);
-                                return;
-                            }
-
-                            idsUnicos.add(valor);
-                        });
-
-                        return Array.from(idsUnicos);
-                    };
-                    
-                    // 2. Identificar qué locales ya pertenecen a OTROS supervisores
-                    const idsAsignadosAOtros = new Set();
-                    supervisores.forEach(s => {
-                        if (s.id !== supervisor.id) {
-                            const ids = normalizarIdsLocalesAsignadosLocal(s.localesAsignados || []);
-                            ids.forEach(id => idsAsignadosAOtros.add(id));
-                        }
-                    });
-                    
-                    // 3. Separar en asignados a este supervisor y disponibles (huérfanos)
-                    const idsAsignadosEsteSupervisor = normalizarIdsLocalesAsignadosLocal(supervisor.localesAsignados || []);
-                    
-                    const localesAsignados = todosLosLocales.filter(l => 
-                        idsAsignadosEsteSupervisor.includes(l.id)
-                    );
-                    const localesDisponibles = todosLosLocales.filter(l => 
-                        !idsAsignadosEsteSupervisor.includes(l.id) && 
-                        !idsAsignadosAOtros.has(l.id)
-                    );
-                    
-                    console.log('🔍 Locales asignados:', localesAsignados.length);
-                    console.log('🔍 Locales disponibles:', localesDisponibles.length);
-
-                    if (todosLosLocales.length === 0) {
-                        alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
-                        return;
+                    let localesDisponibles = [...locales];
+                    if (localesDisponibles.length === 0) {
+                        const db = FirebaseRegionManager.getFirestore();
+                        const snapshot = await db.collection('locales').get();
+                        localesDisponibles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     }
+
+                    console.log('🔍 Locales cargados:', localesDisponibles.map(l => ({id: l.id, nombre: l.nombre})));
+
+                    if (localesDisponibles.length === 0) {
+                        alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
+                    return;
+                }
+                
+                    const contenido = `Selecciona los locales que quieres asignar a ${supervisor.usuario}:\n\nℹ️ Los locales pueden estar asignados a múltiples supervisores simultáneamente.`;
+                    const localesAsignadosSupervisor = new Set(normalizarIdsLocalesAsignados(supervisor.localesAsignados || []));
                     
-                    // Crear modal
+                    // Crear modal con checkboxes
                     const modal = document.createElement('div');
                     modal.style.cssText = `
                         position: fixed;
@@ -4033,11 +3902,12 @@
                     
                     dialogContent.innerHTML = `
                         <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px; color: #333;">
-                            Asignar Locales a ${supervisor.usuario}
+                            Asignar Locales
                         </h3>
-                        <input type="text" id="searchBox" placeholder="🔍 Buscar local..." 
-                            style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
-                        <div id="checkboxesContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                        <p style="color: #666; margin-bottom: 16px; font-size: 14px;">
+                            ${contenido}
+                        </p>
+                        <div id="checkboxesContainer"></div>
                         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
                             <button id="cancelBtn" style="padding: 10px 20px; border: 1px solid #ddd; background: white; color: #666; border-radius: 8px; cursor: pointer;">
                                 Cancelar
@@ -4053,59 +3923,43 @@
                     
                     const checkboxesContainer = dialogContent.querySelector('#checkboxesContainer');
                     const checkboxes = {};
-                    const allCheckboxViews = [];
                     
-                    // Título Asignados
-                    const tituloAsignados = document.createElement('div');
-                    tituloAsignados.style.cssText = 'font-size: 14px; font-weight: bold; color: #4CAF50; margin: 8px 0;';
-                    tituloAsignados.textContent = `✅ Asignados Actualmente (${localesAsignados.length})`;
-                    checkboxesContainer.appendChild(tituloAsignados);
-                    
-                    if (localesAsignados.length === 0) {
-                        const ninguno = document.createElement('div');
-                        ninguno.style.cssText = 'font-size: 12px; color: #666; margin-bottom: 8px;';
-                        ninguno.textContent = 'Ninguno';
-                        checkboxesContainer.appendChild(ninguno);
-                    } else {
-                        localesAsignados.forEach(local => {
-                            const cb = createCheckbox(local, true, supervisor);
-                            checkboxes[local.id] = cb.checkbox;
-                            allCheckboxViews.push(cb.div);
-                            checkboxesContainer.appendChild(cb.div);
-                        });
-                    }
-                    
-                    // Título Disponibles
-                    const tituloDisp = document.createElement('div');
-                    tituloDisp.style.cssText = 'font-size: 14px; font-weight: bold; color: #2196F3; margin: 16px 0 8px 0;';
-                    tituloDisp.textContent = `➕ Disponibles (Sin Asignar) (${localesDisponibles.length})`;
-                    checkboxesContainer.appendChild(tituloDisp);
-                    
-                    if (localesDisponibles.length === 0) {
-                        const noHuerfanos = document.createElement('div');
-                        noHuerfanos.style.cssText = 'font-size: 12px; color: #666; margin-bottom: 8px;';
-                        noHuerfanos.textContent = 'No hay locales huérfanos';
-                        checkboxesContainer.appendChild(noHuerfanos);
-                    } else {
-                        localesDisponibles.forEach(local => {
-                            const cb = createCheckbox(local, false, supervisor);
-                            checkboxes[local.id] = cb.checkbox;
-                            allCheckboxViews.push(cb.div);
-                            checkboxesContainer.appendChild(cb.div);
-                        });
-                    }
-                    
-                    // Buscador
-                    const searchBox = dialogContent.querySelector('#searchBox');
-                    searchBox.addEventListener('input', (e) => {
-                        const query = e.target.value.toLowerCase();
-                        allCheckboxViews.forEach(div => {
-                            if (div.dataset.nombre.toLowerCase().includes(query)) {
-                                div.style.display = 'block';
-                            } else {
-                                div.style.display = 'none';
-                            }
-                        });
+                    localesDisponibles.forEach(local => {
+                        // Verificar si el local está asignado a otros supervisores
+                        const otrosSupervisores = supervisores.filter(s => 
+                            s.id !== supervisor.id && normalizarIdsLocalesAsignados(s.localesAsignados || []).includes(local.id)
+                        );
+                        
+                        const textoLocal = otrosSupervisores.length > 0
+                            ? `🏪 ${local.nombre} (📋 Asignado a: ${otrosSupervisores.map(s => s.usuario).join(', ')})`
+                            : `🏪 ${local.nombre}`;
+                        
+                        const estaAsignado = localesAsignadosSupervisor.has(local.id);
+                        console.log(`🔍 Local: ${local.nombre} (ID: ${local.id}), Asignado: ${estaAsignado}, LocalesAsignados:`, supervisor.localesAsignados);
+                        
+                        const checkboxDiv = document.createElement('div');
+                        checkboxDiv.style.cssText = 'margin-bottom: 8px;';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `local-${local.id}`;
+                        checkbox.checked = estaAsignado;
+                        checkbox.style.cssText = 'margin-right: 8px;';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `local-${local.id}`;
+                        label.textContent = textoLocal;
+                        label.style.cssText = 'font-size: 14px; cursor: pointer;';
+                        
+                        if (otrosSupervisores.length > 0) {
+                            label.style.color = '#FF9800';
+                        }
+                        
+                        checkboxDiv.appendChild(checkbox);
+                        checkboxDiv.appendChild(label);
+                        checkboxesContainer.appendChild(checkboxDiv);
+                        
+                        checkboxes[local.id] = checkbox;
                     });
                     
                     // Event listeners
@@ -4126,28 +3980,6 @@
                     console.error('Error mostrando diálogo de asignación:', error);
                     alert('Error cargando locales: ' + error.message);
                 }
-            };
-            
-            const createCheckbox = (local, checked, supervisor) => {
-                const div = document.createElement('div');
-                div.style.cssText = 'margin-bottom: 8px;';
-                div.dataset.nombre = local.nombre.toLowerCase();
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `local-${local.id}`;
-                checkbox.checked = checked;
-                checkbox.style.cssText = 'margin-right: 8px;';
-                
-                const label = document.createElement('label');
-                label.htmlFor = `local-${local.id}`;
-                label.textContent = `🏪 ${local.nombre}`;
-                label.style.cssText = 'font-size: 14px; cursor: pointer;';
-                
-                div.appendChild(checkbox);
-                div.appendChild(label);
-                
-                return { div, checkbox };
             };
             
             const asignarLocalesASupervisor = async (supervisor, localesAsignados) => {
@@ -4174,17 +4006,6 @@
                     setSupervisoresFiltrados(prev => prev.map(s => 
                         s.id === supervisor.id ? supervisorActualizado : s
                     ));
-                    
-                    // Actualizar localesPorSupervisor si ya están cargados
-                    if (localesPorSupervisor[supervisor.id]) {
-                        // Recargar locales del supervisor
-                        await cargarLocalesDeSupervisor(supervisor.id);
-                    }
-                    
-                    // Recargar locales sin supervisor si están cargados
-                    if (localesSinSupervisorCargados !== null) {
-                        setLocalesSinSupervisorCargados(null); // Forzar recarga la próxima vez que se expanda
-                    }
                     
                     alert(`✅ Locales asignados exitosamente a ${supervisor.usuario}`);
                     
@@ -4393,7 +4214,12 @@
                                 {grupos.map(({ supervisor, locales: localesGrupo }) => (
                                     <div key={`jer-${supervisor.id}`} style={{ marginBottom: '10px' }}>
                                         <div
-                                            onClick={() => toggleExpandirSupervisor(supervisor.id)}
+                                            onClick={() => {
+                                                setSupervisoresContraidos((prev) => ({
+                                                    ...prev,
+                                                    [supervisor.id]: !prev[supervisor.id]
+                                                }));
+                                            }}
                                             style={{
                                                 fontSize: '13px',
                                                 fontWeight: '600',
@@ -4405,90 +4231,64 @@
                                                 userSelect: 'none'
                                             }}
                                         >
-                                            <span>{supervisoresContraidos[supervisor.id] === true ? '▾' : '▸'}</span>
+                                            <span>{supervisoresContraidos[supervisor.id] ? '▸' : '▾'}</span>
                                             <span>Supervisor: {supervisor.usuario}</span>
                                         </div>
-                                        {supervisoresContraidos[supervisor.id] === true && (
-                                            <>
-                                                {localesPorSupervisor[supervisor.id] === undefined ? (
-                                                    <div style={{ fontSize: '12px', color: '#6B7280', paddingLeft: '12px' }}>
-                                                        Cargando locales...
-                                                    </div>
-                                                ) : localesPorSupervisor[supervisor.id].length === 0 ? (
-                                                    <div style={{ fontSize: '12px', color: '#6B7280', paddingLeft: '12px' }}>
-                                                        Sin locales asignados
-                                                    </div>
-                                                ) : (
-                                                    localesPorSupervisor[supervisor.id].map((local) => (
-                                                        <div key={`jer-loc-${supervisor.id}-${local.id}`} style={{
-                                                            marginTop: '6px',
-                                                            marginLeft: '12px',
-                                                            backgroundColor: '#F8FAFC',
-                                                            border: '1px solid #E2E8F0',
-                                                            borderRadius: '10px',
-                                                            padding: '8px'
-                                                        }}>
-                                                            <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>
-                                                                🏪 {local.nombre}
-                                                            </div>
-                                                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                                                <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
-                                                                <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
-                                                                <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
-                                                                <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
-                                                                <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </>
+                                        {!supervisoresContraidos[supervisor.id] && localesGrupo.length === 0 && (
+                                            <div style={{ fontSize: '12px', color: '#6B7280', paddingLeft: '12px' }}>
+                                                Sin locales asignados
+                                            </div>
                                         )}
+                                        {!supervisoresContraidos[supervisor.id] && localesGrupo.map((local) => (
+                                            <div key={`jer-loc-${supervisor.id}-${local.id}`} style={{
+                                                marginTop: '6px',
+                                                marginLeft: '12px',
+                                                backgroundColor: '#F8FAFC',
+                                                border: '1px solid #E2E8F0',
+                                                borderRadius: '10px',
+                                                padding: '8px'
+                                            }}>
+                                                <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>
+                                                    🏪 {local.nombre}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                    <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
+                                                    <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
+                                                    <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
+                                                    <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
+                                                    <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
 
-                                {localesSinSupervisorCargados !== null && localesSinSupervisorCargados.length > 0 && (
+                                {sinSupervisor.length > 0 && (
                                     <div style={{ marginTop: '8px', borderTop: '1px dashed #E5E7EB', paddingTop: '8px' }}>
-                                        <div
-                                            onClick={toggleExpandirLocalesSinSupervisor}
-                                            style={{
-                                                fontSize: '13px',
-                                                fontWeight: '600',
-                                                color: '#92400E',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                userSelect: 'none'
-                                            }}
-                                        >
-                                            <span>{localesSinSupervisorContraido ? '▸' : '▾'}</span>
-                                            <span>Locales sin supervisor ({localesSinSupervisorCargados.length})</span>
+                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400E' }}>
+                                            Locales sin supervisor
                                         </div>
-                                        {!localesSinSupervisorContraido && (
-                                            <>
-                                                {localesSinSupervisorCargados.map((local) => (
-                                                    <div key={`jer-sin-${local.id}`} style={{
-                                                        marginTop: '6px',
-                                                        marginLeft: '12px',
-                                                        backgroundColor: '#FFF7ED',
-                                                        border: '1px solid #FED7AA',
-                                                        borderRadius: '10px',
-                                                        padding: '8px'
-                                                    }}>
-                                                        <div style={{ fontSize: '12px', color: '#7C2D12', marginBottom: '6px' }}>
-                                                            🏪 {local.nombre}
-                                                        </div>
-                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                                            <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
-                                                            <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
-                                                            <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
-                                                            <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
-                                                            <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </>
-                                        )}
+                                        {sinSupervisor.map((local) => (
+                                            <div key={`jer-sin-${local.id}`} style={{
+                                                marginTop: '6px',
+                                                marginLeft: '12px',
+                                                backgroundColor: '#FFF7ED',
+                                                border: '1px solid #FED7AA',
+                                                borderRadius: '10px',
+                                                padding: '8px'
+                                            }}>
+                                                <div style={{ fontSize: '12px', color: '#7C2D12', marginBottom: '6px' }}>
+                                                    🏪 {local.nombre}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                    <button onClick={() => ingresarAlLocal(local)} style={{ padding: '6px 8px', background: '#9C27B0', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🚀 Ingresar</button>
+                                                    <button onClick={() => { if (window.openVencimientosHistorial) { window.openVencimientosHistorial(local.id, local.nombre); } else if (window.openVencLocal) { window.openVencLocal(); } }} style={{ padding: '6px 8px', background: '#1976D2', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>📦 Stock</button>
+                                                    <button onClick={() => mostrarUsuariosYCredenciales(local)} style={{ padding: '6px 8px', background: '#2196F3', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>👥 Credenciales</button>
+                                                    <button onClick={() => cambiarContraseña(local)} style={{ padding: '6px 8px', background: '#4CAF50', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🔑 Cambiar</button>
+                                                    <button onClick={() => eliminarLocal(local)} style={{ padding: '6px 8px', background: '#F44336', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>🗑️ Eliminar</button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -12340,7 +12140,7 @@
     // Verificar si club es argentino
     function esClubArgentino(nombre) {
       if (!nombre) return false;
-      const n = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const n = nombre.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '');
       const clubesArgentinos = [
         'boca juniors', 'boca', 'river plate', 'river', 'racing', 'independiente', 'san lorenzo',
         'estudiantes', 'gimnasia', 'rosario central', 'newell', 'talleres', 'belgrano',

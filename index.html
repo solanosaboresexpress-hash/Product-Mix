@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -1022,7 +1023,7 @@
                         throw new Error('Formato inválido en regiones.json');
                     }
                 } catch (error) {
-                    console.warn('âš ï¸ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
+                    console.warn('⚠️ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
                     // Usar fallback
                     REGIONES_CONFIG_CACHE = REGIONES_CONFIG_FALLBACK;
                     return REGIONES_CONFIG_FALLBACK.filter(function(r) { return r.activo; });
@@ -1144,7 +1145,7 @@
 
             getFirestore() {
                 if (!this.currentDb || !this.currentApp) {
-                    throw new Error('Firebase no esta inicializado. Selecciona una region primero.');
+                    throw new Error('Firebase no está inicializado. Selecciona una región primero.');
                 }
                 // Verificar que la app no haya sido eliminada
                 try {
@@ -1194,7 +1195,7 @@
 
             getAuth() {
                 if (!this.currentAuth) {
-                    throw new Error('Firebase no esta inicializado. Selecciona una region primero.');
+                    throw new Error('Firebase no está inicializado. Selecciona una región primero.');
                 }
                 return this.currentAuth;
             },
@@ -1278,7 +1279,7 @@
                         }
                     }
                 } catch (error) {
-                    console.warn('âš ï¸ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
                     // Mantener la URL por defecto si falla
                 }
             };
@@ -1537,10 +1538,10 @@
                             setRecordarDatos(true);
                             console.log('Datos restaurados: email =', savedEmail);
                             } else {
-                            console.log('âš ï¸ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
+                            console.log('⚠️ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
                         }
                     } else {
-                        console.log('âš ï¸ No hay datos guardados en localStorage');
+                        console.log('⚠️ No hay datos guardados en localStorage');
                     }
                 } catch (error) {
                     console.error('❌ Error cargando datos guardados:', error);
@@ -1699,7 +1700,7 @@
                     localStorage.setItem('usuario', JSON.stringify(usuarioData));
                     localStorage.setItem('region_id', regionCorrecta.id);
                     
-                    // Guardar solo preferencias no sensibles si est? marcado recordar
+                    // Guardar solo preferencias no sensibles si está marcado recordar
                     if (recordarDatos) {
                         window.saveLoginPreferences({
                             email: email,
@@ -1911,12 +1912,12 @@
                                 // Verificar si es error de usuario no encontrado
                                 if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
                                     // Usuario no existe en esta región, continuar con la siguiente
-                                    console.log('âš ï¸ Usuario no encontrado en región', region.nombre, ', intentando siguiente...');
+                                    console.log('⚠️ Usuario no encontrado en región', region.nombre, ', intentando siguiente...');
                                     ultimoError = error;
                                     continue;
                                 } else {
                                     // Otro error, guardar pero continuar
-                                    console.warn('âš ï¸ Error en región', region.nombre, ':', error.message);
+                                    console.warn('⚠️ Error en región', region.nombre, ':', error.message);
                                     if (!ultimoError) {
                                         ultimoError = error;
                                     }
@@ -2432,7 +2433,7 @@
                                             setEmail(valor);
                                             
                                             // Si el email cambia manualmente y es diferente al guardado en loginData, limpiar loginData
-                                            // Esto permite que el usuario pueda cambiar de cuenta incluso si tiene "Recordar email y regi?n" activado
+                                            // Esto permite que el usuario pueda cambiar de cuenta incluso si tiene "Recordar email y región" activado
                                             if (valor) {
                                                 const loginDataGuardado = window.loadLoginPreferences();
                                                 if (loginDataGuardado) {
@@ -2515,7 +2516,7 @@
                                         }}
                                     />
                                     <label htmlFor="recordarDatos" className="text-sm" style={{color: 'var(--brand-black)'}}>
-                                        Recordar email y regi?n
+                                        Recordar email y región
                                     </label>
                                 </div>
                                 <button
@@ -2612,7 +2613,7 @@
             // Header
             const header = document.createElement('div');
             header.style.cssText = 'background:#F44336;color:#fff;padding:16px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center';
-            header.innerHTML = `âš ï¸ Alertas - ${nombreLocal}`;
+            header.innerHTML = `⚠️ Alertas - ${nombreLocal}`;
             dialog.appendChild(header);
             
             // Body con scroll
@@ -2622,7 +2623,7 @@
             // Mensaje introductorio
             const intro = document.createElement('div');
             intro.style.cssText = 'margin-bottom:16px;padding:12px;background:#fff3cd;border-left:4px solid #ffc107;border-radius:4px;font-size:14px;color:#856404';
-            intro.innerHTML = '<strong>âš ï¸ Se encontraron los siguientes problemas:</strong><br><br>Hacé clic en cada problema para ir directamente a completarlo.';
+            intro.innerHTML = '<strong>⚠️ Se encontraron los siguientes problemas:</strong><br><br>Hacé clic en cada problema para ir directamente a completarlo.';
             body.appendChild(intro);
             
             // Lista de problemas (formato original - click directo en el error)
@@ -3392,7 +3393,7 @@
                     cargarSupervisores();
                     
                     // Mostrar credenciales
-                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\nâš ï¸ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
+                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
                     
                 } catch (error) {
                     console.error('Error creando supervisor:', error);
@@ -3405,7 +3406,7 @@
                 try {
                     // Validar que localId no esté vacío
                     if (!localId || localId.trim() === '') {
-                        console.log('âš ï¸ LocalId vacío, retornando valores por defecto');
+                        console.log('⚠️ LocalId vacío, retornando valores por defecto');
                         return { hoy: 0, manana: 0 };
                     }
                     
@@ -3452,7 +3453,7 @@
                             
                             // Validar que la fecha sea válida
                             if (isNaN(fechaVenc.getTime())) {
-                                console.log('âš ï¸ Fecha inválida para lote:', lote.productoCodigo, 'fechaVencimiento:', lote.fechaVencimiento);
+                                console.log('⚠️ Fecha inválida para lote:', lote.productoCodigo, 'fechaVencimiento:', lote.fechaVencimiento);
                                 return;
                             }
                             
@@ -3473,7 +3474,7 @@
                                 console.log('🟡 Producto vence MAÑANA:', lote.productoCodigo || doc.id, 'cantidad:', lote.cantidad || 0);
                             }
                         } else {
-                            console.log('âš ï¸ Lote sin fechaVencimiento:', lote.productoCodigo || doc.id);
+                            console.log('⚠️ Lote sin fechaVencimiento:', lote.productoCodigo || doc.id);
                         }
                     });
                     
@@ -3497,7 +3498,7 @@
                 console.log('🔄 Cargando badges y problemas para', localesConIdValido.length, 'locales (de', localesParaVerificar.length, 'totales)');
                 
                 if (localesConIdValido.length === 0) {
-                    console.log('âš ï¸ No hay locales con ID válido para verificar');
+                    console.log('⚠️ No hay locales con ID válido para verificar');
                     return;
                 }
                 
@@ -3536,7 +3537,7 @@
                 try {
                     // Validar que localId no esté vacío
                     if (!localId || localId.trim() === '') {
-                        console.log('âš ï¸ LocalId vacío para verificar problemas, retornando array vacío');
+                        console.log('⚠️ LocalId vacío para verificar problemas, retornando array vacío');
                         return [];
                     }
                     
@@ -3565,12 +3566,12 @@
                             const fecha = new Date(registro.fecha);
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                             const fechaFormateada = fecha.toLocaleDateString('es-AR');
-                            problemas.push(`📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   âš ï¸ Todos los productos en 0`);
+                            problemas.push(`📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`);
                         } else if (registro.tipo === 'Stock Final' && todosEnCero) {
                             const fecha = new Date(registro.fecha);
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                             const fechaFormateada = fecha.toLocaleDateString('es-AR');
-                            problemas.push(`📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   âš ï¸ Todos los productos en 0`);
+                            problemas.push(`📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`);
                         }
                     });
                     
@@ -3594,7 +3595,7 @@
                         if (faltantes.length > 0) {
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaCheck.getDay()];
                             const fechaFormateada = fechaCheck.toLocaleDateString('es-AR');
-                            problemas.push(`📅 ${diaSemana} ${fechaFormateada}\n   âš ï¸ Faltan: ${faltantes.join(', ')}`);
+                            problemas.push(`📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`);
                         }
                     }
                     
@@ -3610,7 +3611,7 @@
                 try {
                     // Validar que local.id no esté vacío
                     if (!local.id || local.id.trim() === '') {
-                        alert('âš ï¸ Este local no tiene un ID válido');
+                        alert('⚠️ Este local no tiene un ID válido');
                         return;
                     }
                     
@@ -3728,7 +3729,7 @@
             const eliminarLocal = async (local) => {
                 try {
                     // Confirmación final
-                    if (!confirm(`âš ï¸ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
+                    if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
                         return;
                     }
                     
@@ -4223,7 +4224,7 @@
             };
             
             const mostrarDialogoEliminarSupervisor = (supervisor) => {
-                if (!confirm(`âš ï¸ ¿Estás seguro de que quieres eliminar permanentemente el supervisor '${supervisor.usuario}'?\n\nEsta acción NO se puede deshacer.`)) {
+                if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el supervisor '${supervisor.usuario}'?\n\nEsta acción NO se puede deshacer.`)) {
                     return;
                 }
                 
@@ -4671,7 +4672,7 @@
                                             let localId = local.id;
                                             
                                             if (!localId) {
-                                                console.warn('âš ï¸ Local no tiene id, intentando obtenerlo desde Firebase...');
+                                                console.warn('⚠️ Local no tiene id, intentando obtenerlo desde Firebase...');
                                                 try {
                                                     const db = FirebaseRegionManager.getFirestore();
                                                     const snapshot = await db.collection('locales')
@@ -5613,7 +5614,7 @@
                         }
                     }
                 } catch (error) {
-                    console.warn('âš ï¸ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
+                    console.warn('⚠️ No se pudo cargar la URL de descarga desde GitHub, usando URL por defecto:', error);
                     // Mantener la URL por defecto si falla
                 }
             };
@@ -6101,7 +6102,7 @@
                 }
                 
                 if (!usuario || !usuario.localId || !usuario.localNombre) {
-                    console.log('âš ï¸ verificarAlertasLocalAutomatico: usuario o datos faltantes, saliendo');
+                    console.log('⚠️ verificarAlertasLocalAutomatico: usuario o datos faltantes, saliendo');
                     return;
                 }
                 
@@ -6206,9 +6207,9 @@
                                 const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                                 const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                                 const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                                const problema = `📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   âš ï¸ Todos los productos en 0`;
+                                const problema = `📦 ${diaSemana} ${fechaFormateada}:\n Ingreso de Mercadería\n   ⚠️ Todos los productos en 0`;
                                 problemas.push(problema);
-                                console.log('âš ï¸ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
                             }
                         } else if (registro.tipo === 'Stock Final') {
                             // Para Stock Final solo alertar si todos están en 0 (no hay flag aquí)
@@ -6218,9 +6219,9 @@
                                 const fecha = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                                 const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fecha.getDay()];
                                 const fechaFormateada = fecha.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                                const problema = `📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   âš ï¸ Todos los productos en 0`;
+                                const problema = `📊 ${diaSemana} ${fechaFormateada} - Stock Final\n   ⚠️ Todos los productos en 0`;
                                 problemas.push(problema);
-                                console.log('âš ï¸ Problema encontrado:', registro.tipo, '-', registro.fecha);
+                                console.log('⚠️ Problema encontrado:', registro.tipo, '-', registro.fecha);
                             }
                         }
                     });
@@ -6274,11 +6275,11 @@
                         
                         if (!tiposExistentes.has('Ingreso de Mercadería')) {
                             faltantes.push('Ingreso de Mercadería');
-                            console.log('âš ï¸ Falta Ingreso de Mercadería para', fecha);
+                            console.log('⚠️ Falta Ingreso de Mercadería para', fecha);
                         }
                         if (!tiposExistentes.has('Stock Final')) {
                             faltantes.push('Stock Final');
-                            console.log('âš ï¸ Falta Stock Final para', fecha);
+                            console.log('⚠️ Falta Stock Final para', fecha);
                         }
                         
                         if (faltantes.length > 0) {
@@ -6287,7 +6288,7 @@
                             const fechaObj = new Date(parseInt(fechaParts[0]), parseInt(fechaParts[1]) - 1, parseInt(fechaParts[2]));
                             const diaSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][fechaObj.getDay()];
                             const fechaFormateada = fechaObj.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
-                            const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   âš ï¸ Faltan: ${faltantes.join(', ')}`;
+                            const problemaTexto = `📅 ${diaSemana} ${fechaFormateada}\n   ⚠️ Faltan: ${faltantes.join(', ')}`;
                             problemas.push(problemaTexto);
                             console.log('📅 Agregado problema para', fecha, ':', faltantes.join(', '));
                         }
@@ -6775,7 +6776,7 @@
                         const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
                         
                         if (sumaLotes !== stockFinal) {
-                            console.log(`   âš ï¸ ${productoCodigo}: Lotes (${sumaLotes}) â‰  Stock Final (${stockFinal})`);
+                            console.log(`   ⚠️ ${productoCodigo}: Lotes (${sumaLotes}) ≠  Stock Final (${stockFinal})`);
                             todosCoinciden = false;
                         }
                     }
@@ -6784,7 +6785,7 @@
                     for (const [productoCodigo, lotes] of Object.entries(lotesPorProducto)) {
                         const sumaLotes = lotes.reduce((sum, l) => sum + (l.cantidad || 0), 0);
                         if (sumaLotes > 0 && !stockFinalPorProducto[productoCodigo]) {
-                            console.log(`   âš ï¸ ${productoCodigo}: Tiene lotes (${sumaLotes}) pero no está en Stock Final`);
+                            console.log(`   ⚠️ ${productoCodigo}: Tiene lotes (${sumaLotes}) pero no está en Stock Final`);
                             todosCoinciden = false;
                         }
                     }
@@ -6987,7 +6988,7 @@
                     });
                     
                     if (lotes.length === 0) {
-                        console.warn(`âš ï¸ No hay lotes activos para ${productoCodigo}`);
+                        console.warn(`⚠️ No hay lotes activos para ${productoCodigo}`);
                         return;
                     }
                     
@@ -7037,7 +7038,7 @@
                     
                     // 3. Verificar si quedó pendiente por descontar
                     if (pendienteDescontar > 0) {
-                        console.warn(`âš ï¸ ADVERTENCIA: Quedan ${pendienteDescontar} uds sin descontar de vencimientos`);
+                        console.warn(`⚠️ ADVERTENCIA: Quedan ${pendienteDescontar} uds sin descontar de vencimientos`);
                         console.warn(`   Posible causa: Venta registrada mayor a lotes disponibles`);
                     }
                 } catch (error) {
@@ -7179,7 +7180,7 @@
                         // CASO 4: Lotes < Stock Final → Faltan lotes
                         else {
                             const faltante = stockFinal - sumaLotes;
-                            console.warn(`   âš ï¸ Faltan ${faltante} uds en lotes`);
+                            console.warn(`   ⚠️ Faltan ${faltante} uds en lotes`);
                             console.warn(`   💡 Carga los lotes del ingreso en Vencimientos`);
                         }
                     }
@@ -7209,7 +7210,7 @@
                         btnGuardar.disabled = false;
                         btnGuardar.textContent = '👁️ Previsualizar y Guardar';
                         btnGuardar.style.opacity = '1';
-                        alert('âš ï¸ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
+                        alert('⚠️ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
                     }
                 }, 5000);
                 
@@ -7357,7 +7358,7 @@
                                 await actualizarPromedioGeneral(usuario.localId, fechaString, productos, db);
                                 console.log('✅ Promedios generales actualizados correctamente');
                             } catch (error) {
-                                console.warn('âš ï¸ Error actualizando promedios generales (no crítico):', error);
+                                console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
                                 // No lanzar error para no interrumpir el flujo
                             }
                         }
@@ -7410,7 +7411,7 @@
                                 if (sumaLotes === stockFinal) {
                                     console.log(`   ✅ ${productoCodigo}: Lotes = Stock Final (${stockFinal})`);
                                 } else {
-                                    console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) â‰  Stock Final (${stockFinal})`);
+                                    console.error(`   ❌ ${productoCodigo}: Lotes (${sumaLotes}) ≠  Stock Final (${stockFinal})`);
                                 }
                             }
                             
@@ -7506,7 +7507,7 @@
                                 
                                 // Solo mostrar si NO estamos en pantalla de carga (usar referencia)
                                 if (problemas.length > 0 && !enPantallaCargaRef.current && pantallaActual === 'main') {
-                                    console.log('âš ï¸ Aún hay problemas después de guardar, mostrando alertas actualizadas...');
+                                    console.log('⚠️ Aún hay problemas después de guardar, mostrando alertas actualizadas...');
                                     setTimeout(() => {
                                         // Verificar nuevamente usando la REFERENCIA antes de mostrar
                                         if (!enPantallaCargaRef.current && pantallaActual === 'main' && window.mostrarPopupProblemas) {
@@ -7602,7 +7603,7 @@
                         // Validar consistencia (solo loguear, no ajustar automáticamente)
                         else if (sumaLotes !== stockFinal) {
                             const diferencia = stockFinal - sumaLotes;
-                            console.warn(`âš ï¸ INCONSISTENCIA en ${productoCodigo} después del descuento:`);
+                            console.warn(`⚠️ INCONSISTENCIA en ${productoCodigo} después del descuento:`);
                             console.warn(`   Stock Final: ${stockFinal}`);
                             console.warn(`   Suma Lotes: ${sumaLotes}`);
                             console.warn(`   Diferencia: ${diferencia}`);
@@ -7641,7 +7642,7 @@
                     console.log('📊 Total registros históricos:', todosLosRegistros.length);
                     
                     if (todosLosRegistros.length === 0) {
-                        console.warn('âš ï¸ No hay registros históricos para calcular promedios');
+                        console.warn('⚠️ No hay registros históricos para calcular promedios');
                         return;
                     }
                     
@@ -7836,7 +7837,7 @@
                     
                     console.log('✅ Promedios generales guardados en Firebase');
                 } catch (error) {
-                    console.warn('âš ï¸ Error guardando promedios en Firebase:', error);
+                    console.warn('⚠️ Error guardando promedios en Firebase:', error);
                 }
             };
             
@@ -8222,7 +8223,7 @@
                             <div className="bg-white rounded-lg mb-4 p-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-base font-semibold text-black">
-                                        âš ï¸ No recibió mercadería
+                                        ⚠️ No recibió mercadería
                                     </label>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -9165,7 +9166,7 @@
                                 console.log('🔍 DOMINGO - Promedios individuales:', promediosPorDia[dia]);
                             }
                     } else {
-                        console.log(`âš ï¸ No hay datos para ${dia}`);
+                        console.log(`⚠️ No hay datos para ${dia}`);
                     }
                 });
 
@@ -10176,7 +10177,7 @@
   async function getHistorial(localId, fecha) {
     try {
       if (!localId || !fecha) {
-        console.warn('âš ï¸ getHistorial: localId o fecha vacíos', { localId, fecha });
+        console.warn('⚠️ getHistorial: localId o fecha vacíos', { localId, fecha });
         return { lotesIniciales: [], lotesFinales: [] };
       }
       console.log('🔍 Buscando historial en: locales/' + localId + '/vencimientos_historial_diario/' + fecha);
@@ -10603,7 +10604,7 @@
               
               const mensajeDiv = document.createElement('div');
               mensajeDiv.style.cssText = 'padding:0 32px 16px;font-size:12px;color:#c62828';
-              mensajeDiv.textContent = '   âš ï¸ Debes ajustar los lotes para que coincidan con el stock actual';
+              mensajeDiv.textContent = '   ⚠️ Debes ajustar los lotes para que coincidan con el stock actual';
               prodDiv.appendChild(mensajeDiv);
             }
             
@@ -10641,7 +10642,7 @@
             prodDiv.style.cssText = 'margin:16px 0;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden';
             prodDiv.innerHTML = '<div style="background:#f57c00;color:#fff;font-weight:700;padding:12px 16px;font-size:15px">' + productoNombre + '</div>' +
               '<div style="padding:8px 16px;font-size:14px">   Stock actual: ' + stock + ' uds</div>' +
-              '<div style="padding:4px 16px;font-size:14px;font-weight:700;color:#c62828">   âš ï¸ NO HAY VENCIMIENTOS CARGADOS para este producto</div>' +
+              '<div style="padding:4px 16px;font-size:14px;font-weight:700;color:#c62828">   ⚠️ NO HAY VENCIMIENTOS CARGADOS para este producto</div>' +
               '<div style="padding:0 16px 16px;font-size:12px;color:#6b7280">   💡 Debes cargar los vencimientos desde la sección "Vencimientos"</div>';
             body.appendChild(prodDiv);
           });
@@ -11280,7 +11281,7 @@
         if (Object.keys(productosConStockSinLotes).length > 0) {
           const advDiv = document.createElement('div');
           advDiv.style.cssText = 'background:#dc2626;color:#fff;padding:12px;border-radius:6px;margin-bottom:16px;font-weight:700;font-size:14px';
-          advDiv.textContent = 'âš ï¸ PRODUCTOS CON STOCK SIN LOTES CARGADOS';
+          advDiv.textContent = '⚠️ PRODUCTOS CON STOCK SIN LOTES CARGADOS';
           list.appendChild(advDiv);
 
           Object.keys(categorias).forEach(categoria => {
@@ -11301,7 +11302,7 @@
                   const prodDiv = document.createElement('div');
                   prodDiv.style.cssText = 'margin:8px 0;border:1px solid #dc2626;border-radius:6px;overflow:hidden';
                   prodDiv.innerHTML = '<div style="background:#dc2626;color:#fff;font-weight:700;padding:8px 12px;font-size:14px">' + (productos[codigo] || codigo) + '</div>' +
-                    '<div style="padding:8px 12px;font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2">âš ï¸ Stock: ' + stock + ' uds | Lotes: 0 uds | FALTAN CARGAR LOTES</div>';
+                    '<div style="padding:8px 12px;font-size:12px;font-weight:700;color:#dc2626;background:#fee2e2">⚠️ Stock: ' + stock + ' uds | Lotes: 0 uds | FALTAN CARGAR LOTES</div>';
                   catDiv.appendChild(prodDiv);
                 }
               });
@@ -11341,10 +11342,10 @@
                   validacionText = '✅ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds (Coincide)';
                   validacionColor = '#059669';
                 } else if (diferencia > 0) {
-                  validacionText = 'âš ï¸ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Faltan: +' + diferencia + ' uds';
+                  validacionText = '⚠️ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Faltan: +' + diferencia + ' uds';
                   validacionColor = '#f57c00';
                 } else {
-                  validacionText = 'âš ï¸ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Sobran: ' + (-diferencia) + ' uds';
+                  validacionText = '⚠️ Stock: ' + stockActual + ' uds | Lotes: ' + sumaLotes + ' uds | Sobran: ' + (-diferencia) + ' uds';
                   validacionColor = '#dc2626';
                 }
                 prodDiv.innerHTML = '<div style="background:#0ea5e9;color:#fff;font-weight:700;padding:8px 12px;font-size:14px">' + lotesProducto[0].productoNombre + '</div>' +
@@ -11510,7 +11511,7 @@
       }
       
       if (vencimientosManana.length > 0) {
-        mensaje += '> *VENCEN MAÑANA* âš ï¸:\n';
+        mensaje += '> *VENCEN MAÑANA* ⚠️:\n';
         vencimientosManana.forEach(v => {
           mensaje += '  • ' + v.codigo + ': ' + v.cantidad + ' uds\n';
         });
@@ -11686,7 +11687,7 @@
           
           const alertHeader = document.createElement('div');
           alertHeader.style.cssText = 'background:#ff9800;color:#fff;padding:16px;font-weight:bold;font-size:18px';
-          alertHeader.textContent = 'âš ï¸ Stock Final Pendiente';
+          alertHeader.textContent = '⚠️ Stock Final Pendiente';
           alertDialog.appendChild(alertHeader);
           
           const alertBody = document.createElement('div');
@@ -12591,10 +12592,10 @@
               console.log('✅ Cache cargado desde Firebase: ' + Object.keys(tendenciasGuardadas).length + ' productos');
               console.log('   Productos con tendencia: ' + Object.keys(tendenciasGuardadas).filter(k => tendenciasGuardadas[k] !== 0).length);
             } else {
-              console.log('âš ï¸ Documento existe pero no tiene tendencias válidas');
+              console.log('⚠️ Documento existe pero no tiene tendencias válidas');
             }
           } else {
-            console.log('âš ï¸ Documento existe pero está vacío');
+            console.log('⚠️ Documento existe pero está vacío');
           }
         } else {
           console.log('ℹ️ No hay cache en Firebase (aún no se cargó Stock Final)');
@@ -13677,7 +13678,7 @@
           
           // Agregar icono de stock bajo si existe
           if (tieneStockBajo) {
-            texto += ' <span style="color:#dc2626;cursor:pointer" data-tipo="stock-bajo">âš ï¸</span>';
+            texto += ' <span style="color:#dc2626;cursor:pointer" data-tipo="stock-bajo">⚠️</span>';
           }
           
           // Agregar icono de tendencia si existe
@@ -13846,7 +13847,7 @@
     function mostrarOpcionesTendenciaYStock(codigo, tendencia, historial, nombre) {
       const opciones = [
         '📈 Ver Tendencia de Ventas',
-        'âš ï¸ Ver Historial de Stock Bajo'
+        '⚠️ Ver Historial de Stock Bajo'
       ];
       
       const overlay = document.createElement('div');
@@ -13883,7 +13884,7 @@
         return d + '/' + m + '/' + y;
       };
 
-      modalReporte.innerHTML = '<div style="font-weight:700;font-size:20px;color:#dc2626;text-align:center;margin-bottom:16px">âš ï¸ Stock Bajo Detectado</div>' +
+      modalReporte.innerHTML = '<div style="font-weight:700;font-size:20px;color:#dc2626;text-align:center;margin-bottom:16px">⚠️ Stock Bajo Detectado</div>' +
         '<div style="font-weight:700;font-size:18px;text-align:center;margin-bottom:16px;color:#1f2937">' + codigo + ' - ' + nombre + '</div>' +
         '<div style="font-size:16px;margin-bottom:16px;text-align:center;color:#1f2937">En los últimos 7 días, este producto quedó con stock bajo (≤ 15 unidades):</div>' +
         '<div style="max-height:300px;overflow-y:auto;margin-bottom:16px">' +
@@ -13985,7 +13986,7 @@
       const [primerDia, tieneEntregaPrimerDia] = lista[0];
       if (!tieneEntregaPrimerDia) {
         const diasExtraEl = document.getElementById('pf-dias-extra');
-        if (diasExtraEl) diasExtraEl.textContent = 'âš ï¸ No se puede hacer pedido - ' + primerDia + ' sin entrega';
+        if (diasExtraEl) diasExtraEl.textContent = '⚠️ No se puede hacer pedido - ' + primerDia + ' sin entrega';
         return diaSiguiente;
       }
       
@@ -14959,7 +14960,7 @@
       }
       
       // Si no encuentra, retornar el nombre original
-      console.warn('âš ï¸ [obtenerCodigoProducto] No se encontró mapeo para:', nombreNormalizado);
+      console.warn('⚠️ [obtenerCodigoProducto] No se encontró mapeo para:', nombreNormalizado);
       return nombreNormalizado;
     }
 

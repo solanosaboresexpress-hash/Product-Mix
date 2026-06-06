@@ -2795,7 +2795,8 @@
 
                     if (esUsuarioMaestro) {
                         await aplicarPasswordInicialLocalesSiPendiente();
-                        cargarLocales();
+                        // NO cargar locales automáticamente - lazy loading
+                        // Los locales se cargarán solo cuando se expanda un supervisor
                         cargarSupervisores();
                     } else {
                         cargarLocalesAsignados();
@@ -3287,7 +3288,10 @@
                     
                     // Recargar locales según el tipo de usuario
                     if (esUsuarioMaestro) {
-                    cargarLocales();
+                        // Recargar locales sin supervisor si están cargados
+                        if (localesSinSupervisorCargados !== null) {
+                            setLocalesSinSupervisorCargados(null); // Forzar recarga la próxima vez que se expanda
+                        }
                     } else {
                         cargarLocalesAsignados();
                     }
@@ -3762,8 +3766,14 @@
                     
                     // Recargar locales según el tipo de usuario
                     if (esUsuarioMaestro) {
-                    cargarLocales();
-                    cargarSupervisores();
+                        // Recargar supervisores
+                        cargarSupervisores();
+                        // Limpiar localesPorSupervisor para forzar recarga
+                        setLocalesPorSupervisor({});
+                        // Recargar locales sin supervisor si están cargados
+                        if (localesSinSupervisorCargados !== null) {
+                            setLocalesSinSupervisorCargados(null);
+                        }
                     } else {
                         cargarLocalesAsignados();
                     }
@@ -3834,8 +3844,19 @@
                         email: emailCompleto
                     });
                     
-                    // Recargar locales
-                    cargarLocales();
+                    // Recargar locales según el tipo de usuario
+                    if (esUsuarioMaestro) {
+                        // Recargar supervisores
+                        cargarSupervisores();
+                        // Limpiar localesPorSupervisor para forzar recarga
+                        setLocalesPorSupervisor({});
+                        // Recargar locales sin supervisor si están cargados
+                        if (localesSinSupervisorCargados !== null) {
+                            setLocalesSinSupervisorCargados(null);
+                        }
+                    } else {
+                        cargarLocalesAsignados();
+                    }
                     alert(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
                     
                 } catch (error) {
@@ -3935,19 +3956,23 @@
                 }
             };
             
-            const mostrarDialogoAsignarLocales = async (supervisor) => {
+            const mostrarDialogoAsignarLocales = async (supervisorParam) => {
                 try {
-                    console.log('🔍 Supervisor seleccionado:', supervisor);
+                    // Recargar supervisores para tener los datos más actualizados
+                    await cargarSupervisores();
+                    
+                    // Obtener el supervisor actualizado del estado
+                    const supervisor = supervisores.find(s => s.id === supervisorParam.id) || supervisorParam;
                     
                     // 1. Descargar TODOS los locales activos
                     const db = FirebaseRegionManager.getFirestore();
                     const snapshot = await db.collection('locales')
-                        .where('activo', true)
+                        .where('activo', '==', true)
                         .get();
                     
                     const todosLosLocales = [];
                     snapshot.forEach(doc => {
-                        const local = { id: doc.id, ...doc.data() };
+                        const local = { ...doc.data(), id: doc.id };
                         todosLosLocales.push(local);
                     });
                     
@@ -3960,17 +3985,23 @@
 
                             const localPorId = todosLosLocales.find((local) => local.id === valor);
                             if (localPorId) {
-                                idsUnicos.add(localPorId.id);
+                                if (localPorId.id) {
+                                    idsUnicos.add(localPorId.id);
+                                }
                                 return;
                             }
 
-                            const localPorNombre = todosLosLocales.find((local) => String(local.nombre || '').trim().toLowerCase() === valor.toLowerCase());
+                            const localPorNombre = todosLosLocales.find((local) => {
+                                const nombreLocal = String(local.nombre || '').trim().toLowerCase();
+                                const valorNormalizado = valor.toLowerCase();
+                                return nombreLocal === valorNormalizado;
+                            });
                             if (localPorNombre) {
-                                idsUnicos.add(localPorNombre.id);
+                                if (localPorNombre.id) {
+                                    idsUnicos.add(localPorNombre.id);
+                                }
                                 return;
                             }
-
-                            idsUnicos.add(valor);
                         });
 
                         return Array.from(idsUnicos);
@@ -3995,9 +4026,6 @@
                         !idsAsignadosEsteSupervisor.includes(l.id) && 
                         !idsAsignadosAOtros.has(l.id)
                     );
-                    
-                    console.log('🔍 Locales asignados:', localesAsignados.length);
-                    console.log('🔍 Locales disponibles:', localesDisponibles.length);
 
                     if (todosLosLocales.length === 0) {
                         alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');

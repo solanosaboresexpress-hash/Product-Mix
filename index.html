@@ -1524,24 +1524,14 @@
             const cargarDatosGuardados = (localesLista = null) => {
                 try {
                     const preferenciasGuardadas = window.loadLoginPreferences();
-                    console.log('cargarDatosGuardados - datosGuardados en localStorage:', preferenciasGuardadas ? 'EXISTE' : 'NO EXISTE');
                     if (preferenciasGuardadas) {
                         const parsed = preferenciasGuardadas;
-                        console.log('Datos parseados:', { email: parsed.email, recordar: parsed.recordar });
                         const { email: savedEmail, recordar } = parsed;
                         if (recordar && savedEmail) {
-                            // EXACTO como Android: Solo cargar si el campo de email está vacío
-                            // Si el usuario ya escribió algo, no sobrescribir (permite cambio de cuenta)
-                            console.log('Restaurando preferencias guardadas...');
                             setEmail(savedEmail || '');
                             setPassword('');
                             setRecordarDatos(true);
-                            console.log('Datos restaurados: email =', savedEmail);
-                            } else {
-                            console.log('⚠️ Datos guardados no tienen recordar=true o email:', { recordar, email: savedEmail });
                         }
-                    } else {
-                        console.log('⚠️ No hay datos guardados en localStorage');
                     }
                 } catch (error) {
                     console.error('❌ Error cargando datos guardados:', error);
@@ -5831,7 +5821,7 @@
                     if (stockFinalHoy.length > 0) {
                         const stockMap = {};
                         stockFinalHoy.forEach(producto => {
-                            const codigo = obtenerCodigoProducto(producto.nombre);
+                            const codigo = obtenerCodigoProductoFabrica(producto.nombre);
                             stockMap[codigo] = producto.cantidad || 0;
                         });
                         console.log('✅ Usando Stock Final de HOY:', stockMap);
@@ -5845,7 +5835,7 @@
                     
                     const stockMap = {};
                     stockAyer.forEach(producto => {
-                        const codigo = obtenerCodigoProducto(producto.nombre);
+                        const codigo = obtenerCodigoProductoFabrica(producto.nombre);
                         stockMap[codigo] = producto.cantidad || 0;
                     });
                     
@@ -5854,7 +5844,7 @@
                         .flatMap(registro => registro.productos || []);
                     
                     ingresoHoy.forEach(producto => {
-                        const codigo = obtenerCodigoProducto(producto.nombre);
+                        const codigo = obtenerCodigoProductoFabrica(producto.nombre);
                         const cantidadAnterior = stockMap[codigo] || 0;
                         stockMap[codigo] = cantidadAnterior + (producto.cantidad || 0);
                     });
@@ -9123,23 +9113,9 @@
                                 const suma = ventasConDatos.reduce((acc, venta) => acc + venta, 0);
                                 const promedio = suma / ventasConDatos.length;
                                 promediosPorDia[dia][producto] = Math.round(promedio); // Redondear a número entero
-                                
-                                // Log específico para CRIOLLITO
-                                if (producto.includes('CRIOLLITO')) {
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Día: ${dia}`);
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Total días en lista: ${ventasDelDia.length}`);
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Días con ventas > 0: ${ventasConDatos.length}`);
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Ventas encontradas: ${ventasConDatos}`);
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Suma: ${suma}, Promedio: ${promedio}, Redondeado: ${Math.round(promedio)}`);
-                                }
                             } else {
                                 // Si no hay días con ventas > 0, el promedio es 0
                                 promediosPorDia[dia][producto] = 0.0;
-                                
-                                // Log específico para CRIOLLITO
-                                if (producto.includes('CRIOLLITO')) {
-                                    console.log(`🔍 CRIOLLITO PROMEDIO DEBUG - Día: ${dia} - sin ventas registradas, promedio=0.0`);
-                                }
                             }
                         });
                         
@@ -9243,16 +9219,6 @@
                     
                     // Fórmula: (Stock Final día anterior + Ingreso de Mercadería) - Stock Final de hoy
                     const venta = (stockAnt + ingreso) - stockAct;
-                    
-                    // Log específico para CRIOLLITO
-                    if (producto.includes('Criollito') || producto.includes('CRIOLLITO')) {
-                        console.log(`🔍 CRIOLLITO DEBUG - Producto: ${producto}`);
-                        console.log(`🔍 CRIOLLITO DEBUG - Stock Ant: ${stockAnt}, Ingreso: ${ingreso}, Stock Act: ${stockAct}`);
-                        console.log(`🔍 CRIOLLITO DEBUG - Venta calculada: ${venta}`);
-                        console.log(`🔍 CRIOLLITO DEBUG - Stock Anterior Map keys:`, Object.keys(stockAnteriorMap));
-                        console.log(`🔍 CRIOLLITO DEBUG - Ingreso Map keys:`, Object.keys(ingresoMap));
-                        console.log(`🔍 CRIOLLITO DEBUG - Stock Actual Map keys:`, Object.keys(stockActualMap));
-                    }
                     
                     // Solo incluir si hay venta positiva
                     if (venta > 0) {
@@ -10390,7 +10356,6 @@
         
         if (!stockHoy.empty) {
           // Si existe Stock Final de hoy, usarlo directamente (igual que en gestión de locales)
-          console.log('📊 Usando Stock Final de HOY (existe)');
           stockHoy.forEach(d => {
             const productos = d.data().productos || [];
             productos.forEach(p => {
@@ -10400,7 +10365,6 @@
           });
         } else {
           // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
-          console.log('📊 Calculando stock: Stock Final ayer + Ingreso hoy');
           const stockAyer = await db.collection('locales').doc(localId).collection('registros')
             .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
           stockAyer.forEach(d => {
@@ -10429,16 +10393,12 @@
     async function render() {
       body.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280">Cargando...</div>';
       try {
-        console.log('🔍 Buscando lotes para localId:', localId);
         const db = FirebaseRegionManager.getFirestore();
         const lotesSnap = await db.collection('locales').doc(localId).collection('vencimientos_activos').get();
-        console.log('📦 Lotes encontrados:', lotesSnap.size);
         const stockMap = await calcularStockActual();
-        console.log('📊 Stock calculado:', stockMap);
         const lotes = [];
         lotesSnap.forEach(d => {
           const data = d.data();
-          console.log('📋 Lote raw:', data);
           const codigoRaw = data.productoCodigo || data.codigo || '';
           lotes.push({
             id: d.id,
@@ -10448,7 +10408,6 @@
             productoNombre: data.productoNombre || codigoRaw || ''
           });
         });
-        console.log('✅ Lotes normalizados:', lotes);
         
         // Detectar productos con problemas (como Android StockVencimientosActivity)
         const codigosConControlVencimientos = new Set();
@@ -10936,19 +10895,14 @@
           fechaActual = fechaISO(hoy);
         }
         
-        console.log('Fecha actual antes de cambiar:', fechaActual, 'dias a sumar:', dias);
-        
         // Calcular nueva fecha - usar método directo sin conversiones de zona horaria
         const [y, m, d] = fechaActual.split('-').map(Number);
-        console.log('Componentes de fecha:', { anio: y, mes: m, dia: d });
         
         // Crear fecha en UTC para evitar problemas de zona horaria
         const fechaObj = new Date(Date.UTC(y, m - 1, d));
-        console.log('Fecha objeto creada:', fechaObj.toISOString(), 'día local:', fechaObj.getUTCDate());
         
         // Sumar/restar días directamente en UTC
         fechaObj.setUTCDate(fechaObj.getUTCDate() + dias);
-        console.log('Después de setUTCDate:', fechaObj.toISOString(), 'día local:', fechaObj.getUTCDate());
         
         // Formatear manualmente para evitar problemas con fechaISO
         const nuevoAnio = fechaObj.getUTCFullYear();
@@ -10956,22 +10910,19 @@
         const nuevoDia = String(fechaObj.getUTCDate()).padStart(2, '0');
         fechaVencimientoSeleccionada = `${nuevoAnio}-${nuevoMes}-${nuevoDia}`;
         
-        console.log('Nueva fecha calculada:', fechaVencimientoSeleccionada);
-        
         // Actualizar el input date visible
         if (fechaInput) {
           fechaInput.value = fechaVencimientoSeleccionada;
-          console.log('Input date actualizado a:', fechaInput.value);
         }
         
         actualizarTextoFecha();
-        console.log('Fecha cambiada a:', fechaVencimientoSeleccionada, '(dias:', dias, ')');
       } catch (e) {
         console.error('Error cambiando fecha:', e);
       }
     }
 
-    function obtenerCodigoProducto(nombre) {
+    // Función helper para obtener código de producto desde nombre (Fábrica)
+    function obtenerCodigoProductoFabrica(nombre) {
       // Extraer código del nombre (formato: "JQ - Jamón y Queso" -> "JQ")
       let codigo = '';
       if (nombre && nombre.includes(' - ')) {
@@ -11006,23 +10957,21 @@
         
         if (!stockHoy.empty) {
           // Si existe Stock Final de hoy, usarlo directamente (igual que en gestión de locales)
-          console.log('📊 [VencLocalModal] Usando Stock Final de HOY (existe)');
           stockHoy.forEach(d => {
             const productos = d.data().productos || [];
             productos.forEach(p => {
-              const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
+              const codigo = obtenerCodigoProductoFabrica(p.nombre || p.codigo || '');
               stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
             });
           });
         } else {
           // Si NO existe Stock Final de hoy, calcular: Stock Final de ayer + Ingreso de hoy
-          console.log('📊 [VencLocalModal] Calculando stock: Stock Final ayer + Ingreso hoy');
           const stockAyer = await db.collection('locales').doc(localId).collection('registros')
             .where('fecha', '==', ayer).where('tipo', '==', 'Stock Final').get();
           stockAyer.forEach(d => {
             const productos = d.data().productos || [];
             productos.forEach(p => {
-              const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
+              const codigo = obtenerCodigoProductoFabrica(p.nombre || p.codigo || '');
               stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
             });
           });
@@ -11031,7 +10980,7 @@
           ingresoHoy.forEach(d => {
             const productos = d.data().productos || [];
             productos.forEach(p => {
-              const codigo = obtenerCodigoProducto(p.nombre || p.codigo || '');
+              const codigo = obtenerCodigoProductoFabrica(p.nombre || p.codigo || '');
               stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
             });
           });
@@ -11627,7 +11576,6 @@
       btnFechaNext.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Botón siguiente clickeado, cambiando fecha +1');
         cambiarFecha(1);
         return false;
       };
@@ -12564,11 +12512,9 @@
       try {
         // Si ya tenemos cache en memoria, no cargar de nuevo
         if (cacheTendencias !== null) {
-          console.log('✅ Cache ya disponible en memoria (' + Object.keys(cacheTendencias).length + ' productos)');
           return;
         }
 
-        console.log('📥 Cargando cache de tendencias desde Firebase (documento único)...');
         const db = obtenerFirestore();
         
         const docTendencias = await db.collection('locales')
@@ -12589,16 +12535,8 @@
 
             if (Object.keys(tendenciasGuardadas).length > 0) {
               cacheTendencias = tendenciasGuardadas;
-              console.log('✅ Cache cargado desde Firebase: ' + Object.keys(tendenciasGuardadas).length + ' productos');
-              console.log('   Productos con tendencia: ' + Object.keys(tendenciasGuardadas).filter(k => tendenciasGuardadas[k] !== 0).length);
-            } else {
-              console.log('⚠️ Documento existe pero no tiene tendencias válidas');
             }
-          } else {
-            console.log('⚠️ Documento existe pero está vacío');
           }
-        } else {
-          console.log('ℹ️ No hay cache en Firebase (aún no se cargó Stock Final)');
         }
       } catch (e) {
         console.error('❌ Error cargando cache desde Firebase:', e);
@@ -12613,9 +12551,6 @@
       try {
         if (cacheTendencias !== null) {
           const tendenciaCache = cacheTendencias[codigo] || 0;
-          if (tendenciaCache !== 0) {
-            console.log('⚡ ' + codigo + ': ' + tendenciaCache.toFixed(1) + '% (desde cache)');
-          }
           return tendenciaCache;
         }
         return 0;
@@ -12712,19 +12647,13 @@
         
         try {
           // Intentar cargar desde promedios_generales/promedios (formato de la APK)
-          console.log('🔍 DEBUG: Intentando cargar desde promedios_generales/promedios para localId:', localId);
           const promediosDoc = await db.collection('locales').doc(localId).collection('promedios_generales').doc('promedios').get();
           
-          console.log('🔍 DEBUG: promediosDoc.exists =', promediosDoc.exists);
-          
           if (promediosDoc.exists) {
-            console.log('🔍 DEBUG: Cargando promedios pre-calculados desde promedios_generales/promedios...');
             const data = promediosDoc.data();
-            console.log('🔍 DEBUG: Estructura de datos recibida:', Object.keys(data));
             
             // La APK guarda los promedios en data.promedios[dia], no directamente en data[dia]
             const promediosData = data.promedios || data;
-            console.log('🔍 DEBUG: Estructura de promedios:', Object.keys(promediosData));
             
             ordenProductos.forEach(codigo => {
               promediosVenta[codigo] = {};
@@ -12740,11 +12669,9 @@
                   if (productoData && typeof productoData === 'object') {
                     // Formato PromedioData: { suma, cantidad, promedio }
                     promediosVenta[codigo][dia] = productoData.promedio || 0;
-                    console.log(`🔍 DEBUG: Cargado ${codigo} ${dia}: promedio=${productoData.promedio}`);
                   } else if (typeof productoData === 'number') {
                     // Formato simple: solo el número
                     promediosVenta[codigo][dia] = productoData;
-                    console.log(`🔍 DEBUG: Cargado ${codigo} ${dia}: promedio=${productoData}`);
                   }
                 }
               });
@@ -12755,20 +12682,15 @@
               Object.values(promediosVenta[codigo] || {}).some(p => p > 0)
             );
             
-            console.log('🔍 DEBUG: tienePromedios =', tienePromedios);
-            
             if (tienePromedios) {
               console.log('✅ Promedios pre-calculados cargados desde promedios_generales:', promediosVenta);
               return; // Salir si se cargaron promedios
             }
-          } else {
-            console.log('🔍 DEBUG: No existe el documento promedios_generales/promedios');
           }
           
           // Fallback: intentar cargar desde colección 'promedios' (formato antiguo)
           const promediosSnap = await db.collection('locales').doc(localId).collection('promedios').get();
           if (!promediosSnap.empty) {
-            console.log('🔍 DEBUG: Cargando promedios desde colección promedios (formato antiguo)...');
             
             ordenProductos.forEach(codigo => {
               promediosVenta[codigo] = {};
@@ -12803,12 +12725,11 @@
             }
           }
         } catch (e) {
-          console.log('🔍 DEBUG: No se encontraron promedios pre-calculados en Firebase:', e.message);
+          // Error al cargar promedios pre-calculados, continuar con cálculo desde registros
         }
         
         // Obtener registros igual que la APK - CARGAR TODOS los registros históricos
         // La APK usa todos los registros, no solo 100
-        console.log('🔍 DEBUG: Cargando TODOS los registros históricos...');
         const registrosSnap = await db.collection('locales').doc(localId).collection('registros').get();
         const registros = [];
         registrosSnap.forEach(d => {
@@ -12820,8 +12741,6 @@
           });
         });
         
-        console.log('🔍 DEBUG: Iniciando cálculo de promedios con', registros.length, 'registros (todos los históricos)');
-
         // Inicializar estructura igual que la APK
         const promediosPorDia = {};
         diasSemana.forEach(dia => {
@@ -12830,13 +12749,11 @@
         
         // 🚀 OPTIMIZACIÓN: Usar registros de "Venta Diaria" pre-calculados si existen (igual que APK)
         const registrosVentaDiaria = registros.filter(r => r.tipo === 'Venta Diaria');
-        console.log('🔍 DEBUG: Registros Venta Diaria encontrados:', registrosVentaDiaria.length);
         
         const ventasPorDia = {};
         
         if (registrosVentaDiaria.length > 0) {
           // ✅ Usar ventas diarias pre-calculadas (igual que PromedioVentasActivity.kt líneas 230-244)
-          console.log('🔍 DEBUG: Usando ventas diarias pre-calculadas');
           
           registrosVentaDiaria.forEach(registro => {
             const diaSemana = obtenerDiaSemana(registro.fecha);
@@ -12847,7 +12764,6 @@
             });
             
             if (Object.keys(ventasDia).length > 0) {
-              console.log(`🔍 DEBUG: Ventas pre-calculadas para ${registro.fecha}:`, ventasDia);
               if (!ventasPorDia[diaSemana]) {
                 ventasPorDia[diaSemana] = [];
               }
@@ -12856,11 +12772,9 @@
           });
         } else {
           // 🔙 FALLBACK: Calcular desde registros históricos (método más lento)
-          console.log('🔍 DEBUG: No hay ventas pre-calculadas, calculando desde registros históricos');
           
           // Obtener todas las fechas ordenadas (igual que PromedioVentasActivity en APK)
           const fechasOrdenadas = [...new Set(registros.map(r => r.fecha))].sort();
-          console.log('🔍 DEBUG: Fechas únicas encontradas:', fechasOrdenadas);
           
           if (fechasOrdenadas.length === 0) {
             return;
@@ -12871,7 +12785,6 @@
             if (diasSemana.includes(dia)) {
               const ventasDia = calcularVentasDiaExacto(fecha, registros);
               if (Object.keys(ventasDia).length > 0) {
-                console.log(`🔍 DEBUG: Ventas calculadas para ${fecha}:`, ventasDia);
                 if (!ventasPorDia[dia]) {
                   ventasPorDia[dia] = [];
                 }
@@ -12886,7 +12799,6 @@
         Object.keys(ventasPorDia).forEach(dia => {
           const listaVentas = ventasPorDia[dia]; // Lista de maps, uno por fecha
           if (listaVentas && listaVentas.length > 0) {
-            console.log(`🔍 DEBUG: Calculando promedios para ${dia} con ${listaVentas.length} días de datos`);
             
             // Obtener todos los productos que aparecen en alguna fecha
             const productosSet = new Set();
@@ -12905,7 +12817,6 @@
                 const suma = ventasConDatos.reduce((a, b) => a + b, 0);
                 const promedio = suma / ventasConDatos.length;
                 promediosPorDia[dia][producto] = promedio;
-                console.log(`🔍 DEBUG:   ${producto}: suma=${suma}, promedio=${promedio}`);
               } else {
                 promediosPorDia[dia][producto] = 0;
               }
@@ -12957,8 +12868,6 @@
         .find(r => r.tipo === 'Stock Final')?.productos || [];
       
       const ventas = {};
-      
-      console.log(`🔍 DEBUG calcularVentasDia: ${fecha} - Ingreso: ${ingreso.length}, StockFinal: ${stockFinal.length}, StockAnt: ${stockAnterior.length}`);
       
       // Si no hay stock final del día actual, no podemos calcular ventas
       if (stockFinal.length === 0) {
@@ -13059,7 +12968,7 @@
             });
           } else {
             // Si no hay productos guardados, cargar stock actual desde registros
-            const stockActualMap = await cargarStockActualDesdeRegistros();
+            const stockActualMap = await cargarStockActualDesdeRegistrosFabrica();
             productos = ordenProductos.map(codigo => ({
               codigo: codigo,
               nombre: obtenerNombreProducto(codigo),
@@ -13091,7 +13000,7 @@
     // Función para inicializar productos si no hay pedido existente
     async function inicializarProductos() {
       // Cargar stock actual desde registros de inventario
-      const stockActualMap = await cargarStockActualDesdeRegistros();
+      const stockActualMap = await cargarStockActualDesdeRegistrosFabrica();
       
       productos = ordenProductos.map(codigo => ({
         codigo: codigo,
@@ -13105,7 +13014,7 @@
     }
 
     // Función para cargar stock actual desde registros (replica de la APK)
-    async function cargarStockActualDesdeRegistros() {
+    async function cargarStockActualDesdeRegistrosFabrica() {
       const stockMap = {};
       try {
         let db;
@@ -13221,26 +13130,17 @@
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       const diaSiguiente = obtenerDiaSiguiente(diaActual);
       
-      console.log(`🔍 DEBUG obtenerPromediosHastaProximaEntrega [${codigo}]:`);
-      console.log(`  - diaActual: ${diaActual}, diaSiguiente: ${diaSiguiente}`);
-      console.log(`  - promedio diaSiguiente (${diaSiguiente}): ${promediosVenta[codigo]?.[diaSiguiente] || 0}`);
-      
       // Siempre incluir el día siguiente
       let suma = promediosVenta[codigo]?.[diaSiguiente] || 0;
-      console.log(`  - suma inicial (solo diaSiguiente): ${suma}`);
       
       // Obtener días extra según configuración
       const diasExtra = obtenerDiasExtraSegunTexto();
-      console.log(`  - diasExtra: ${JSON.stringify(diasExtra)}`);
-      console.log(`  - diasEntrega: ${JSON.stringify(diasEntrega)}`);
       
       diasExtra.forEach(dia => {
         const promedioDia = promediosVenta[codigo]?.[dia] || 0;
-        console.log(`  - sumando ${dia}: ${promedioDia}`);
         suma += promedioDia;
       });
       
-      console.log(`  - suma FINAL: ${suma}`);
       return suma;
     }
 
@@ -13428,15 +13328,7 @@
         const ventaActualHoy = Math.max(0, stockInicialHoy - stockActual);
         const ventaRestanteHoy = Math.max(0, promedioDiaActual - ventaActualHoy);
         
-        console.log(`🔍 DEBUG calcularSugerencia REAL [${codigo}]:`);
-        console.log(`  - diaActual: ${diaActual}, promedioDiaActual: ${promedioDiaActual}`);
-        console.log(`  - stockActual: ${stockActual}, porcentajeExtra: ${porcentajeExtra}`);
-        console.log(`  - stockAnterior: ${stockAnterior}, ingresoHoy: ${ingresoHoy}`);
-        console.log(`  - stockInicialHoy: ${stockInicialHoy}, ventaActualHoy: ${ventaActualHoy}`);
-        console.log(`  - ventaRestanteHoy (real): ${ventaRestanteHoy}`);
-        
         if (promedioDiaActual <= 0) {
-          console.log(`  - RETURN 0: promedioDiaActual <= 0`);
           return 0;
         }
 
@@ -13714,7 +13606,6 @@
           tieneTendencia = Math.abs(tendenciaValor) >= 5.0;
           if (tieneTendencia) {
             actualizarTextoConIconos();
-            console.log('⚡ Tendencia desde cache: ' + prod.codigo + ' → ' + Math.abs(tendenciaValor).toFixed(0) + '%');
           }
         }
         
@@ -14602,14 +14493,6 @@
       }
     }
 
-    // Función para obtener día de la semana
-    function obtenerDiaSemana(fecha) {
-      const [y, m, d] = fecha.split('-').map(Number);
-      const date = new Date(y, m - 1, d);
-      const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-      return dias[date.getDay()];
-    }
-
     // Función para cargar configuración desde Firebase
     async function cargarConfiguracion() {
       try {
@@ -14803,7 +14686,7 @@
           // Filtrar SOLO productos de panificadora antes de procesar
           const productosPanificadora = stockFinal.productos.filter(p => {
             const nombreProducto = p.nombre || p.codigo || '';
-            const codigo = obtenerCodigoProducto(nombreProducto);
+            const codigo = obtenerCodigoProductoPanificadora(nombreProducto);
             const esPanificadora = ordenProductosPanificadora.includes(codigo);
             if (!esPanificadora && nombreProducto) {
               // Log solo para productos que NO son de panificadora (para debug)
@@ -14819,7 +14702,7 @@
           // Solo procesar productos de panificadora
           productosPanificadora.forEach(p => {
             const nombreProducto = p.nombre || p.codigo || '';
-            const codigo = obtenerCodigoProducto(nombreProducto);
+            const codigo = obtenerCodigoProductoPanificadora(nombreProducto);
             
             // Debug: log para ver qué productos se están procesando
             console.log('🔍 [Panificadora] Procesando producto:', nombreProducto, '→ código:', codigo);
@@ -14828,13 +14711,13 @@
             // Necesitamos buscar por el nombre original del producto en la BD
             const ingresoCant = (ingreso?.productos || []).find(ip => {
               const nombreIngreso = ip.nombre || ip.codigo || '';
-              const codigoIngreso = obtenerCodigoProducto(nombreIngreso);
+              const codigoIngreso = obtenerCodigoProductoPanificadora(nombreIngreso);
               return codigoIngreso === codigo;
             })?.cantidad || 0;
             
             const stockAntCant = (stockAnterior?.productos || []).find(sp => {
               const nombreStock = sp.nombre || sp.codigo || '';
-              const codigoStock = obtenerCodigoProducto(nombreStock);
+              const codigoStock = obtenerCodigoProductoPanificadora(nombreStock);
               return codigoStock === codigo;
             })?.cantidad || 0;
             
@@ -14845,17 +14728,11 @@
                 ventasPorDia[dia][codigo] = [];
               }
               ventasPorDia[dia][codigo].push(venta);
-              
-              // Debug: log para ver ventas calculadas
-              if (codigo === 'MEDIALUNA_MANTECA') {
-                console.log('📊 [Panificadora] Venta calculada para', codigo, 'en', dia, ':', venta, '(stockAnt:', stockAntCant, '+ ingreso:', ingresoCant, '- stockFinal:', p.cantidad, ')');
-              }
             }
           });
         });
 
         // Calcular promedios SOLO para productos de panificadora
-        console.log('📊 [Panificadora] Calculando promedios para productos:', ordenProductosPanificadora);
         ordenProductosPanificadora.forEach(codigo => {
           if (!promediosVenta[codigo]) {
             promediosVenta[codigo] = {};
@@ -14866,27 +14743,18 @@
               const suma = ventasDelDia.reduce((a, b) => a + b, 0);
               const promedio = suma / ventasDelDia.length;
               promediosVenta[codigo][dia] = Math.round(promedio);
-              
-              console.log(`✅ [Panificadora] Promedio calculado para ${codigo} en ${dia}: ${Math.round(promedio)} (de ${ventasDelDia.length} ventas)`);
             } else {
               promediosVenta[codigo][dia] = 0;
             }
           });
-        });
-        
-        // Debug: mostrar resumen de promedios para todos los productos de panificadora
-        ordenProductosPanificadora.forEach(codigo => {
-          if (promediosVenta[codigo]) {
-            console.log(`📈 [Panificadora] Resumen promedios ${codigo}:`, promediosVenta[codigo]);
-          }
         });
       } catch (e) {
         console.warn('Error cargando promedios:', e);
       }
     }
 
-    // Función helper para obtener código de producto desde nombre
-    function obtenerCodigoProducto(nombre) {
+    // Función helper para obtener código de producto desde nombre (Panificadora)
+    function obtenerCodigoProductoPanificadora(nombre) {
       if (!nombre) return nombre;
       
       // Normalizar nombre (trim)
@@ -14964,8 +14832,8 @@
       return nombreNormalizado;
     }
 
-    // Función para cargar stock actual desde registros
-    async function cargarStockActualDesdeRegistros() {
+    // Función para cargar stock actual desde registros (Panificadora)
+    async function cargarStockActualDesdeRegistrosPanificadora() {
       try {
         let db;
         try {
@@ -14988,7 +14856,7 @@
             const productos = d.data().productos || [];
             productos.forEach(p => {
               const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
+              const codigo = obtenerCodigoProductoPanificadora(nombreProducto);
               if (ordenProductosPanificadora.includes(codigo)) {
                 stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
               }
@@ -15006,7 +14874,7 @@
             const productos = d.data().productos || [];
             productos.forEach(p => {
               const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
+              const codigo = obtenerCodigoProductoPanificadora(nombreProducto);
               if (ordenProductosPanificadora.includes(codigo)) {
                 stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
               }
@@ -15019,7 +14887,7 @@
             const productos = d.data().productos || [];
             productos.forEach(p => {
               const nombreProducto = p.nombre || p.codigo || '';
-              const codigo = obtenerCodigoProducto(nombreProducto);
+              const codigo = obtenerCodigoProductoPanificadora(nombreProducto);
               if (ordenProductosPanificadora.includes(codigo)) {
                 stockMap[codigo] = (stockMap[codigo] || 0) + (Number(p.cantidad) || 0);
               }
@@ -15073,7 +14941,7 @@
     // Función para inicializar productos
     async function inicializarProductos() {
       productos = [];
-      const stockMap = await cargarStockActualDesdeRegistros();
+      const stockMap = await cargarStockActualDesdeRegistrosPanificadora();
       
       ordenProductosPanificadora.forEach(codigo => {
         const productoInfo = productosPanificadora[codigo];
@@ -15219,7 +15087,7 @@
           const productosGuardados = data.productos || [];
           
           productosGuardados.forEach(prod => {
-            const codigo = obtenerCodigoProducto(prod.nombre || prod.codigo || '');
+            const codigo = obtenerCodigoProductoPanificadora(prod.nombre || prod.codigo || '');
             const pedidoInput = document.getElementById('pp-pedido-' + codigo);
             if (pedidoInput) {
               pedidoInput.value = prod.pedidoFinal || 0;

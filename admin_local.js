@@ -31,6 +31,23 @@
     CRITICA: '#7f1d1d'
   };
 
+  const THEME = {
+    overlay: 'position:fixed;inset:0;background:rgba(15,23,42,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10002;padding:20px',
+    modal: 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(197,155,52,0.35);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border-radius:20px;box-shadow:0 25px 50px rgba(0,0,0,0.5)',
+    modalLg: 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(197,155,52,0.35);width:100%;max-width:1100px;max-height:95vh;overflow:hidden;border-radius:20px;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.5)',
+    header: 'padding:24px;border-bottom:1px solid rgba(197,155,52,0.2);background:linear-gradient(135deg,rgba(197,155,52,0.12),transparent)',
+    headerTitle: 'margin:0;font-size:20px;font-weight:700;color:#E6C874',
+    label: 'display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px',
+    input: 'width:100%;padding:12px 14px;border:1px solid rgba(197,155,52,0.3);border-radius:12px;font-size:14px;background:rgba(15,23,42,0.6);color:#f1f5f9;box-sizing:border-box',
+    select: 'width:100%;padding:12px 14px;border:1px solid rgba(197,155,52,0.3);border-radius:12px;font-size:14px;background:rgba(15,23,42,0.6);color:#f1f5f9',
+    textarea: 'width:100%;padding:12px 14px;border:1px solid rgba(197,155,52,0.3);border-radius:12px;font-size:14px;background:rgba(15,23,42,0.6);color:#f1f5f9;min-height:80px;resize:vertical;box-sizing:border-box',
+    footer: 'padding:20px 24px;border-top:1px solid rgba(197,155,52,0.2);display:flex;justify-content:flex-end;gap:12px;background:rgba(15,23,42,0.5)',
+    btnPrimary: 'padding:12px 20px;background:linear-gradient(135deg,#C59B34,#E6C874);color:#0f172a;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:transform 0.2s ease',
+    btnSecondary: 'padding:12px 20px;background:rgba(100,116,139,0.4);color:#f1f5f9;border:1px solid rgba(148,163,184,0.3);border-radius:12px;font-weight:600;cursor:pointer',
+    adminHeader: 'display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:linear-gradient(135deg,rgba(197,155,52,0.15),rgba(30,41,59,0.9));border-bottom:1px solid rgba(197,155,52,0.25);flex-wrap:wrap;gap:8px',
+    adminBody: 'padding:12px;overflow:auto;background:rgba(15,23,42,0.6);flex:1;-webkit-overflow-scrolling:touch'
+  };
+
   function esc(value) {
     return window.escapeHtml ? window.escapeHtml(value) : String(value ?? '');
   }
@@ -136,50 +153,50 @@
   // Función mejorada para agregar documento con formulario completo
   async function promptAndSaveDocumento(db, localId) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:10002;padding:20px';
+    overlay.style.cssText = THEME.overlay;
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.3)';
+    modal.style.cssText = THEME.modal;
     
     modal.innerHTML = `
-      <div style="padding:24px;border-bottom:1px solid #e5e7eb;background:#f8fafc">
-        <h2 style="margin:0;font-size:20px;font-weight:700;color:#111827">📄 Agregar Documento</h2>
+      <div style="${THEME.header}">
+        <h2 style="${THEME.headerTitle}">📄 Agregar Documento</h2>
       </div>
       <div style="padding:24px;display:grid;gap:16px">
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Nombre del documento *</label>
-          <input type="text" id="doc-nombre" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Ej: Certificado Anual">
+          <label style="${THEME.label}">Nombre del documento *</label>
+          <input type="text" id="doc-nombre" style="${THEME.input}" placeholder="Ej: Certificado Anual">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Tipo de documento *</label>
-          <select id="doc-tipo" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff">
+          <label style="${THEME.label}">Tipo de documento *</label>
+          <select id="doc-tipo" style="${THEME.select}">
             ${DOC_TYPES.map(t => `<option value="${t}">${DOC_LABELS[t]}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Fecha de vencimiento</label>
-          <input type="date" id="doc-vencimiento" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Fecha de vencimiento</label>
+          <input type="date" id="doc-vencimiento" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Empresa responsable</label>
-          <input type="text" id="doc-empresa" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Nombre de la empresa">
+          <label style="${THEME.label}">Empresa responsable</label>
+          <input type="text" id="doc-empresa" style="${THEME.input}" placeholder="Nombre de la empresa">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Número de certificado</label>
-          <input type="text" id="doc-numero" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Número o código">
+          <label style="${THEME.label}">Número de certificado</label>
+          <input type="text" id="doc-numero" style="${THEME.input}" placeholder="Número o código">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Teléfono de contacto</label>
-          <input type="text" id="doc-telefono" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Teléfono">
+          <label style="${THEME.label}">Teléfono de contacto</label>
+          <input type="text" id="doc-telefono" style="${THEME.input}" placeholder="Teléfono">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Observaciones</label>
-          <textarea id="doc-observaciones" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;min-height:80px;resize:vertical" placeholder="Notas adicionales..."></textarea>
+          <label style="${THEME.label}">Observaciones</label>
+          <textarea id="doc-observaciones" style="${THEME.textarea}" placeholder="Notas adicionales..."></textarea>
         </div>
       </div>
-      <div style="padding:20px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc">
-        <button id="doc-cancel" style="padding:10px 20px;background:#6b7280;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cancelar</button>
-        <button id="doc-save" style="padding:10px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">💾 Guardar</button>
+      <div style="${THEME.footer}">
+        <button id="doc-cancel" style="${THEME.btnSecondary}">Cancelar</button>
+        <button id="doc-save" style="${THEME.btnPrimary}">💾 Guardar</button>
       </div>
     `;
     
@@ -228,10 +245,10 @@
   // Función para editar documento
   async function promptAndEditDocumento(db, localId, documento) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:10002;padding:20px';
+    overlay.style.cssText = THEME.overlay;
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.3)';
+    modal.style.cssText = THEME.modal;
     
     const fechaVenc = documento.fechaVencimiento ? 
       new Date(documento.fechaVencimiento).toISOString().split('T')[0] : '';
@@ -332,10 +349,10 @@
   // Función mejorada para agregar personal con formulario completo
   async function promptAndSavePersonal(db, localId) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:10002;padding:20px';
+    overlay.style.cssText = THEME.overlay;
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.3)';
+    modal.style.cssText = THEME.modal;
     
     modal.innerHTML = `
       <div style="padding:24px;border-bottom:1px solid #e5e7eb;background:#f8fafc">
@@ -468,10 +485,10 @@
   // Función para editar personal
   async function promptAndEditPersonal(db, localId, personal) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:10002;padding:20px';
+    overlay.style.cssText = THEME.overlay;
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.3)';
+    modal.style.cssText = THEME.modal;
     
     const fechaIngreso = personal.fechaIngreso ? new Date(personal.fechaIngreso).toISOString().split('T')[0] : '';
     const fechaLibreta = personal.libretaSanitaria?.fechaVencimiento ? 
@@ -639,25 +656,25 @@
 
     const db = await ensureFirebaseReady(usuario);
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10001;padding:8px';
+    overlay.style.cssText = THEME.overlay;
     const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;width:100%;max-width:1100px;max-height:95vh;overflow:hidden;border-radius:12px;display:flex;flex-direction:column';
+    modal.style.cssText = THEME.modalLg;
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:8px';
-    header.innerHTML = `<div style="font-weight:700;font-size:18px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Administracion · ${esc(usuario.localNombre || 'Local')}</div><div style="display:flex;gap:6px;flex-shrink:0"><button id="admin-refresh" style="padding:8px 12px;background:#059669;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:13px">↻ Recargar</button><button id="admin-close" style="padding:8px 12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:13px">✕ Cerrar</button></div>`;
+    header.style.cssText = THEME.adminHeader;
+    header.innerHTML = `<div style="font-weight:700;font-size:18px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#E6C874">Administracion · ${esc(usuario.localNombre || 'Local')}</div><div style="display:flex;gap:6px;flex-shrink:0"><button id="admin-refresh" style="${THEME.btnPrimary};font-size:13px;padding:8px 12px">↻ Recargar</button><button id="admin-close" style="${THEME.btnSecondary};font-size:13px;padding:8px 12px">✕ Cerrar</button></div>`;
     modal.appendChild(header);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:12px;overflow:auto;background:#e5e7eb;flex:1;-webkit-overflow-scrolling:touch';
+    body.style.cssText = THEME.adminBody;
     modal.appendChild(body);
 
     const state = { section: 'documentos', documentos: [], personal: [], notificaciones: [] };
 
     async function loadData() {
-      body.innerHTML = '<div style="padding:32px;text-align:center;color:#6b7280">Cargando administracion del local...</div>';
+      body.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Cargando administracion del local...</div>';
       const [docsSnap, peopleSnap] = await Promise.all([
         db.collection('locales').doc(usuario.localId).collection('documentos').get(),
         db.collection('locales').doc(usuario.localId).collection('personal').get()
@@ -697,23 +714,23 @@
       const isActive = state.section === section;
       return `
         <button data-section="${section}" style="
-          border:${isActive ? '3px solid ' + color : '2px solid #e5e7eb'};
-          background:${isActive ? '#fff' : '#f9fafb'};
+          border:${isActive ? '2px solid ' + color : '1px solid rgba(197,155,52,0.25)'};
+          background:${isActive ? 'rgba(30,41,59,0.95)' : 'rgba(30,41,59,0.65)'};
           border-radius:16px;
           padding:20px 16px;
           text-align:center;
-          box-shadow:${isActive ? '0 8px 16px rgba(0,0,0,.12)' : '0 2px 4px rgba(0,0,0,.05)'};
+          box-shadow:${isActive ? '0 8px 24px rgba(197,155,52,0.2)' : '0 4px 12px rgba(0,0,0,0.3)'};
           cursor:pointer;
           transition:all 0.2s ease;
           display:flex;
           flex-direction:column;
           align-items:center;
           gap:8px;
-        " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px rgba(0,0,0,.12)'" 
-           onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='${isActive ? '0 8px 16px rgba(0,0,0,.12)' : '0 2px 4px rgba(0,0,0,.05)'}'">
+        " onmouseover="this.style.transform='translateY(-2px)'" 
+           onmouseout="this.style.transform='translateY(0)'">
           <div style="font-size:32px">${icon}</div>
           <div style="font-size:32px;font-weight:800;color:${color};line-height:1">${value}</div>
-          <div style="font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px">${label}</div>
+          <div style="font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">${label}</div>
         </button>
       `;
     }
@@ -731,10 +748,11 @@
       
       return `
         <div class="admin-card" data-id="${esc(doc.id)}" style="
-          background:#fff;
+          background:rgba(30,41,59,0.85);
           border-radius:16px;
           padding:20px;
-          box-shadow:0 4px 12px rgba(0,0,0,.08);
+          box-shadow:0 4px 16px rgba(0,0,0,.3);
+          border:1px solid rgba(197,155,52,0.15);
           border-left:5px solid ${estadoColor};
           cursor:pointer;
           transition:all 0.2s ease;

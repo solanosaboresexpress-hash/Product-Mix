@@ -1,43 +1,41 @@
 // Modal de Cambio de Contraseña para Primer Ingreso
 // Se carga dinámicamente cuando se detecta primer ingreso
 
-// Variables globales
 window.cambioContrasenaCallback = null;
 window.modalCreado = false;
 
-// Función para crear el modal
 window.crearModalCambioContrasena = function() {
   if (window.modalCreado) return;
   
   const modalHTML = `
-    <div id="modalCambioContrasenaPrimerIngreso" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
-      <div style="background:white;padding:30px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <h2 style="margin:0 0 20px 0;color:#C59B34;text-align:center;">🔑 Cambio de Contraseña</h2>
-        <p style="margin:0 0 20px 0;color:#666;text-align:center;">
+    <div id="modalCambioContrasenaPrimerIngreso" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:rgba(30,41,59,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(197,155,52,0.35);padding:32px;border-radius:24px;max-width:420px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.5);box-sizing:border-box;">
+        <h2 style="margin:0 0 12px 0;background:linear-gradient(135deg,#C59B34,#E6C874);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;font-size:22px;font-weight:800;">🔑 Cambio de Contraseña</h2>
+        <p style="margin:0 0 24px 0;color:#94a3b8;text-align:center;font-size:14px;line-height:1.5;">
           Es tu primer ingreso. Por seguridad, debes cambiar tu contraseña para continuar.
         </p>
         
-        <div style="margin-bottom:15px;">
-          <label style="display:block;margin-bottom:5px;color:#333;font-weight:600;">Nueva Contraseña</label>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:8px;color:#E6C874;font-weight:600;font-size:13px;">Nueva Contraseña</label>
           <input type="password" id="inputNuevaContrasena" placeholder="Mínimo 6 caracteres" 
-                 style="width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                 style="width:100%;padding:14px 16px;border:2px solid rgba(197,155,52,0.35);border-radius:14px;font-size:16px;box-sizing:border-box;background:rgba(15,23,42,0.6);color:#f1f5f9;transition:box-shadow 0.2s ease;">
         </div>
         
         <div style="margin-bottom:20px;">
-          <label style="display:block;margin-bottom:5px;color:#333;font-weight:600;">Confirmar Contraseña</label>
+          <label style="display:block;margin-bottom:8px;color:#E6C874;font-weight:600;font-size:13px;">Confirmar Contraseña</label>
           <input type="password" id="inputConfirmarContrasena" placeholder="Repite la nueva contraseña" 
-                 style="width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                 style="width:100%;padding:14px 16px;border:2px solid rgba(197,155,52,0.35);border-radius:14px;font-size:16px;box-sizing:border-box;background:rgba(15,23,42,0.6);color:#f1f5f9;transition:box-shadow 0.2s ease;">
         </div>
         
-        <div id="errorContrasena" style="margin-bottom:15px;color:#d32f2f;font-size:14px;display:none;"></div>
+        <div id="errorContrasena" style="margin-bottom:16px;color:#f87171;font-size:14px;display:none;text-align:center;"></div>
         
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:12px;">
           <button id="btnCancelarCambio" 
-                  style="flex:1;padding:12px;border:1px solid #ddd;background:#f5f5f5;border-radius:6px;cursor:pointer;font-size:16px;">
+                  style="flex:1;padding:14px;border:1px solid rgba(148,163,184,0.3);background:rgba(100,116,139,0.35);color:#f1f5f9;border-radius:14px;cursor:pointer;font-size:15px;font-weight:600;transition:transform 0.2s ease;">
             Cancelar
           </button>
           <button id="btnConfirmarCambio" 
-                  style="flex:1;padding:12px;border:none;background:#C59B34;color:white;border-radius:6px;cursor:pointer;font-size:16px;font-weight:600;">
+                  style="flex:1;padding:14px;border:none;background:linear-gradient(135deg,#C59B34,#E6C874);color:#0f172a;border-radius:14px;cursor:pointer;font-size:15px;font-weight:800;box-shadow:0 4px 16px rgba(197,155,52,0.35);transition:transform 0.2s ease;">
             Cambiar Contraseña
           </button>
         </div>
@@ -45,7 +43,6 @@ window.crearModalCambioContrasena = function() {
     </div>
   `;
 
-  // Insertar el modal en el body
   const insertarModal = function() {
     if (document.body) {
       document.body.insertAdjacentHTML('beforeend', modalHTML);
@@ -61,8 +58,22 @@ window.crearModalCambioContrasena = function() {
   }
 };
 
-// Función para configurar event listeners
 function configurarEventListeners() {
+  const inputs = ['inputNuevaContrasena', 'inputConfirmarContrasena'];
+  inputs.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('focus', function() {
+        this.style.boxShadow = '0 0 0 4px rgba(197,155,52,0.2)';
+        this.style.borderColor = '#C59B34';
+      });
+      el.addEventListener('blur', function() {
+        this.style.boxShadow = 'none';
+        this.style.borderColor = 'rgba(197,155,52,0.35)';
+      });
+    }
+  });
+
   document.getElementById('btnCancelarCambio').addEventListener('click', function() {
     window.ocultarModalCambioContrasena();
     if (window.cambioContrasenaCallback) {
@@ -121,9 +132,7 @@ function configurarEventListeners() {
   });
 }
 
-// Función para mostrar el modal
 window.mostrarModalCambioContrasena = function(callback) {
-  // Crear modal si no existe
   if (!window.modalCreado) {
     window.crearModalCambioContrasena();
   }
@@ -143,11 +152,10 @@ window.mostrarModalCambioContrasena = function(callback) {
   setTimeout(() => inputNueva.focus(), 100);
 };
 
-// Función para ocultar el modal
 window.ocultarModalCambioContrasena = function() {
   const modal = document.getElementById('modalCambioContrasenaPrimerIngreso');
   modal.style.display = 'none';
   window.cambioContrasenaCallback = null;
 };
 
-console.log('✅ Script de cambio de contraseña cargado');
+window.crearModalCambioContrasena();

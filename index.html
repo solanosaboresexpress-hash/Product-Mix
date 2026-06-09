@@ -2102,18 +2102,18 @@
                     try {
                         const emailInput = inputEmail.value.trim();
                         if (!emailInput) {
-                            alert('Ingrese el email');
-                            return;
-                        }
-                        
-                        const emailCompleto = emailInput.includes('@') ? emailInput : emailInput + '@saboresexpress.com.ar';
-                        
-                        if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
-                            alert('El email debe ser @saboresexpress.com.ar');
+                            mostrarModalError('Ingrese el email');
                             return;
                         }
 
-                        alert('La recuperación automática por email está deshabilitada.\n\nSolicita al administrador el cambio de contraseña desde Gestión de Locales.');
+                        const emailCompleto = emailInput.includes('@') ? emailInput : emailInput + '@saboresexpress.com.ar';
+
+                        if (!emailCompleto.endsWith('@saboresexpress.com.ar')) {
+                            mostrarModalError('El email debe ser @saboresexpress.com.ar');
+                            return;
+                        }
+
+                        mostrarModalError('La recuperación automática por email está deshabilitada.\n\nSolicita al administrador el cambio de contraseña desde Gestión de Locales.');
                         document.body.removeChild(modal);
                         return;
                         
@@ -2160,10 +2160,10 @@
                                     // Éxito: el usuario existe en esta región
                                     console.log('✅ Email de reset enviado desde región:', region.nombre);
                                     exito = true;
-                                    
-                                    alert('✅ Email enviado. Revisa tu bandeja de entrada para restablecer tu contraseña.');
+
+                                    mostrarModalExito('✅ Email enviado. Revisa tu bandeja de entrada para restablecer tu contraseña.');
                                     document.body.removeChild(modal);
-                                    
+
                                     break;
                                 }
                             } catch (error) {
@@ -2188,15 +2188,15 @@
                         if (!exito) {
                             console.error('❌ Usuario no encontrado en ninguna región');
                             if (ultimoError && ultimoError.code === 'auth/user-not-found') {
-                                alert('El email ' + emailCompleto + ' no está registrado en ninguna región del sistema.');
+                                mostrarModalError('El email ' + emailCompleto + ' no está registrado en ninguna región del sistema.');
                             } else {
-                                alert('Error: ' + (ultimoError ? ultimoError.message : 'No se pudo enviar el email'));
+                                mostrarModalError('Error: ' + (ultimoError ? ultimoError.message : 'No se pudo enviar el email'));
                             }
                         }
-                        
+
                     } catch (error) {
                         console.error('Error enviando email reset:', error);
-                        alert('Error: ' + (error.message || 'No se pudo enviar el email. Verifique su conexión e intente nuevamente.'));
+                        mostrarModalError('Error: ' + (error.message || 'No se pudo enviar el email. Verifique su conexión e intente nuevamente.'));
                     }
                 });
             };
@@ -2453,14 +2453,14 @@
                     const usuario = dialogContent.querySelector('#usuarioInput').value.trim();
                     const password = dialogContent.querySelector('#passwordInput').value.trim();
                     const remember = dialogContent.querySelector('#rememberPassword').checked;
-                    
+
                     if (!usuario) {
-                        alert('Seleccione un usuario');
+                        mostrarModalError('Seleccione un usuario');
                         return;
                     }
-                    
+
                     if (!password) {
-                        alert('Ingrese la contraseña');
+                        mostrarModalError('Ingrese la contraseña');
                         return;
                     }
                     
@@ -2559,13 +2559,13 @@
                             window.location.href = '#gestion-locales';
                             return;
                         }
-                        
+
                         // Si no se encontró usuario válido
-                        alert('Credenciales incorrectas');
-                        
+                        mostrarModalError('Credenciales incorrectas');
+
                     } catch (error) {
                         console.error('Error verificando credenciales:', error);
-                        alert('Error verificando credenciales: ' + error.message);
+                        mostrarModalError('Error verificando credenciales: ' + error.message);
                     }
                 };
             };
@@ -2939,7 +2939,7 @@
                             } else if (tipo === 'Ingreso de Mercadería' && window.abrirCargaIngreso) {
                                 window.abrirCargaIngreso();
                             } else {
-                                alert(`Por favor, usa el botón "${tipo}" en el menú principal`);
+                                mostrarModalError(`Por favor, usa el botón "${tipo}" en el menú principal`);
                             }
                         }, 200);
                     } else {
@@ -2950,7 +2950,7 @@
                             } else if (window.abrirCargaStock) {
                                 window.abrirCargaStock();
                             } else {
-                                alert('Por favor, usa el botón "Stock Final" en el menú principal');
+                                mostrarModalError('Por favor, usa el botón "Stock Final" en el menú principal');
                             }
                         } else if (problema.includes('Ingreso de Mercadería')) {
                             if (window.navegarA) {
@@ -2958,7 +2958,7 @@
                             } else if (window.abrirCargaIngreso) {
                                 window.abrirCargaIngreso();
                             } else {
-                                alert('Por favor, usa el botón "Ingreso de Mercadería" en el menú principal');
+                                mostrarModalError('Por favor, usa el botón "Ingreso de Mercadería" en el menú principal');
                             }
                         }
                     }
@@ -2998,6 +2998,96 @@
         
         // Exponer globalmente
         window.mostrarPopupProblemas = mostrarPopupProblemas;
+
+        // Función para mostrar modal de error premium
+        window.mostrarModalError = (mensaje) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:fadeIn 0.2s ease-out';
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);width:90%;max-width:400px;border-radius:16px;border:1px solid rgba(239,68,68,0.3);box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:slideUp 0.3s ease-out';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'background:linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.1) 100%);color:#ef4444;padding:20px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(239,68,68,0.2)';
+            header.innerHTML = '⚠️ Error';
+            dialog.appendChild(header);
+
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:20px;color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-line';
+            body.textContent = mensaje;
+            dialog.appendChild(body);
+
+            const footer = document.createElement('div');
+            footer.style.cssText = 'padding:16px 20px;border-top:1px solid rgba(71,85,105,0.5);display:flex;justify-content:flex-end;background:rgba(15,23,42,0.5)';
+
+            const btnCerrar = document.createElement('button');
+            btnCerrar.textContent = 'Cerrar';
+            btnCerrar.style.cssText = 'padding:10px 28px;background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(239,68,68,0.3)';
+            btnCerrar.onmouseenter = () => {
+                btnCerrar.style.transform = 'translateY(-2px)';
+                btnCerrar.style.boxShadow = '0 6px 16px rgba(239,68,68,0.4)';
+            };
+            btnCerrar.onmouseleave = () => {
+                btnCerrar.style.transform = 'translateY(0)';
+                btnCerrar.style.boxShadow = '0 4px 12px rgba(239,68,68,0.3)';
+            };
+            btnCerrar.onclick = () => overlay.remove();
+
+            footer.appendChild(btnCerrar);
+            dialog.appendChild(footer);
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+        };
+
+        // Función para mostrar modal de éxito premium
+        window.mostrarModalExito = (mensaje) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:fadeIn 0.2s ease-out';
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);width:90%;max-width:400px;border-radius:16px;border:1px solid rgba(16,185,129,0.3);box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:slideUp 0.3s ease-out';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'background:linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.1) 100%);color:#10b981;padding:20px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(16,185,129,0.2)';
+            header.innerHTML = '✅ Éxito';
+            dialog.appendChild(header);
+
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:20px;color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-line';
+            body.textContent = mensaje;
+            dialog.appendChild(body);
+
+            const footer = document.createElement('div');
+            footer.style.cssText = 'padding:16px 20px;border-top:1px solid rgba(71,85,105,0.5);display:flex;justify-content:flex-end;background:rgba(15,23,42,0.5)';
+
+            const btnCerrar = document.createElement('button');
+            btnCerrar.textContent = 'Cerrar';
+            btnCerrar.style.cssText = 'padding:10px 28px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(16,185,129,0.3)';
+            btnCerrar.onmouseenter = () => {
+                btnCerrar.style.transform = 'translateY(-2px)';
+                btnCerrar.style.boxShadow = '0 6px 16px rgba(16,185,129,0.4)';
+            };
+            btnCerrar.onmouseleave = () => {
+                btnCerrar.style.transform = 'translateY(0)';
+                btnCerrar.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)';
+            };
+            btnCerrar.onclick = () => overlay.remove();
+
+            footer.appendChild(btnCerrar);
+            dialog.appendChild(footer);
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+        };
 
         // GestionLocales Component - EXACTO como GestionLocalesActivity.kt
         function GestionLocales({ onVolver, onLoginSuccess }) {
@@ -3545,10 +3635,10 @@
                     } else {
                         cargarLocalesAsignados();
                     }
-                    
+
                     // Mostrar credenciales
-                    alert(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n📧 Email: ${emailCompleto}\n🔑 Contraseña inicial: ${contraseñaFinal}\n\nEn el primer ingreso deberá cambiar la contraseña.`);
-                    
+                    mostrarModalExito(`🎉 Local creado exitosamente!\n\n📍 Local: ${nuevoLocal.nombre}\n📧 Email: ${emailCompleto}\n🔑 Contraseña inicial: ${contraseñaFinal}\n\nEn el primer ingreso deberá cambiar la contraseña.`);
+
                 } catch (error) {
                     console.error('Error creando local:', error);
                     setError('Error creando local: ' + error.message);
@@ -3640,10 +3730,10 @@
                     
                     // Recargar supervisores
                     cargarSupervisores();
-                    
+
                     // Mostrar credenciales
-                    alert(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
-                    
+                    mostrarModalExito(`🎉 Supervisor creado exitosamente!\n\n👤 Usuario: ${nuevoSupervisor.usuario}\n📧 Email: ${emailCompleto}\n🔑 Contraseña: ${contraseñaFinal}\n\n⚠️ Guarda estas credenciales para que el supervisor pueda acceder\nUsa el email y contraseña para iniciar sesión`);
+
                 } catch (error) {
                     console.error('Error creando supervisor:', error);
                     setError('Error creando supervisor: ' + error.message);
@@ -4117,12 +4207,12 @@
                     if (!confirm(`⚠️ ¿Estás seguro de que quieres eliminar permanentemente el local '${local.nombre}'?\n\nEsta acción NO se puede deshacer.`)) {
                         return;
                     }
-                    
+
                     // Eliminar el local de Firestore
                     const db = FirebaseRegionManager.getFirestore();
                     const localDocId = local.id || local.nombre;
                     if (!localDocId) {
-                        alert('Error: no se pudo determinar el ID del local para eliminar.');
+                        mostrarModalError('Error: no se pudo determinar el ID del local para eliminar.');
                         return;
                     }
                     await db.collection('locales').doc(localDocId).delete();
@@ -4163,49 +4253,49 @@
                     } else {
                         cargarLocalesAsignados();
                     }
-                    
-                    alert('✅ Local eliminado exitosamente');
-                    
+
+                    mostrarModalExito('✅ Local eliminado exitosamente');
+
                 } catch (error) {
                     console.error('Error eliminando local:', error);
-                    alert('Error eliminando local: ' + error.message);
+                    mostrarModalError('Error eliminando local: ' + error.message);
                 }
             };
 
             const cambiarContraseña = async (local) => {
                 const usuarioAdmin = Object.values(local.usuarios).find(u => u.rol === 'admin_local');
                 if (!usuarioAdmin) {
-                    alert('No se encontró el usuario administrador del local');
+                    mostrarModalError('No se encontró el usuario administrador del local');
                     return;
                 }
-                
+
                 const emailAdmin = usuarioAdmin.email || '';
                 const emailSinDominio = emailAdmin.includes('@') ? emailAdmin.split('@')[0] : emailAdmin;
-                
+
                 const email = prompt(`Email del administrador:\n\n(Se agregará automáticamente @saboresexpress.com.ar)`, emailSinDominio);
                 if (!email) return;
-                
+
                 // Agregar dominio automáticamente si no lo tiene
                 const emailCompleto = email.includes('@') ? email : `${email}@saboresexpress.com.ar`;
-                
+
                 const contraseñaNueva = prompt('Nueva contraseña:');
                 if (!contraseñaNueva) return;
-                
+
                 const confirmarContraseña = prompt('Confirmar nueva contraseña:');
                 if (!confirmarContraseña) return;
-                
+
                 if (contraseñaNueva !== confirmarContraseña) {
-                    alert('Las contraseñas nuevas no coinciden');
+                    mostrarModalError('Las contraseñas nuevas no coinciden');
                     return;
                 }
-                
+
                 if (contraseñaNueva.length < 4) {
-                    alert('La nueva contraseña debe tener al menos 4 caracteres');
+                    mostrarModalError('La nueva contraseña debe tener al menos 4 caracteres');
                     return;
                 }
-                
+
                 if (!emailCompleto.includes('@')) {
-                    alert('El email debe ser válido');
+                    mostrarModalError('El email debe ser válido');
                     return;
                 }
                 
@@ -4243,11 +4333,11 @@
                     } else {
                         cargarLocalesAsignados();
                     }
-                    alert(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
-                    
+                    mostrarModalExito(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
+
                 } catch (error) {
                     console.error('Error cambiando credenciales:', error);
-                    alert('Error cambiando credenciales: ' + error.message);
+                    mostrarModalError('Error cambiando credenciales: ' + error.message);
                 }
             };
 
@@ -4392,7 +4482,7 @@
             };
 
             // Funciones de gestión de supervisores - EXACTAS como GestionLocalesActivity.kt
-            
+
             const mostrarLocalesAsignados = (supervisor) => {
                 const localesAsignadosSupervisor = obtenerLocalesDelSupervisor(supervisor);
 
@@ -4400,7 +4490,7 @@
                     ? "Este supervisor no tiene locales asignados"
                     : "Locales asignados:\n\n" + localesAsignadosSupervisor.map(local => `🏪 ${local.nombre}`).join('\n');
 
-                alert(`Locales de ${supervisor.usuario}\n\n${mensaje}`);
+                mostrarModalInfo(`Locales de ${supervisor.usuario}\n\n${mensaje}`);
             };
             
             const mostrarContraseñaSupervisor = async (supervisor) => {
@@ -4413,25 +4503,25 @@
                 
                 // Agregar dominio automáticamente si no lo tiene
                 const emailCompleto = email.includes('@') ? email : `${email}@saboresexpress.com.ar`;
-                
+
                 const contraseñaNueva = prompt('Nueva contraseña:');
                 if (!contraseñaNueva) return;
-                
+
                 const confirmarContraseña = prompt('Confirmar nueva contraseña:');
                 if (!confirmarContraseña) return;
-                
+
                 if (contraseñaNueva !== confirmarContraseña) {
-                    alert('Las contraseñas nuevas no coinciden');
+                    mostrarModalError('Las contraseñas nuevas no coinciden');
                     return;
                 }
-                
+
                 if (contraseñaNueva.length < 4) {
-                    alert('La nueva contraseña debe tener al menos 4 caracteres');
+                    mostrarModalError('La nueva contraseña debe tener al menos 4 caracteres');
                     return;
                 }
-                
+
                 if (!emailCompleto.includes('@')) {
-                    alert('El email debe ser válido');
+                    mostrarModalError('El email debe ser válido');
                     return;
                 }
                 
@@ -4444,16 +4534,16 @@
                         email: emailCompleto,
                         contraseña: contraseñaNueva
                     };
-                    
+
                     await db.collection('supervisores').doc(supervisor.id).set(supervisorActualizado);
-                    
+
                     // Recargar supervisores
                     cargarSupervisores();
-                    alert(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
-                    
+                    mostrarModalExito(`✅ Credenciales actualizadas exitosamente.\n\nEmail: ${emailCompleto}`);
+
                 } catch (error) {
                     console.error('Error cambiando credenciales del supervisor:', error);
-                    alert('Error cambiando credenciales: ' + error.message);
+                    mostrarModalError('Error cambiando credenciales: ' + error.message);
                 }
             };
             
@@ -4529,7 +4619,7 @@
                     );
 
                     if (todosLosLocales.length === 0) {
-                        alert('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
+                        mostrarModalError('❌ No hay locales disponibles para asignar\n\nVerifica que existan locales activos en Firebase');
                         return;
                     }
                     
@@ -4647,14 +4737,14 @@
                         await asignarLocalesASupervisor(supervisor, localesSeleccionados);
                         document.body.removeChild(modal);
                     };
-                    
+
                     modal.onclick = (e) => {
                         if (e.target === modal) document.body.removeChild(modal);
                     };
-                    
+
                 } catch (error) {
                     console.error('Error mostrando diálogo de asignación:', error);
-                    alert('Error cargando locales: ' + error.message);
+                    mostrarModalError('Error cargando locales: ' + error.message);
                 }
             };
             
@@ -4724,12 +4814,12 @@
                     if (localesSinSupervisorCargados !== null) {
                         setLocalesSinSupervisorCargados(null); // Forzar recarga la próxima vez que se expanda
                     }
-                    
-                    alert(`✅ Locales asignados exitosamente a ${supervisor.usuario}`);
-                    
+
+                    mostrarModalExito(`✅ Locales asignados exitosamente a ${supervisor.usuario}`);
+
                 } catch (error) {
                     console.error('Error asignando locales:', error);
-                    alert('Error asignando locales: ' + error.message);
+                    mostrarModalError('Error asignando locales: ' + error.message);
                 }
             };
             
@@ -4746,16 +4836,16 @@
                     // Eliminar de Firestore
                     const db = FirebaseRegionManager.getFirestore();
                     await db.collection('supervisores').doc(supervisor.id).delete();
-                    
+
                     // Actualizar estado local
                     setSupervisores(prev => prev.filter(s => s.id !== supervisor.id));
                     setSupervisoresFiltrados(prev => prev.filter(s => s.id !== supervisor.id));
-                    
-                    alert(`✅ Supervisor '${supervisor.usuario}' eliminado exitosamente`);
-                    
+
+                    mostrarModalExito(`✅ Supervisor '${supervisor.usuario}' eliminado exitosamente`);
+
                 } catch (error) {
                     console.error('Error eliminando supervisor:', error);
-                    alert('Error eliminando supervisor: ' + error.message);
+                    mostrarModalError('Error eliminando supervisor: ' + error.message);
                 }
             };
 
@@ -4794,7 +4884,7 @@
                         window.location.href = window.location.origin + window.location.pathname + '#main';
                     }
                 } catch (error) {
-                    alert('Error ingresando al local: ' + error.message);
+                    mostrarModalError('Error ingresando al local: ' + error.message);
                 }
             };
 
@@ -5219,7 +5309,7 @@
                                                     }
                                                 } catch (error) {
                                                     console.error('❌ ERROR: No se pudo obtener el ID del local:', error);
-                                                    alert('Error: No se pudo obtener el ID del local "' + local.nombre + '". Por favor, recarga la página e intenta nuevamente.');
+                                                    mostrarModalError('Error: No se pudo obtener el ID del local "' + local.nombre + '". Por favor, recarga la página e intenta nuevamente.');
                                                     return;
                                                 }
                                             }
@@ -5253,7 +5343,7 @@
                                             }
                                         } catch (error) {
                                             console.error('❌ ERROR en onClick del botón:', error);
-                                            alert('Error ingresando al local: ' + error.message);
+                                            mostrarModalError('Error ingresando al local: ' + error.message);
                                         }
                                     }}
                                     style={{
@@ -6731,7 +6821,7 @@
                         console.log('🏪 Local nuevo sin registros, mostrando bienvenida');
                         // Local nuevo - mostrar mensaje de bienvenida
                         setTimeout(() => {
-                            alert(`🏪 ¡Bienvenido a ${usuario.localNombre}!\n\nEste es un local nuevo. Podés empezar a cargar datos de inventario.`);
+                            mostrarModalInfo(`🏪 ¡Bienvenido a ${usuario.localNombre}!\n\nEste es un local nuevo. Podés empezar a cargar datos de inventario.`);
                         }, 500);
                         return;
                     }
@@ -7081,7 +7171,7 @@
                     setEnPantallaCarga(false); // No es pantalla de carga
                     enPantallaCargaRef.current = false;
                 } else {
-                    alert(`Funcionalidad de ${ruta} próximamente disponible`);
+                    mostrarModalInfo(`Funcionalidad de ${ruta} próximamente disponible`);
                 }
             };
             
@@ -7923,7 +8013,7 @@
                         btnGuardar.disabled = false;
                         btnGuardar.textContent = '👁️ Previsualizar y Guardar';
                         btnGuardar.style.opacity = '1';
-                        alert('⚠️ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
+                        mostrarModalError('⚠️ La operación está tomando más tiempo del esperado. Intenta nuevamente.');
                     }
                 }, 5000);
                 
@@ -7966,7 +8056,7 @@
                     try {
                         db = FirebaseRegionManager.getFirestore();
                     } catch (e) {
-                        alert('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
+                        mostrarModalError('Error: Firebase no está inicializado. Por favor, selecciona una región primero.');
                         return;
                     }
                     
@@ -8163,9 +8253,9 @@
                             mensajeExistente.remove();
                         }
                     }
-                    
-                    alert(`✅ ${tipo} guardado y sincronizado correctamente para ${fechaString}`);
-                    
+
+                    mostrarModalExito(`✅ ${tipo} guardado y sincronizado correctamente para ${fechaString}`);
+
                     // Actualizar estados de botones
                     if (tipo === 'Ingreso de Mercadería') {
                         setTieneIngreso(true);
@@ -8267,7 +8357,7 @@
                     if (mensajeExistente) {
                         mensajeExistente.remove();
                     }
-                    alert(`❌ Error guardando datos: ${error.message}`);
+                    mostrarModalError(`❌ Error guardando datos: ${error.message}`);
                 }
             };
             
@@ -8695,10 +8785,10 @@
             const tareasMenu = [
                 { icon: '➕', titulo: 'Ingreso Mercadería', completado: tieneIngreso, accion: () => navegarA('Ingreso de Mercadería') },
                 { icon: '📊', titulo: 'Stock Final', completado: tieneStock, accion: () => navegarA('Stock Final') },
-                { icon: '📅', titulo: 'Vencimientos', completado: tieneVencimientosCoincidentes, accion: () => { if (window.openVencLocal) window.openVencLocal(); else alert('Función de vencimientos no disponible'); } },
-                { icon: '🏭', titulo: 'Pedido a Fábrica', completado: tienePedidoFabrica, accion: () => { if (window.openPedidoFabrica) window.openPedidoFabrica(); else alert('Función de pedido a fábrica no disponible'); } },
+                { icon: '📅', titulo: 'Vencimientos', completado: tieneVencimientosCoincidentes, accion: () => { if (window.openVencLocal) window.openVencLocal(); else mostrarModalError('Función de vencimientos no disponible'); } },
+                { icon: '🏭', titulo: 'Pedido a Fábrica', completado: tienePedidoFabrica, accion: () => { if (window.openPedidoFabrica) window.openPedidoFabrica(); else mostrarModalError('Función de pedido a fábrica no disponible'); } },
                 { icon: '📈', titulo: 'Promedio Ventas', completado: false, accion: () => navegarA('Promedio de Ventas'), siemprePendiente: true },
-                { icon: '🏢', titulo: 'Administración del Local', completado: false, accion: () => { if (window.openAdministracionLocalModal) window.openAdministracionLocalModal(); else alert('Funcionalidad de administracion del local no disponible'); }, siemprePendiente: true }
+                { icon: '🏢', titulo: 'Administración del Local', completado: false, accion: () => { if (window.openAdministracionLocalModal) window.openAdministracionLocalModal(); else mostrarModalError('Funcionalidad de administracion del local no disponible'); }, siemprePendiente: true }
             ];
 
             return (
@@ -9463,7 +9553,7 @@
                 // Botón aplicar
                 document.getElementById('btn-aplicar-rango').onclick = () => {
                     if (!fechaDesde || !fechaHasta) {
-                        alert('Por favor selecciona ambas fechas (desde y hasta)');
+                        mostrarModalError('Por favor selecciona ambas fechas (desde y hasta)');
                         return;
                     }
                     
@@ -9899,10 +9989,10 @@
 
             const handleLoginSuccess = (usuarioData) => {
                 console.log('🚀 handleLoginSuccess llamado con:', usuarioData);
-                
+
                 if (!usuarioData) {
                     console.error('❌ ERROR: usuarioData es null o undefined');
-                    alert('Error: No se pudo obtener los datos del usuario. Por favor, intenta nuevamente.');
+                    mostrarModalError('Error: No se pudo obtener los datos del usuario. Por favor, intenta nuevamente.');
                     return;
                 }
                 
@@ -9943,7 +10033,7 @@
                     console.log('🏪 Login como LOCAL:', usuarioData.localNombre);
                     if (!usuarioData.localId) {
                         console.error('❌ ERROR: usuarioData no tiene localId:', usuarioData);
-                        alert('Error: No se pudo obtener el ID del local. Por favor, intenta nuevamente.');
+                        mostrarModalError('Error: No se pudo obtener el ID del local. Por favor, intenta nuevamente.');
                         return;
                     }
                     setVistaActual('main');
@@ -9952,7 +10042,7 @@
                     console.log('✅ Redirigiendo a Main (admin_local)');
                 } else {
                     console.error('❌ ERROR: Rol desconocido:', rol);
-                    alert('Error: Rol de usuario no reconocido. Por favor, contacta al administrador.');
+                    mostrarModalError('Error: Rol de usuario no reconocido. Por favor, contacta al administrador.');
                 }
             };
 
@@ -10669,18 +10759,18 @@
   async function openVencLocalModal() {
     const u = localStorage.getItem('usuario');
     if (!u) {
-      alert('Inicie sesión primero.');
+      mostrarModalError('Inicie sesión primero.');
       return;
     }
     const usuario = JSON.parse(u);
     const localId = usuario.localId || '';
     const localNombre = usuario.localNombre || 'Local';
-    
+
     if (!localId) {
-      alert('Error: No se encontró el local');
+      mostrarModalError('Error: No se encontró el local');
       return;
     }
-    
+
     // Verificar e inicializar Firebase con la región del usuario si no está inicializado
     try {
       FirebaseRegionManager.getFirestore();
@@ -10705,11 +10795,11 @@
           }
         } catch (initError) {
           console.error('Error inicializando Firebase:', initError);
-          alert('Error: No se pudo inicializar Firebase. Por favor, vuelve al login y selecciona una región.');
+          mostrarModalError('Error: No se pudo inicializar Firebase. Por favor, vuelve al login y selecciona una región.');
           return;
         }
       } else {
-        alert('Error: No se encontró la región. Por favor, vuelve al login y selecciona una región.');
+        mostrarModalError('Error: No se encontró la región. Por favor, vuelve al login y selecciona una región.');
         return;
       }
     }
@@ -11269,7 +11359,7 @@
               // Actualizar cantidad faltante después de eliminar el lote
               await actualizarCantidadFaltante();
             } catch (e) {
-              alert('Error al eliminar lote: ' + e.message);
+              mostrarModalError('Error al eliminar lote: ' + e.message);
             }
           };
         });
@@ -11454,7 +11544,7 @@
             window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
             previewOverlay.remove();
           }).catch(() => {
-            alert('Error copiando al portapapeles. Abriendo WhatsApp...');
+            mostrarModalError('Error copiando al portapapeles. Abriendo WhatsApp...');
             const mensajeCodificado = encodeURIComponent(mensaje);
             window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
             previewOverlay.remove();
@@ -11473,7 +11563,7 @@
             window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
             previewOverlay.remove();
           } catch (e) {
-            alert('Error copiando. Abriendo WhatsApp...');
+            mostrarModalError('Error copiando. Abriendo WhatsApp...');
             const mensajeCodificado = encodeURIComponent(mensaje);
             window.open(`https://wa.me/?text=${mensajeCodificado}`, '_blank');
             previewOverlay.remove();
@@ -11597,7 +11687,7 @@
                 window.abrirCargaStock();
               }, 300);
             } else {
-              alert('Por favor, usa el botón "Stock Final" en el menú principal y selecciona la fecha de ayer');
+              mostrarModalError('Por favor, usa el botón "Stock Final" en el menú principal y selecciona la fecha de ayer');
             }
           };
           
@@ -12038,25 +12128,25 @@
       
     } catch (e) {
       console.error('Error mostrando gráfico:', e);
-      alert('Error mostrando gráfico: ' + e.message);
+      mostrarModalError('Error mostrando gráfico: ' + e.message);
     }
   }
 
   async function openPedidoFabricaModal() {
     const u = localStorage.getItem('usuario');
     if (!u) {
-      alert('Inicie sesión primero.');
+      mostrarModalError('Inicie sesión primero.');
       return;
     }
     const usuario = JSON.parse(u);
     const localId = usuario.localId || '';
     const localNombre = usuario.localNombre || 'Local';
-    
+
     if (!localId) {
-      alert('Error: No se encontró el local');
+      mostrarModalError('Error: No se encontró el local');
       return;
     }
-    
+
     // Verificar que Firebase esté inicializado, si no, inicializarlo con la región guardada
     try {
       FirebaseRegionManager.getFirestore();
@@ -12076,11 +12166,11 @@
           }
         } catch (error) {
           console.error('Error inicializando Firebase:', error);
-          alert('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
+          mostrarModalError('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
           return;
         }
       } else {
-        alert('Error: No se encontró la región. Por favor, selecciona una región primero.');
+        mostrarModalError('Error: No se encontró la región. Por favor, selecciona una región primero.');
         return;
       }
     }
@@ -13731,7 +13821,7 @@
     // Función para guardar pedido (replica de guardarPedidoEnFirestore de la APK)
     async function guardarPedido() {
       if (modoSoloLectura && !modoAdmin) {
-        alert('No se puede guardar en fechas anteriores');
+        mostrarModalError('No se puede guardar en fechas anteriores');
         return;
       }
 
@@ -13785,7 +13875,7 @@
         console.log('✅ Pedido guardado exitosamente');
       } catch (e) {
         console.error('Error guardando pedido:', e);
-        alert('Error guardando pedido: ' + e.message);
+        mostrarModalError('Error guardando pedido: ' + e.message);
       }
     }
 
@@ -14230,7 +14320,7 @@
         console.log('✅ Configuración guardada en Firebase');
       } catch (e) {
         console.error('Error guardando configuración:', e);
-        alert('Error guardando configuración: ' + e.message);
+        mostrarModalError('Error guardando configuración: ' + e.message);
       }
     }
 
@@ -14251,7 +14341,7 @@
         console.log('✅ Días de entrega guardados en Firebase');
       } catch (e) {
         console.error('Error guardando días de entrega:', e);
-        alert('Error guardando días de entrega: ' + e.message);
+        mostrarModalError('Error guardando días de entrega: ' + e.message);
       }
     }
 
@@ -14307,18 +14397,18 @@
   async function openPedidoPanificadoraModal() {
     const u = localStorage.getItem('usuario');
     if (!u) {
-      alert('Inicie sesión primero.');
+      mostrarModalError('Inicie sesión primero.');
       return;
     }
     const usuario = JSON.parse(u);
     const localId = usuario.localId || '';
     const localNombre = usuario.localNombre || 'Local';
-    
+
     if (!localId) {
-      alert('Error: No se encontró el local');
+      mostrarModalError('Error: No se encontró el local');
       return;
     }
-    
+
     // Verificar que Firebase esté inicializado
     try {
       FirebaseRegionManager.getFirestore();
@@ -14336,11 +14426,11 @@
           }
         } catch (error) {
           console.error('Error inicializando Firebase:', error);
-          alert('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
+          mostrarModalError('Error: No se pudo inicializar Firebase. Por favor, selecciona una región primero.');
           return;
         }
       } else {
-        alert('Error: No se encontró la región. Por favor, selecciona una región primero.');
+        mostrarModalError('Error: No se encontró la región. Por favor, selecciona una región primero.');
         return;
       }
     }
@@ -15048,7 +15138,7 @@
         try {
           db = obtenerFirestore();
         } catch (e) {
-          alert('Error: Firebase no está inicializado');
+          mostrarModalError('Error: Firebase no está inicializado');
           return;
         }
         
@@ -15086,9 +15176,9 @@
         };
         
         await db.collection('locales').doc(localId).collection('pedidos_panificadora').doc(fechaSeleccionada).set(pedidoData);
-        alert('Pedido guardado exitosamente');
+        mostrarModalExito('Pedido guardado exitosamente');
       } catch (e) {
-        alert('Error guardando pedido: ' + e.message);
+        mostrarModalError('Error guardando pedido: ' + e.message);
       }
     }
 
@@ -15173,7 +15263,7 @@
         const texto = generarTextoPedido();
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(texto).then(() => {
-            alert('Pedido copiado al portapapeles');
+            mostrarModalExito('Pedido copiado al portapapeles');
           });
         } else {
           const textarea = document.createElement('textarea');
@@ -15184,9 +15274,9 @@
           textarea.select();
           try {
             document.execCommand('copy');
-            alert('Pedido copiado al portapapeles');
+            mostrarModalExito('Pedido copiado al portapapeles');
           } catch (e) {
-            alert('Error copiando: ' + e.message);
+            mostrarModalError('Error copiando: ' + e.message);
           }
           document.body.removeChild(textarea);
         }
@@ -15417,12 +15507,12 @@
       
       dias.forEach(([clave, nombre]) => {
         const checkboxDiv = document.createElement('div');
-        checkboxDiv.style.cssText = 'display:flex;align-items:center;padding:8px 16px;margin-bottom:8px';
-        
+        checkboxDiv.style.cssText = 'display:flex;align-items:center;padding:12px 16px;margin-bottom:8px;background:rgba(15,23,42,0.4);border-radius:8px;border:1px solid rgba(71,85,105,0.3);transition:all 0.2s ease';
+
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = 'pp-dia-' + clave;
-        checkbox.style.cssText = 'width:20px;height:20px;margin-right:12px;cursor:pointer';
+        checkbox.style.cssText = 'width:20px;height:20px;margin-right:12px;cursor:pointer;accent-color:#fbbf24';
         // Cargar estado actual desde diasEntrega si existe
         if (typeof diasEntrega !== 'undefined' && diasEntrega[clave] !== undefined) {
           checkbox.checked = diasEntrega[clave];
@@ -15430,22 +15520,22 @@
           checkbox.checked = true; // Por defecto todos marcados
         }
         checkboxes[clave] = checkbox;
-        
+
         const label = document.createElement('label');
         label.htmlFor = 'pp-dia-' + clave;
-        label.style.cssText = 'font-size:16px;cursor:pointer;flex:1';
+        label.style.cssText = 'font-size:16px;cursor:pointer;flex:1;color:#e2e8f0';
         label.textContent = nombre;
-        
+
         checkboxDiv.appendChild(checkbox);
         checkboxDiv.appendChild(label);
         modalDias.appendChild(checkboxDiv);
       });
-      
+
       const botonesDiv = document.createElement('div');
       botonesDiv.style.cssText = 'display:flex;gap:12px;margin-top:24px';
-      
+
       const btnGuardar = document.createElement('button');
-      btnGuardar.style.cssText = 'flex:1;padding:12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnGuardar.style.cssText = 'flex:1;padding:12px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(16,185,129,0.3)';
       btnGuardar.textContent = 'Guardar';
       btnGuardar.onclick = async () => {
         // Actualizar configuración
@@ -15480,7 +15570,7 @@
       };
       
       const btnCancelar = document.createElement('button');
-      btnCancelar.style.cssText = 'flex:1;padding:12px;background:#6b7280;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer';
+      btnCancelar.style.cssText = 'flex:1;padding:12px;background:rgba(71,85,105,0.8);color:#e2e8f0;border:none;border-radius:6px;font-weight:700;cursor:pointer;transition:all 0.2s ease';
       btnCancelar.textContent = 'Cancelar';
       btnCancelar.onclick = () => overlayDias.remove();
       
@@ -15505,7 +15595,7 @@
         console.log('✅ Configuración de Panificadora guardada en Firebase');
       } catch (e) {
         console.error('Error guardando configuración:', e);
-        alert('Error guardando configuración: ' + e.message);
+        mostrarModalError('Error guardando configuración: ' + e.message);
       }
     }
 
@@ -15527,7 +15617,7 @@
         console.log('✅ Días de entrega de Panificadora guardados en Firebase');
       } catch (e) {
         console.error('Error guardando días de entrega:', e);
-        alert('Error guardando días de entrega: ' + e.message);
+        mostrarModalError('Error guardando días de entrega: ' + e.message);
       }
     }
 

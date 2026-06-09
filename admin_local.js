@@ -219,7 +219,7 @@
         const observaciones = document.getElementById('doc-observaciones').value.trim();
         
         if (!nombre) {
-          alert('El nombre del documento es obligatorio');
+          mostrarModalError('El nombre del documento es obligatorio');
           return;
         }
         
@@ -254,46 +254,46 @@
       new Date(documento.fechaVencimiento).toISOString().split('T')[0] : '';
     
     modal.innerHTML = `
-      <div style="padding:24px;border-bottom:1px solid #e5e7eb;background:#f8fafc">
-        <h2 style="margin:0;font-size:20px;font-weight:700;color:#111827">✏️ Editar Documento</h2>
+      <div style="${THEME.header}">
+        <h2 style="${THEME.headerTitle}">✏️ Editar Documento</h2>
       </div>
       <div style="padding:24px;display:grid;gap:16px">
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Nombre del documento *</label>
-          <input type="text" id="doc-nombre" value="${esc(documento.nombreDocumento)}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Nombre del documento *</label>
+          <input type="text" id="doc-nombre" value="${esc(documento.nombreDocumento)}" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Tipo de documento *</label>
-          <select id="doc-tipo" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff">
+          <label style="${THEME.label}">Tipo de documento *</label>
+          <select id="doc-tipo" style="${THEME.select}">
             ${DOC_TYPES.map(t => `<option value="${t}" ${t === documento.tipoDocumento ? 'selected' : ''}>${DOC_LABELS[t]}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Fecha de vencimiento</label>
-          <input type="date" id="doc-vencimiento" value="${fechaVenc}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Fecha de vencimiento</label>
+          <input type="date" id="doc-vencimiento" value="${fechaVenc}" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Empresa responsable</label>
-          <input type="text" id="doc-empresa" value="${esc(documento.empresaResponsable || '')}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Empresa responsable</label>
+          <input type="text" id="doc-empresa" value="${esc(documento.empresaResponsable || '')}" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Número de certificado</label>
-          <input type="text" id="doc-numero" value="${esc(documento.numeroCertificado || '')}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Número de certificado</label>
+          <input type="text" id="doc-numero" value="${esc(documento.numeroCertificado || '')}" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Teléfono de contacto</label>
-          <input type="text" id="doc-telefono" value="${esc(documento.telefono || '')}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="${THEME.label}">Teléfono de contacto</label>
+          <input type="text" id="doc-telefono" value="${esc(documento.telefono || '')}" style="${THEME.input}">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Observaciones</label>
-          <textarea id="doc-observaciones" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;min-height:80px;resize:vertical">${esc(documento.observaciones || '')}</textarea>
+          <label style="${THEME.label}">Observaciones</label>
+          <textarea id="doc-observaciones" style="${THEME.textarea}">${esc(documento.observaciones || '')}</textarea>
         </div>
       </div>
-      <div style="padding:20px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;gap:12px;background:#f8fafc">
-        <button id="doc-delete" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">🗑️ Eliminar</button>
+      <div style="${THEME.footer};justify-content:space-between">
+        <button id="doc-delete" style="padding:12px 20px;background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(220,38,38,0.3)">🗑️ Eliminar</button>
         <div style="display:flex;gap:12px">
-          <button id="doc-cancel" style="padding:10px 20px;background:#6b7280;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cancelar</button>
-          <button id="doc-save" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">💾 Actualizar</button>
+          <button id="doc-cancel" style="${THEME.btnSecondary}">Cancelar</button>
+          <button id="doc-save" style="padding:12px 20px;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(59,130,246,0.3)">💾 Actualizar</button>
         </div>
       </div>
     `;
@@ -324,7 +324,7 @@
         const observaciones = document.getElementById('doc-observaciones').value.trim();
         
         if (!nombre) {
-          alert('El nombre del documento es obligatorio');
+          mostrarModalError('El nombre del documento es obligatorio');
           return;
         }
         
@@ -355,66 +355,66 @@
     modal.style.cssText = THEME.modal;
     
     modal.innerHTML = `
-      <div style="padding:24px;border-bottom:1px solid #e5e7eb;background:#f8fafc">
-        <h2 style="margin:0;font-size:20px;font-weight:700;color:#111827">👤 Agregar Personal</h2>
+      <div style="padding:24px;border-bottom:1px solid rgba(197,155,52,0.3);background:rgba(15,23,42,0.6)">
+        <h2 style="margin:0;font-size:20px;font-weight:700;color:#E6C874">👤 Agregar Personal</h2>
       </div>
       <div style="padding:24px;display:grid;gap:16px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Nombre *</label>
-            <input type="text" id="per-nombre" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Nombre *</label>
+            <input type="text" id="per-nombre" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Apellido *</label>
-            <input type="text" id="per-apellido" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Apellido *</label>
+            <input type="text" id="per-apellido" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">DNI *</label>
-          <input type="text" id="per-dni" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Número de DNI">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">DNI *</label>
+          <input type="text" id="per-dni" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0" placeholder="Número de DNI">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Cargo *</label>
-          <input type="text" id="per-cargo" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" placeholder="Ej: Encargado, Mozo">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Cargo *</label>
+          <input type="text" id="per-cargo" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0" placeholder="Ej: Encargado, Mozo">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Teléfono</label>
-            <input type="text" id="per-telefono" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Teléfono</label>
+            <input type="text" id="per-telefono" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Email</label>
-            <input type="email" id="per-email" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Email</label>
+            <input type="email" id="per-email" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Fecha de ingreso</label>
-          <input type="date" id="per-ingreso" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Fecha de ingreso</label>
+          <input type="date" id="per-ingreso" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
         </div>
-        <div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">
+        <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px;margin-top:8px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
-            <input type="checkbox" id="per-tiene-libreta" style="width:18px;height:18px">
-            <span style="font-size:14px;font-weight:600;color:#374151">Posee Libreta Sanitaria</span>
+            <input type="checkbox" id="per-tiene-libreta" style="width:18px;height:18px;accent-color:#fbbf24">
+            <span style="font-size:14px;font-weight:600;color:#e2e8f0">Posee Libreta Sanitaria</span>
           </label>
           <div id="per-libreta-container" style="display:none;padding-left:28px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Vencimiento libreta</label>
-            <input type="date" id="per-libreta-venc" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento libreta</label>
+            <input type="date" id="per-libreta-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
-        <div style="border-top:1px solid #e5e7eb;padding-top:16px">
+        <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
-            <input type="checkbox" id="per-tiene-curso" style="width:18px;height:18px">
-            <span style="font-size:14px;font-weight:600;color:#374151">Posee Curso de Manipulación</span>
+            <input type="checkbox" id="per-tiene-curso" style="width:18px;height:18px;accent-color:#fbbf24">
+            <span style="font-size:14px;font-weight:600;color:#e2e8f0">Posee Curso de Manipulación</span>
           </label>
           <div id="per-curso-container" style="display:none;padding-left:28px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Vencimiento curso</label>
-            <input type="date" id="per-curso-venc" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento curso</label>
+            <input type="date" id="per-curso-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
       </div>
-      <div style="padding:20px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc">
-        <button id="per-cancel" style="padding:10px 20px;background:#6b7280;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cancelar</button>
-        <button id="per-save" style="padding:10px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">💾 Guardar</button>
+      <div style="padding:20px 24px;border-top:1px solid rgba(197,155,52,0.3);display:flex;justify-content:flex-end;gap:12px;background:rgba(15,23,42,0.6)">
+        <button id="per-cancel" style="padding:10px 20px;background:rgba(71,85,105,0.8);color:#e2e8f0;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s ease">Cancelar</button>
+        <button id="per-save" style="padding:10px 20px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(16,185,129,0.3)">💾 Guardar</button>
       </div>
     `;
     
@@ -451,7 +451,7 @@
         const cursoVenc = document.getElementById('per-curso-venc').value;
         
         if (!nombre || !apellido || !dni || !cargo) {
-          alert('Nombre, Apellido, DNI y Cargo son obligatorios');
+          mostrarModalError('Nombre, Apellido, DNI y Cargo son obligatorios');
           return;
         }
         
@@ -499,68 +499,68 @@
     const tieneCurso = !!personal.cursoManipulacion;
     
     modal.innerHTML = `
-      <div style="padding:24px;border-bottom:1px solid #e5e7eb;background:#f8fafc">
-        <h2 style="margin:0;font-size:20px;font-weight:700;color:#111827">✏️ Editar Personal</h2>
+      <div style="padding:24px;border-bottom:1px solid rgba(197,155,52,0.3);background:rgba(15,23,42,0.6)">
+        <h2 style="margin:0;font-size:20px;font-weight:700;color:#E6C874">✏️ Editar Personal</h2>
       </div>
       <div style="padding:24px;display:grid;gap:16px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Nombre *</label>
-            <input type="text" id="per-nombre" value="${esc(personal.nombre)}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Nombre *</label>
+            <input type="text" id="per-nombre" value="${esc(personal.nombre)}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Apellido *</label>
-            <input type="text" id="per-apellido" value="${esc(personal.apellido)}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Apellido *</label>
+            <input type="text" id="per-apellido" value="${esc(personal.apellido)}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">DNI *</label>
-          <input type="text" id="per-dni" value="${esc(personal.dni)}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">DNI *</label>
+          <input type="text" id="per-dni" value="${esc(personal.dni)}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Cargo *</label>
-          <input type="text" id="per-cargo" value="${esc(personal.cargo)}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Cargo *</label>
+          <input type="text" id="per-cargo" value="${esc(personal.cargo)}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Teléfono</label>
-            <input type="text" id="per-telefono" value="${esc(personal.telefono || '')}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Teléfono</label>
+            <input type="text" id="per-telefono" value="${esc(personal.telefono || '')}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
           <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Email</label>
-            <input type="email" id="per-email" value="${esc(personal.email || '')}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Email</label>
+            <input type="email" id="per-email" value="${esc(personal.email || '')}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div>
-          <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Fecha de ingreso</label>
-          <input type="date" id="per-ingreso" value="${fechaIngreso}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Fecha de ingreso</label>
+          <input type="date" id="per-ingreso" value="${fechaIngreso}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
         </div>
-        <div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">
+        <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px;margin-top:8px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
-            <input type="checkbox" id="per-tiene-libreta" ${tieneLibreta ? 'checked' : ''} style="width:18px;height:18px">
-            <span style="font-size:14px;font-weight:600;color:#374151">Posee Libreta Sanitaria</span>
+            <input type="checkbox" id="per-tiene-libreta" ${tieneLibreta ? 'checked' : ''} style="width:18px;height:18px;accent-color:#fbbf24">
+            <span style="font-size:14px;font-weight:600;color:#e2e8f0">Posee Libreta Sanitaria</span>
           </label>
           <div id="per-libreta-container" style="${tieneLibreta ? '' : 'display:none'};padding-left:28px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Vencimiento libreta</label>
-            <input type="date" id="per-libreta-venc" value="${fechaLibreta}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento libreta</label>
+            <input type="date" id="per-libreta-venc" value="${fechaLibreta}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
-        <div style="border-top:1px solid #e5e7eb;padding-top:16px">
+        <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
-            <input type="checkbox" id="per-tiene-curso" ${tieneCurso ? 'checked' : ''} style="width:18px;height:18px">
-            <span style="font-size:14px;font-weight:600;color:#374151">Posee Curso de Manipulación</span>
+            <input type="checkbox" id="per-tiene-curso" ${tieneCurso ? 'checked' : ''} style="width:18px;height:18px;accent-color:#fbbf24">
+            <span style="font-size:14px;font-weight:600;color:#e2e8f0">Posee Curso de Manipulación</span>
           </label>
           <div id="per-curso-container" style="${tieneCurso ? '' : 'display:none'};padding-left:28px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Vencimiento curso</label>
-            <input type="date" id="per-curso-venc" value="${fechaCurso}" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento curso</label>
+            <input type="date" id="per-curso-venc" value="${fechaCurso}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
       </div>
-      <div style="padding:20px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;gap:12px;background:#f8fafc">
-        <button id="per-delete" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">🗑️ Eliminar</button>
+      <div style="padding:20px 24px;border-top:1px solid rgba(197,155,52,0.3);display:flex;justify-content:space-between;gap:12px;background:rgba(15,23,42,0.6)">
+        <button id="per-delete" style="padding:10px 20px;background:linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(220,38,38,0.3)">🗑️ Eliminar</button>
         <div style="display:flex;gap:12px">
-          <button id="per-cancel" style="padding:10px 20px;background:#6b7280;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cancelar</button>
-          <button id="per-save" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">💾 Actualizar</button>
+          <button id="per-cancel" style="padding:10px 20px;background:rgba(71,85,105,0.8);color:#e2e8f0;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s ease">Cancelar</button>
+          <button id="per-save" style="padding:10px 20px;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(59,130,246,0.3)">💾 Actualizar</button>
         </div>
       </div>
     `;
@@ -603,7 +603,7 @@
         const cursoVenc = document.getElementById('per-curso-venc').value;
         
         if (!nombre || !apellido || !dni || !cargo) {
-          alert('Nombre, Apellido, DNI y Cargo son obligatorios');
+          mostrarModalError('Nombre, Apellido, DNI y Cargo son obligatorios');
           return;
         }
         
@@ -645,12 +645,12 @@
   window.openAdministracionLocalModal = async function () {
     const rawUser = localStorage.getItem('usuario');
     if (!rawUser) {
-      alert('Inicie sesion primero.');
+      mostrarModalError('Inicie sesion primero.');
       return;
     }
     const usuario = JSON.parse(rawUser);
     if (!usuario.localId) {
-      alert('No se encontro el local actual.');
+      mostrarModalError('No se encontro el local actual.');
       return;
     }
 
@@ -749,19 +749,20 @@
       return `
         <div class="admin-card" data-id="${esc(doc.id)}" style="
           background:rgba(30,41,59,0.85);
+          backdrop-filter:blur(12px);
           border-radius:16px;
           padding:20px;
           box-shadow:0 4px 16px rgba(0,0,0,.3);
-          border:1px solid rgba(197,155,52,0.15);
-          border-left:5px solid ${estadoColor};
+          border:1px solid rgba(197,155,52,0.25);
+          border-left:4px solid ${estadoColor};
           cursor:pointer;
           transition:all 0.2s ease;
-        " onmouseover="this.style.transform='translateX(4px)';this.style.boxShadow='0 8px 20px rgba(0,0,0,.12)'" 
-           onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'">
+        " onmouseover="this.style.transform='translateX(4px)';this.style.boxShadow='0 8px 20px rgba(197,155,52,0.15)';this.style.borderColor='rgba(197,155,52,0.5)'"
+           onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.3)';this.style.borderColor='rgba(197,155,52,0.25)'">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(doc.nombreDocumento)}</div>
-              <div style="font-size:13px;color:#6b7280;font-weight:500">${esc(DOC_LABELS[doc.tipoDocumento] || doc.tipoDocumento)}</div>
+              <div style="font-size:18px;font-weight:700;color:#E6C874;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(doc.nombreDocumento)}</div>
+              <div style="font-size:13px;color:#94a3b8;font-weight:500">${esc(DOC_LABELS[doc.tipoDocumento] || doc.tipoDocumento)}</div>
             </div>
             <span style="
               background:${estadoColor};
@@ -775,32 +776,32 @@
               white-space:nowrap;
             ">${formatEstado(doc.estado)}</span>
           </div>
-          
-          <div style="display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6">
-            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#374151">
+
+          <div style="display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(197,155,52,0.2)">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#e2e8f0">
               <span style="font-size:16px">📅</span>
               <span style="font-weight:600">${diasText}</span>
             </div>
             ${doc.empresaResponsable ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#4b5563">
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8">
                 <span style="font-size:16px">🏢</span>
                 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(doc.empresaResponsable)}</span>
               </div>
             ` : ''}
             ${doc.telefono ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#4b5563">
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8">
                 <span style="font-size:16px">📞</span>
                 <span>${esc(doc.telefono)}</span>
               </div>
             ` : ''}
             ${doc.numeroCertificado ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#4b5563">
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8">
                 <span style="font-size:16px">📝</span>
                 <span style="font-family:monospace">${esc(doc.numeroCertificado)}</span>
               </div>
             ` : ''}
             ${doc.observaciones ? `
-              <div style="margin-top:8px;padding:10px;background:#f9fafb;border-radius:8px;font-size:13px;color:#6b7280;word-break:break-word">
+              <div style="margin-top:8px;padding:10px;background:rgba(15,23,42,0.4);border-radius:8px;font-size:13px;color:#94a3b8;word-break:break-word;border:1px solid rgba(197,155,52,0.15)">
                 💬 ${esc(doc.observaciones)}
               </div>
             ` : ''}
@@ -814,29 +815,31 @@
       const cursoEstado = persona.cursoManipulacion?.estado || 'NO_POSEE';
       const libretaColor = COLORS[libretaEstado] || '#6b7280';
       const cursoColor = COLORS[cursoEstado] || '#6b7280';
-      
+
       return `
         <div class="admin-card" data-id="${esc(persona.id)}" style="
-          background:#fff;
+          background:rgba(30,41,59,0.8);
+          backdrop-filter:blur(12px);
+          border:1px solid rgba(197,155,52,0.25);
           border-radius:16px;
           padding:20px;
-          box-shadow:0 4px 12px rgba(0,0,0,.08);
+          box-shadow:0 4px 12px rgba(0,0,0,.3);
           cursor:pointer;
           transition:all 0.2s ease;
-        " onmouseover="this.style.transform='translateX(4px)';this.style.boxShadow='0 8px 20px rgba(0,0,0,.12)'" 
-           onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.08)'">
+        " onmouseover="this.style.transform='translateX(4px)';this.style.boxShadow='0 8px 20px rgba(197,155,52,0.15)';this.style.borderColor='rgba(197,155,52,0.5)'"
+           onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.3)';this.style.borderColor='rgba(197,155,52,0.25)'">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(persona.nombreCompleto)}</div>
-              <div style="font-size:13px;color:#6b7280;font-weight:500">${esc(persona.cargo || 'Sin cargo')} · DNI ${esc(persona.dni || 'Sin dato')}</div>
+              <div style="font-size:18px;font-weight:700;color:#E6C874;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(persona.nombreCompleto)}</div>
+              <div style="font-size:13px;color:#94a3b8;font-weight:500">${esc(persona.cargo || 'Sin cargo')} · DNI ${esc(persona.dni || 'Sin dato')}</div>
             </div>
           </div>
-          
+
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
             <span style="
-              background:${libretaColor}15;
+              background:${libretaColor}25;
               color:${libretaColor};
-              border:2px solid ${libretaColor}30;
+              border:1px solid ${libretaColor}40;
               border-radius:20px;
               padding:6px 12px;
               font-size:12px;
@@ -846,9 +849,9 @@
               🏥 Libreta: ${formatEstado(libretaEstado)}
             </span>
             <span style="
-              background:${cursoColor}15;
+              background:${cursoColor}25;
               color:${cursoColor};
-              border:2px solid ${cursoColor}30;
+              border:1px solid ${cursoColor}40;
               border-radius:20px;
               padding:6px 12px;
               font-size:12px;
@@ -858,22 +861,22 @@
               📚 Curso: ${formatEstado(cursoEstado)}
             </span>
           </div>
-          
-          <div style="display:grid;gap:6px;margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6">
+
+          <div style="display:grid;gap:6px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(197,155,52,0.2)">
             ${persona.telefono ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8">
                 <span>📞</span>
                 <span>${esc(persona.telefono)}</span>
               </div>
             ` : ''}
             ${persona.email ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 <span>✉️</span>
                 <span>${esc(persona.email)}</span>
               </div>
             ` : ''}
             ${persona.fechaIngreso ? `
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8">
                 <span>📅</span>
                 <span>Ingreso: ${formatDate(persona.fechaIngreso)}</span>
               </div>
@@ -886,18 +889,20 @@
     function renderNotificacionCard(notif, index) {
       const prioridadColor = COLORS[notif.prioridad] || '#6b7280';
       const prioridadIcon = notif.prioridad === 'CRITICA' ? '🔴' : notif.prioridad === 'ALTA' ? '🟠' : notif.prioridad === 'MEDIA' ? '🟡' : '🔵';
-      
+
       return `
         <div style="
-          background:#fff;
+          background:rgba(30,41,59,0.8);
+          backdrop-filter:blur(12px);
+          border:1px solid rgba(197,155,52,0.25);
           border-radius:16px;
           padding:18px;
-          box-shadow:0 4px 12px rgba(0,0,0,.08);
-          border-left:5px solid ${prioridadColor};
+          box-shadow:0 4px 12px rgba(0,0,0,.3);
+          border-left:4px solid ${prioridadColor};
         ">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:17px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${prioridadIcon} ${esc(notif.titulo)}</div>
+              <div style="font-size:17px;font-weight:700;color:#E6C874;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${prioridadIcon} ${esc(notif.titulo)}</div>
             </div>
             <span style="
               background:${prioridadColor};
@@ -911,8 +916,8 @@
               white-space:nowrap;
             ">${esc(notif.prioridad)}</span>
           </div>
-          <div style="font-size:14px;color:#374151;margin-top:8px;line-height:1.5">${esc(notif.mensaje)}</div>
-          <div style="font-size:13px;color:#6b7280;margin-top:10px;display:flex;align-items:center;gap:6px">
+          <div style="font-size:14px;color:#e2e8f0;margin-top:8px;line-height:1.5">${esc(notif.mensaje)}</div>
+          <div style="font-size:13px;color:#94a3b8;margin-top:10px;display:flex;align-items:center;gap:6px">
             <span>📅</span>
             <span>Vence: ${esc(formatDate(notif.fecha))}</span>
           </div>

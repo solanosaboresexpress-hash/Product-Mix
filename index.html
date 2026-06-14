@@ -12180,6 +12180,7 @@
     const offsetArgentina = -3 * 60; // UTC-3 en minutos
     const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
     let fechaSeleccionada = fechaISO(fechaArgentina);
+    
     let modoSoloLectura = false;
     let modoAdmin = false;
     try {
@@ -12253,7 +12254,7 @@
     cardDemandaManiana.id = 'pf-card-demanda';
     cardDemandaManiana.style.cssText = 'background:rgba(245,158,11,0.1);padding:12px 16px;border-bottom:1px solid rgba(245,158,11,0.3);display:none;margin:0;border:1px solid rgba(251,191,36,0.2)';
     cardDemandaManiana.innerHTML = '<div id="pf-demanda-titulo" style="font-weight:700;font-size:14px;color:#fbbf24;margin-bottom:8px">📣 Mañana</div>' +
-      '<div id="pf-demanda-cuerpo" style="font-size:13px;color:#e2e8f0;line-height:1.5">Cargando información...</div>';
+      '<div id="pf-demanda-cuerpo" style="font-size:13px;color:#1e293b;line-height:1.5;font-weight:600">Cargando información...</div>';
     modal.appendChild(cardDemandaManiana);
 
     // Contenido principal premium
@@ -12641,6 +12642,7 @@
       if (porcentajeEl) porcentajeEl.textContent = '% Extra: ' + configuracion.porcentajeExtra + '%';
       if (horaAlertaEl) horaAlertaEl.textContent = '🔔 Alerta: ' + configuracion.horaAlerta;
       
+      // Mostrar el día de HOY (no mañana)
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       if (diaActualEl) diaActualEl.textContent = 'Día: ' + diaActual;
       
@@ -12678,12 +12680,30 @@
               promediosVenta[codigo] = {};
               const nombreCompleto = obtenerNombreProducto(codigo);
               
+              // Log para depurar búsqueda de producto
+              console.log(`🔍 Buscando ${codigo} como: "${nombreCompleto}"`);
+              
               diasSemana.forEach(dia => {
                 const diaData = promediosData[dia];
                 if (diaData) {
                   // Buscar el producto en los datos del día
                   // El formato es: dia -> { producto: { suma, cantidad, promedio } }
-                  const productoData = diaData[codigo] || diaData[nombreCompleto] || diaData[codigo + ' - ' + nombreCompleto];
+                  // Intentar múltiples formas de búsqueda
+                  let productoData = diaData[codigo] || 
+                                     diaData[nombreCompleto] || 
+                                     diaData[codigo + ' - ' + nombreCompleto];
+                  
+                  // Si no se encontró, intentar buscar por código + nombre simple (sin prefijos)
+                  if (!productoData) {
+                    const nombreSimple = nombreCompleto.replace('Pizza ', '').replace('Pastelito ', '');
+                    productoData = diaData[codigo + ' - ' + nombreSimple];
+                  }
+                  
+                  // Si no se encontró, intentar buscar solo por el nombre simple
+                  if (!productoData) {
+                    const nombreSimple = nombreCompleto.replace('Pizza ', '').replace('Pastelito ', '');
+                    productoData = diaData[nombreSimple];
+                  }
                   
                   if (productoData && typeof productoData === 'object') {
                     // Formato PromedioData: { suma, cantidad, promedio }
@@ -12692,8 +12712,21 @@
                     // Formato simple: solo el número
                     promediosVenta[codigo][dia] = productoData;
                   }
+                  
+                  // Log si no se encontró en este día
+                  if (!productoData && diaData && Object.keys(diaData).length > 0) {
+                    console.log(`  ❌ No encontrado en ${dia}, claves disponibles:`, Object.keys(diaData).slice(0, 5));
+                  }
                 }
               });
+              
+              // Log para depurar promedios cargados
+              const tienePromedios = Object.values(promediosVenta[codigo]).some(v => v > 0);
+              if (tienePromedios) {
+                console.log(`📊 ${codigo} (${nombreCompleto}):`, promediosVenta[codigo]);
+              } else {
+                console.warn(`⚠️ ${codigo} (${nombreCompleto}): SIN PROMEDIOS`);
+              }
             });
             
             // Verificar si se cargaron promedios
@@ -12703,7 +12736,18 @@
             
             if (tienePromedios) {
               console.log('✅ Promedios pre-calculados cargados desde promedios_generales:', promediosVenta);
-              return; // Salir si se cargaron promedios
+              
+              // Verificar qué productos NO tienen promedios y calcularlos desde registros históricos
+              const productosSinPromedios = ordenProductos.filter(codigo => 
+                !Object.values(promediosVenta[codigo] || {}).some(p => p > 0)
+              );
+              
+              if (productosSinPromedios.length > 0) {
+                console.log(`⚠️ ${productosSinPromedios.length} productos sin promedios, calculando desde registros históricos...`);
+                // NO retornar aquí, continuar para calcular promedios faltantes
+              } else {
+                return; // Todos los productos tienen promedios
+              }
             }
           }
           
@@ -12740,7 +12784,18 @@
             
             if (tienePromedios) {
               console.log('✅ Promedios cargados desde colección promedios:', promediosVenta);
-              return;
+              
+              // Verificar qué productos NO tienen promedios y calcularlos desde registros históricos
+              const productosSinPromedios = ordenProductos.filter(codigo => 
+                !Object.values(promediosVenta[codigo] || {}).some(p => p > 0)
+              );
+              
+              if (productosSinPromedios.length > 0) {
+                console.log(`⚠️ ${productosSinPromedios.length} productos sin promedios, calculando desde registros históricos...`);
+                // NO retornar aquí, continuar para calcular promedios faltantes
+              } else {
+                return; // Todos los productos tienen promedios
+              }
             }
           }
         } catch (e) {
@@ -12988,15 +13043,22 @@
           } else {
             // Si no hay productos guardados, cargar stock actual desde registros
             const stockActualMap = await cargarStockActualDesdeRegistrosFabrica();
-            productos = ordenProductos.map(codigo => ({
-              codigo: codigo,
-              nombre: obtenerNombreProducto(codigo),
-              categoria: productosFabrica[codigo]?.categoria || 'OTROS',
-              promediosVenta: promediosVenta[codigo] || {},
-              stockActual: stockActualMap[codigo] || 0,
-              pedidoSugerido: 0,
-              pedidoFinal: 0
-            }));
+            console.log('📊 Stock actual map cargado:', stockActualMap);
+            productos = ordenProductos.map(codigo => {
+              const stockCalculado = stockActualMap[codigo] || 0;
+              if (stockCalculado > 0) {
+                console.log(`  - ${codigo}: ${stockCalculado} (tipo: ${typeof stockCalculado})`);
+              }
+              return {
+                codigo: codigo,
+                nombre: obtenerNombreProducto(codigo),
+                categoria: productosFabrica[codigo]?.categoria || 'OTROS',
+                promediosVenta: promediosVenta[codigo] || {},
+                stockActual: stockCalculado,
+                pedidoSugerido: 0,
+                pedidoFinal: 0
+              };
+            });
           }
           
           if (data.configuracion) {
@@ -13049,11 +13111,14 @@
         const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
         const fechaHoy = fechaISO(fechaArgentina);
         
-        // Obtener fecha anterior
-        const [y, m, d] = fechaHoy.split('-').map(Number);
-        const fechaAnterior = new Date(y, m - 1, d);
+        // Obtener fecha anterior (restar 1 día a la fecha actual)
+        const fechaAnterior = new Date(fechaArgentina);
         fechaAnterior.setDate(fechaAnterior.getDate() - 1);
         const fechaAnteriorStr = fechaISO(fechaAnterior);
+        
+        console.log('📅 Fechas usadas para cálculo de stock:');
+        console.log(`  - Fecha hoy: ${fechaHoy}`);
+        console.log(`  - Fecha anterior: ${fechaAnteriorStr}`);
         
         // Obtener ingreso de HOY (no de fechaSeleccionada)
         const ingresoHoySnap = await db.collection('locales').doc(localId).collection('registros')
@@ -13067,24 +13132,62 @@
           .where('tipo', '==', 'Stock Final')
           .get();
         
+        console.log(`  - Stock final encontrado para ${fechaAnteriorStr}: ${stockFinalAnteriorSnap.empty ? 'NO' : 'SÍ'} (${stockFinalAnteriorSnap.size} documentos)`);
+        
+        // Obtener pedido final del día anterior (como fallback si no hay ingreso hoy)
+        const pedidoFinalAnteriorSnap = await db.collection('locales').doc(localId).collection('registros')
+          .where('fecha', '==', fechaAnteriorStr)
+          .where('tipo', '==', 'Pedido Final')
+          .get();
+        
         const ingresoHoy = ingresoHoySnap.docs[0]?.data()?.productos || [];
         const stockFinalAnterior = stockFinalAnteriorSnap.docs[0]?.data()?.productos || [];
+        const pedidoFinalAnterior = pedidoFinalAnteriorSnap.docs[0]?.data()?.productos || [];
+        
+        console.log('📊 Datos de stock recuperados:');
+        console.log(`  - Ingreso hoy (${fechaHoy}): ${ingresoHoy.length} productos`);
+        console.log(`  - Stock anterior (${fechaAnteriorStr}): ${stockFinalAnterior.length} productos`);
+        console.log(`  - Pedido anterior (${fechaAnteriorStr}): ${pedidoFinalAnterior.length} productos (fallback)`);
         
         // Calcular stock actual para cada producto
         ordenProductos.forEach(codigo => {
           const nombreProducto = productosFabrica[codigo]?.nombre || codigo;
-          const ingresoCant = ingresoHoy.find(p => 
+          const ingresoProd = ingresoHoy.find(p => 
             p.nombre === nombreProducto || 
             p.nombre.startsWith(codigo + ' -') ||
             p.nombre === codigo
-          )?.cantidad || 0;
-          const stockAnteriorCant = stockFinalAnterior.find(p => 
+          );
+          const stockAnteriorProd = stockFinalAnterior.find(p => 
             p.nombre === nombreProducto || 
             p.nombre.startsWith(codigo + ' -') ||
             p.nombre === codigo
-          )?.cantidad || 0;
+          );
+          const pedidoAnteriorProd = pedidoFinalAnterior.find(p => 
+            p.nombre === nombreProducto || 
+            p.nombre.startsWith(codigo + ' -') ||
+            p.nombre === codigo
+          );
           
-          stockMap[codigo] = stockAnteriorCant + ingresoCant;
+          // Asegurar que los valores sean números
+          const ingresoCant = Number(ingresoProd?.cantidad) || 0;
+          const stockAnteriorCant = Number(stockAnteriorProd?.cantidad) || 0;
+          const pedidoAnteriorCant = Number(pedidoAnteriorProd?.cantidad) || 0;
+          
+          // Si hay ingreso hoy, usarlo; si no, usar pedido final de ayer como fallback
+          const ingresoReal = ingresoCant > 0 ? ingresoCant : pedidoAnteriorCant;
+          
+          const stockCalculado = stockAnteriorCant + ingresoReal;
+          stockMap[codigo] = stockCalculado;
+          
+          // Log para depurar cálculo de stock
+          if (stockCalculado > 0) {
+            console.log(`📦 ${codigo} (${nombreProducto}):`);
+            console.log(`  - Stock anterior: ${stockAnteriorCant} (de "${stockAnteriorProd?.nombre || 'no encontrado'}")`);
+            console.log(`  - Ingreso hoy: ${ingresoCant} (de "${ingresoProd?.nombre || 'no encontrado'}")`);
+            console.log(`  - Pedido anterior (fallback): ${pedidoAnteriorCant} (de "${pedidoAnteriorProd?.nombre || 'no encontrado'}")`);
+            console.log(`  - Ingreso usado: ${ingresoReal} (${ingresoCant > 0 ? 'ingreso hoy' : 'pedido anterior'})`);
+            console.log(`  - Total calculado: ${stockCalculado}`);
+          }
         });
       } catch (e) {
         console.error('Error cargando stock actual:', e);
@@ -13165,8 +13268,16 @@
 
     // Función para obtener días extra según texto (replica de obtenerDiasExtraSegunTexto de la APK)
     function obtenerDiasExtraSegunTexto() {
+      // Usar fecha de HOY para revisar días a partir de mañana
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       const diasExtra = [];
+      
+      // Función auxiliar para determinar si un día tiene entrega (maneja ambos formatos: string y boolean)
+      const diaTieneEntrega = (valor) => {
+        if (typeof valor === 'boolean') return valor;
+        if (typeof valor === 'string') return valor !== 'No entrega' && valor !== '';
+        return true; // Por defecto, tiene entrega
+      };
       
       // Obtener la lista de próximos días con sus configuraciones (usando booleanos)
       const proximosDias = {
@@ -13184,20 +13295,26 @@
       
       // Verificar que el primer día (mañana) tenga entrega
       const [primerDia, tieneEntregaPrimerDia] = lista[0];
-      if (!tieneEntregaPrimerDia) {
+      if (!diaTieneEntrega(tieneEntregaPrimerDia)) {
         return diasExtra; // No se puede hacer pedido
       }
+      
+      console.log(`✅ MAÑANA (${primerDia}) tiene entrega - Se puede hacer pedido`);
       
       // Revisar días después de mañana
       for (let i = 1; i < lista.length; i++) {
         const [nombreDia, tieneEntrega] = lista[i];
-        if (!tieneEntrega) {
+        const tieneEntregaBool = diaTieneEntrega(tieneEntrega);
+        if (!tieneEntregaBool) {
           diasExtra.push(nombreDia);
+          console.log(`⚠️ ${nombreDia} NO tiene entrega - Agregado como día extra`);
         } else {
+          console.log(`🛑 ${nombreDia} tiene entrega, parar`);
           break; // Parar al encontrar día con entrega
         }
       }
       
+      console.log(`📋 Días extra finales: ${diasExtra.length > 0 ? diasExtra.join(', ') : '(ninguno)'}`);
       return diasExtra;
     }
 
@@ -13212,7 +13329,7 @@
     function redondearSugerencia(sugerencia, codigo) {
       if (sugerencia <= 0) return 0;
       
-      const porcentajeMultiplo = 1.0; // Por defecto 100% del múltiplo
+      const porcentajeMultiplo = 0.5; // Reducir umbral al 50% del múltiplo
       
       // Empanadas: redondear a múltiplo de 50
       if (categorias.EMPANADAS.includes(codigo)) {
@@ -13277,110 +13394,63 @@
       return variantes.some(v => textoLower.includes(v));
     }
 
-    // Función para obtener días extra según configuración de entrega (lógica APK)
-    function obtenerDiasExtraSegunTexto() {
-      const fechaActual = new Date(fechaSeleccionada);
-      const diaSemana = fechaActual.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
-      const diasExtra = [];
-      
-      // Mapeo de días con su configuración de entrega
-      const diasMap = {
-        0: { nombre: 'DOMINGO', tieneEntrega: diasEntrega.domingo },
-        1: { nombre: 'LUNES', tieneEntrega: diasEntrega.lunes },
-        2: { nombre: 'MARTES', tieneEntrega: diasEntrega.martes },
-        3: { nombre: 'MIERCOLES', tieneEntrega: diasEntrega.miercoles },
-        4: { nombre: 'JUEVES', tieneEntrega: diasEntrega.jueves },
-        5: { nombre: 'VIERNES', tieneEntrega: diasEntrega.viernes },
-        6: { nombre: 'SABADO', tieneEntrega: diasEntrega.sabado }
-      };
-      
-      // Obtener los próximos días (mañana + siguientes, hasta 6 días)
-      const proximosDias = [];
-      for (let i = 1; i <= 6; i++) {
-        const diaIdx = (diaSemana + i) % 7;
-        proximosDias.push(diasMap[diaIdx]);
-      }
-      
-      if (proximosDias.length === 0) {
-        console.log(`❌ No hay días configurados`);
-        return diasExtra;
-      }
-      
-      // 1. Verificar que el PRIMER día (mañana) tenga entrega
-      const primerDia = proximosDias[0];
-      if (!primerDia.tieneEntrega) {
-        console.log(`❌ MAÑANA (${primerDia.nombre}) NO tiene entrega - No se puede hacer pedido`);
-        return diasExtra;
-      }
-      
-      console.log(`✅ MAÑANA (${primerDia.nombre}) tiene entrega - Se puede hacer pedido`);
-      
-      // 2. Revisar los días DESPUÉS de mañana
-      for (let i = 1; i < proximosDias.length; i++) {
-        const dia = proximosDias[i];
-        
-        if (!dia.tieneEntrega) {
-          // Este día NO tiene entrega, agregarlo y continuar
-          diasExtra.push(dia.nombre);
-          console.log(`➕ ${dia.nombre} sin entrega, agregarlo`);
-        } else {
-          // Este día SÍ tiene entrega, PARAR aquí
-          console.log(`🛑 ${dia.nombre} tiene entrega, parar`);
-          break;
-        }
-      }
-      
-      console.log(`📋 Días extra finales: ${diasExtra}`);
-      return diasExtra;
-    }
-
-    // Función para calcular sugerencia de pedido (con cálculo real de ventas y días extra)
+    // Función para calcular sugerencia de pedido (NUEVA LÓGICA basada en sobrante al cierre)
     async function calcularSugerencia(codigo, stockActual) {
       try {
+        // Usar fecha de HOY para el cálculo
         const diaActual = obtenerDiaSemana(fechaSeleccionada);
+        const diaSiguiente = obtenerDiaSiguiente(diaActual); // MAÑANA (el día de entrega)
+        
         const promedioDiaActual = promediosVenta[codigo]?.[diaActual] || 0;
+        const promedioDiaSiguiente = promediosVenta[codigo]?.[diaSiguiente] || 0;
         const porcentajeExtra = configuracion.porcentajeExtra / 100.0;
         
-        // Obtener datos reales de venta parcial del día
-        const [stockAnterior, ingresoHoy] = await obtenerDatosVentaParcial(codigo);
-        const stockInicialHoy = stockAnterior + ingresoHoy;
-        const ventaActualHoy = Math.max(0, stockInicialHoy - stockActual);
-        const ventaRestanteHoy = Math.max(0, promedioDiaActual - ventaActualHoy);
+        // PASO 1: Calcular el sobrante estimado al cierre de hoy
+        // sobranteHoy = stockActual - promedioVentaHoy
+        const sobranteHoy = Math.max(0, stockActual - promedioDiaActual);
         
-        if (promedioDiaActual <= 0) {
-          return 0;
-        }
-
-        // Obtener días extra según configuración (lógica APK)
+        console.log(`  - stockActual: ${stockActual}`);
+        console.log(`  - promedioDiaActual (${diaActual}): ${promedioDiaActual}`);
+        console.log(`  - sobranteHoy (stock - promedioHoy): ${sobranteHoy}`);
+        
+        // Obtener días extra según configuración (lógica APK - MANTENER INTACTA)
         const diasExtra = obtenerDiasExtraSegunTexto();
-        
-        // Calcular suma de promedios: mañana + días extra
-        const diaSiguiente = obtenerDiaSiguiente(diaActual);
-        const promedioDiaSiguiente = promediosVenta[codigo]?.[diaSiguiente] || 0;
-        let sumaPromedios = promedioDiaSiguiente;
         
         console.log(`  - diaSiguiente: ${diaSiguiente}, promedio: ${promedioDiaSiguiente}`);
         
-        // Sumar promedios de días extra
+        // PASO 2: Calcular cuánto falta para cubrir mañana
+        // faltanteMañana = promedioVentaMañana - sobranteHoy
+        const faltanteMañana = Math.max(0, promedioDiaSiguiente - sobranteHoy);
+        
+        console.log(`  - faltanteMañana (promedioMañana - sobranteHoy): ${faltanteMañana}`);
+        
+        // PASO 3: Calcular el porcentaje extra (colchón)
+        // El porcentaje extra se calcula sobre el promedio de venta de mañana, NO sobre el faltante
+        const colchon = promedioDiaSiguiente * porcentajeExtra;
+        
+        console.log(`  - colchon (promedioMañana × ${configuracion.porcentajeExtra}%): ${colchon}`);
+        
+        // PASO 4: Mantener la lógica actual de días extra (INTACTA)
+        // Calcular necesidad de días extra SIN porcentaje extra
+        let necesidadDiasExtra = 0;
         diasExtra.forEach(diaExtra => {
           const promedioExtra = promediosVenta[codigo]?.[diaExtra] || 0;
-          sumaPromedios += promedioExtra;
+          necesidadDiasExtra += promedioExtra;
           console.log(`  - día extra ${diaExtra}: promedio ${promedioExtra}`);
         });
         
-        console.log(`  - SUMA PROMEDIOS (mañana + extras): ${sumaPromedios}`);
+        console.log(`  - necesidadDiasExtra (sin % extra): ${necesidadDiasExtra}`);
         
-        // Calcular necesidad total con % extra
-        const necesidadTotal = sumaPromedios * (1 + porcentajeExtra);
+        // PASO 5: Fórmula final
+        // pedidoSugerido = faltanteMañana + colchon + necesidadDiasExtra
+        // NOTA: El porcentaje extra SOLO se aplica al día de mañana (colchon)
+        // Los días extra se suman SIN porcentaje extra
+        const pedido = faltanteMañana + colchon + necesidadDiasExtra;
         
-        // La sugerencia es la necesidad total menos lo que me falta vender hoy
-        const pedido = Math.max(0.0, necesidadTotal - ventaRestanteHoy);
-        
-        console.log(`  - necesidadTotal (con ${configuracion.porcentajeExtra}% extra): ${necesidadTotal}`);
-        console.log(`  - pedido (necesidad - ventaRestante): ${pedido}`);
+        console.log(`  - pedido FINAL (faltanteMañana + colchon + necesidadDiasExtra): ${pedido}`);
 
-        // Redondear a múltiplo de 50 - igual que APK redondearAMultiploDe50 línea 510-511
-        const resultado = redondearAMultiploDe50(pedido);
+        // PASO 6: Redondear según tipo de producto (empanadas: 50, pizzas: 5, pastelitos: 35)
+        const resultado = redondearSugerencia(pedido, codigo);
         console.log(`  - resultado FINAL (redondeado): ${resultado}`);
         
         return resultado;
@@ -13653,11 +13723,15 @@
         inputStock.setAttribute('data-codigo', prod.codigo);
         inputStock.setAttribute('data-tipo', 'stock');
         inputStock.value = prod.stockActual;
+        if (prod.stockActual > 0) {
+          console.log(`📝 Input stock para ${prod.codigo}: value=${inputStock.value} (tipo: ${typeof inputStock.value}, prod.stockActual=${prod.stockActual} tipo: ${typeof prod.stockActual})`);
+        }
         inputStock.style.cssText = 'width:60px;height:35px;padding:4px;border:1px solid rgba(71,85,105,0.5);border-radius:4px;text-align:center;font-size:14px;font-weight:700;color:#fbbf24;background:rgba(15,23,42,0.6)';
         if (modoSoloLectura && !modoAdmin) {
           inputStock.disabled = true;
           inputStock.style.background = 'rgba(71,85,105,0.3)';
         } else {
+          // Seleccionar todo el texto al hacer foco para facilitar la edición
           inputStock.onfocus = function() { this.select(); };
         }
         stockDiv.appendChild(inputStock);
@@ -13881,6 +13955,7 @@
 
     // Función para actualizar información de días extra (replica de actualizarInformacionDiasExtra de la APK)
     function actualizarInformacionDiasExtra() {
+      // Usar fecha de HOY para mostrar información correcta
       const diaActual = obtenerDiaSemana(fechaSeleccionada);
       const diaSiguiente = obtenerDiaSiguiente(diaActual);
       
@@ -15039,6 +15114,7 @@
           stockInput.disabled = true;
           stockInput.style.background = 'rgba(71,85,105,0.3)';
         } else {
+          // Seleccionar todo el texto al hacer foco para facilitar la edición
           stockInput.onfocus = function() { this.select(); };
           // Listener para actualizar sugerencia cuando cambia el stock
           stockInput.addEventListener('input', async () => {

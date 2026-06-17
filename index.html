@@ -15,15 +15,31 @@
     <title>Sabores Express - Product Mix V2 Web v4.12</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js?v=4.12"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js?v=4.12"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.12"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=4.12"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js?v=4.12"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js?v=4.12"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js?v=4.12"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js?v=4.12"></script>
+    <!-- Scripts locales -->
     <script src="admin_local.js?v=4.12"></script>
     <script src="cambio_contrasena_primer_ingreso.js?v=4.12"></script>
-    
+
+    <!-- Script de captura de errores globales -->
+    <script>
+    window.onerror = function(msg, src, line, col, err) {
+      console.error("ERROR GLOBAL:", msg);
+      console.error("ARCHIVO:", src);
+      console.error("LINEA:", line);
+      console.error("COLUMNA:", col);
+      console.error(err);
+    };
+
+    window.addEventListener("unhandledrejection", e => {
+      console.error("PROMISE REJECTION:", e.reason);
+    });
+    </script>
+
     <!-- Funciones de zona horaria de Argentina - DEBEN ESTAR ANTES DE REACT -->
     <script>
       // Función para obtener fecha/hora en zona horaria de Argentina (UTC-3)
@@ -1267,23 +1283,29 @@
             currentAuth: null,
 
             async cargarRegiones() {
+                console.log("INICIO cargarRegiones");
                 // Si ya están en cache, retornar cache
                 if (REGIONES_CONFIG_CACHE) {
+                    console.log("FIN cargarRegiones (desde cache)");
                     return REGIONES_CONFIG_CACHE.filter(function(r) { return r.activo; });
                 }
 
                 try {
                     // Intentar cargar desde regiones.json
+                    console.log("Intentando cargar regiones.json...");
                     const response = await fetch('regiones.json');
+                    console.log("Response status:", response.status);
                     if (!response.ok) {
                         throw new Error('No se pudo cargar regiones.json');
                     }
                     const regiones = await response.json();
-                    
+                    console.log("regiones.json parseado, cantidad:", regiones.length);
+
                     // Validar que sea un array y tenga la estructura correcta
                     if (Array.isArray(regiones) && regiones.length > 0) {
                         REGIONES_CONFIG_CACHE = regiones;
                         console.log('✅ Regiones cargadas desde regiones.json:', regiones.length);
+                        console.log("FIN cargarRegiones");
                         return regiones.filter(function(r) { return r.activo; });
                     } else {
                         throw new Error('Formato inválido en regiones.json');
@@ -1292,6 +1314,7 @@
                     console.warn('⚠️ No se pudo cargar regiones.json, usando configuración por defecto:', error.message);
                     // Usar fallback
                     REGIONES_CONFIG_CACHE = REGIONES_CONFIG_FALLBACK;
+                    console.log("FIN cargarRegiones (fallback)");
                     return REGIONES_CONFIG_FALLBACK.filter(function(r) { return r.activo; });
                 }
             },
@@ -1515,8 +1538,62 @@
         </div>
     </div>
 
-    <script type="text/babel">
+    <script type="text/plain" id="react-app-code">
         const { useState, useEffect } = React;
+
+        // Función para mostrar modal de error premium (definida al principio para estar disponible en todo el script)
+        const mostrarModalError = (mensaje) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:fadeIn 0.2s ease-out';
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);width:90%;max-width:400px;border-radius:16px;border:1px solid rgba(239,68,68,0.3);box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:slideUp 0.3s ease-out';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'background:linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.1) 100%);color:#ef4444;padding:20px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(239,68,68,0.2)';
+            header.innerHTML = '⚠️ Error';
+            dialog.appendChild(header);
+
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:20px;color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-line';
+            body.textContent = mensaje;
+            dialog.appendChild(body);
+
+            const footer = document.createElement('div');
+            footer.style.cssText = 'padding:16px 20px;border-top:1px solid rgba(71,85,105,0.5);display:flex;justify-content:flex-end;background:rgba(15,23,42,0.5)';
+
+            const btnCerrar = document.createElement('button');
+            btnCerrar.textContent = 'Cerrar';
+            btnCerrar.style.cssText = 'padding:10px 28px;background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(239,68,68,0.3)';
+            btnCerrar.onmouseenter = () => {
+                btnCerrar.style.transform = 'translateY(-2px)';
+                btnCerrar.style.boxShadow = '0 6px 16px rgba(239,68,68,0.4)';
+            };
+            btnCerrar.onmouseleave = () => {
+                btnCerrar.style.transform = 'translateY(0)';
+                btnCerrar.style.boxShadow = '0 4px 12px rgba(239,68,68,0.3)';
+            };
+            btnCerrar.onclick = () => overlay.remove();
+
+            footer.appendChild(btnCerrar);
+            dialog.appendChild(footer);
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+        };
+
+        // Exponer globalmente
+        window.mostrarModalError = mostrarModalError;
+
+        // Función placeholder para mostrarModalCambioContrasena (definida en cambio_contrasena_primer_ingreso.js)
+        window.mostrarModalCambioContrasena = (callback) => {
+            console.warn('mostrarModalCambioContrasena no está disponible (script comentado)');
+            callback(null, true); // Cancelar por defecto
+        };
 
         // Login Component
         function Login({ onLoginSuccess }) {
@@ -2998,51 +3075,6 @@
         
         // Exponer globalmente
         window.mostrarPopupProblemas = mostrarPopupProblemas;
-
-        // Función para mostrar modal de error premium
-        window.mostrarModalError = (mensaje) => {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:10000;animation:fadeIn 0.2s ease-out';
-
-            const dialog = document.createElement('div');
-            dialog.style.cssText = 'background:rgba(30,41,59,0.95);backdrop-filter:blur(12px);width:90%;max-width:400px;border-radius:16px;border:1px solid rgba(239,68,68,0.3);box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:slideUp 0.3s ease-out';
-
-            const header = document.createElement('div');
-            header.style.cssText = 'background:linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.1) 100%);color:#ef4444;padding:20px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(239,68,68,0.2)';
-            header.innerHTML = '⚠️ Error';
-            dialog.appendChild(header);
-
-            const body = document.createElement('div');
-            body.style.cssText = 'padding:20px;color:#e2e8f0;font-size:14px;line-height:1.6;white-space:pre-line';
-            body.textContent = mensaje;
-            dialog.appendChild(body);
-
-            const footer = document.createElement('div');
-            footer.style.cssText = 'padding:16px 20px;border-top:1px solid rgba(71,85,105,0.5);display:flex;justify-content:flex-end;background:rgba(15,23,42,0.5)';
-
-            const btnCerrar = document.createElement('button');
-            btnCerrar.textContent = 'Cerrar';
-            btnCerrar.style.cssText = 'padding:10px 28px;background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(239,68,68,0.3)';
-            btnCerrar.onmouseenter = () => {
-                btnCerrar.style.transform = 'translateY(-2px)';
-                btnCerrar.style.boxShadow = '0 6px 16px rgba(239,68,68,0.4)';
-            };
-            btnCerrar.onmouseleave = () => {
-                btnCerrar.style.transform = 'translateY(0)';
-                btnCerrar.style.boxShadow = '0 4px 12px rgba(239,68,68,0.3)';
-            };
-            btnCerrar.onclick = () => overlay.remove();
-
-            footer.appendChild(btnCerrar);
-            dialog.appendChild(footer);
-
-            overlay.appendChild(dialog);
-            document.body.appendChild(overlay);
-
-            overlay.onclick = (e) => {
-                if (e.target === overlay) overlay.remove();
-            };
-        };
 
         // Función para mostrar modal de éxito premium
         window.mostrarModalExito = (mensaje) => {
@@ -5013,7 +5045,7 @@
                                 marginBottom: '16px'
                             }}>
                                 <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#fbbf24' }}>
-                                    Estructura jerárquica Supervisor > Locales
+                                    Estructura jerárquica Supervisor {'>'} Locales
                                 </div>
 
                                 {grupos.map(({ supervisor, locales: localesGrupo }) => (
@@ -7128,8 +7160,50 @@
                         console.log(`📊 No hay datos ${tipo} para la fecha ${fechaString}`);
                         // EXACTO como Android: Si no hay datos, mostrar campos vacíos (líneas 316-317, 333-334)
                         if (tipo === 'Ingreso de Mercadería') {
-                            setDatosIngreso({});
-                            setNoRecibioMercaderia(false); // Resetear switch si no hay datos
+                            // 🔧 AUTOCOMPLETAR con pedido de fábrica del día anterior
+                            console.log('🔍 Intentando autocompletar con pedido de fábrica del día anterior...');
+                            try {
+                                // Calcular fecha anterior
+                                const fecha = new Date(fechaString);
+                                fecha.setDate(fecha.getDate() - 1);
+                                const fechaAnterior = fecha.toISOString().split('T')[0];
+                                console.log('📅 Fecha anterior:', fechaAnterior);
+
+                                // Buscar pedido de fábrica del día anterior
+                                const pedidoSnapshot = await db.collection('locales')
+                                    .doc(usuario.localId)
+                                    .collection('pedidos_fabrica')
+                                    .doc(fechaAnterior)
+                                    .get();
+
+                                if (pedidoSnapshot.exists) {
+                                    const pedidoData = pedidoSnapshot.data();
+                                    console.log('📦 Pedido de fábrica encontrado:', pedidoData);
+
+                                    // Extraer productos del pedido final
+                                    const datosAutocompletar = {};
+                                    if (pedidoData.productos && Array.isArray(pedidoData.productos)) {
+                                        pedidoData.productos.forEach(producto => {
+                                            const nombreCompleto = producto.nombre;
+                                            const partes = nombreCompleto.split(' - ');
+                                            const nombre = partes.length > 1 ? partes[1] : nombreCompleto;
+                                            // Usar el pedido final como sugerencia de ingreso
+                                            datosAutocompletar[nombre] = producto.pedido || 0;
+                                        });
+                                        console.log('📦 Datos autocompletados desde pedido de fábrica:', datosAutocompletar);
+                                        setDatosIngreso(datosAutocompletar);
+                                        setNoRecibioMercaderia(false);
+                                    }
+                                } else {
+                                    console.log('📦 No hay pedido de fábrica del día anterior, mostrando campos vacíos');
+                                    setDatosIngreso({});
+                                    setNoRecibioMercaderia(false);
+                                }
+                            } catch (error) {
+                                console.error('Error autocompletando con pedido de fábrica:', error);
+                                setDatosIngreso({});
+                                setNoRecibioMercaderia(false);
+                            }
                         } else if (tipo === 'Stock Final') {
                             // EXACTO como Android: mostrarProductos() con campos vacíos (línea 317)
                             setDatosStock({});
@@ -10108,10 +10182,9 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-</body>
-</html>
-<script>
-// Inline Vencimientos (sin archivo externo)
+
+    <script>
+    // Inline Vencimientos (sin archivo externo)
 (function () {
   // Utils
   const normalizar = (c) => {
@@ -15717,7 +15790,37 @@
   };
 })();
 </script>
+
+<script>
+    // Transformar manualmente el código React usando Babel
+    (function() {
+        const codeElement = document.getElementById('react-app-code');
+        if (!codeElement) {
+            console.error('No se encontró el elemento react-app-code');
+            return;
+        }
+
+        const code = codeElement.textContent;
+        try {
+            const transformedCode = Babel.transform(code, {
+                presets: [
+                    ['env', {
+                        modules: false
+                    }],
+                    ['react', { runtime: 'classic' }]
+                ],
+                plugins: []
+            }).code;
+
+            // Ejecutar el código transformado
+            eval(transformedCode);
+        } catch (error) {
+            console.error('Error al transformar el código React:', error);
+        }
+    })();
 </script>
+</body>
+</html>
 
 
 

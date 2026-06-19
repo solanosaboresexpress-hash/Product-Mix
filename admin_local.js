@@ -104,6 +104,99 @@
     }
   }
 
+  async function ensureFirebaseStorageReady(usuario) {
+    try {
+      return FirebaseRegionManager.getStorage();
+    } catch (e) {
+      const regionId = localStorage.getItem('region_id') || usuario.regionId;
+      if (!regionId) throw e;
+      const regiones = await FirebaseRegionManager.cargarRegiones();
+      const region = regiones.find((item) => item.id === regionId);
+      if (!region) throw e;
+      FirebaseRegionManager.initializeFirebase(region);
+      return FirebaseRegionManager.getStorage();
+    }
+  }
+
+  // Función para convertir archivo a Base64
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        console.log('FileReader onload success, result length:', reader.result?.length);
+        resolve(reader.result);
+      };
+      reader.onerror = error => {
+        console.error('FileReader error:', error);
+        reject(error);
+      };
+    });
+  }
+
+  function mostrarModalDocumento(titulo, url, isBase64 = false) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = THEME.overlay;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = THEME.modal;
+    modal.style.maxWidth = '600px';
+
+    const filename = titulo.toLowerCase().replace(/[^a-z0-9]/g, '_') + '.jpg';
+
+    modal.innerHTML = `
+      <div style="${THEME.header};display:flex;justify-content:space-between;align-items:center">
+        <h2 style="${THEME.headerTitle}">${esc(titulo)}</h2>
+        <button id="doc-view-close-x" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;justify-content:center;background:rgba(15,23,42,0.4)">
+        <img src="${esc(url)}" alt="${esc(titulo)}" style="max-width:100%;max-height:60vh;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.5);object-fit:contain">
+      </div>
+      <div style="${THEME.footer}">
+        <button id="doc-view-download" style="${THEME.btnPrimary}">📥 Descargar</button>
+        <button id="doc-view-close" style="${THEME.btnSecondary}">Cerrar</button>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    document.getElementById('doc-view-close-x').onclick = () => overlay.remove();
+    document.getElementById('doc-view-close').onclick = () => overlay.remove();
+    document.getElementById('doc-view-download').onclick = async () => {
+      await descargarImagen(url, filename, isBase64);
+    };
+  }
+
+  async function descargarImagen(url, filename, isBase64 = false) {
+    try {
+      if (isBase64) {
+        // Descargar directamente desde Base64
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (err) {
+      console.error('Error al descargar archivo:', err);
+      // Fallback: abrir en nueva pestaña
+      window.open(url, '_blank');
+    }
+  }
+
   function buildNotifications(documentos, personal) {
     const items = [];
     documentos.forEach((doc) => {
@@ -347,7 +440,8 @@
   }
 
   // Función mejorada para agregar personal con formulario completo
-  async function promptAndSavePersonal(db, localId) {
+  async function promptAndSavePersonal(db, usuario) {
+    const localId = usuario.localId;
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
     
@@ -398,7 +492,9 @@
           </label>
           <div id="per-libreta-container" style="display:none;padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento libreta</label>
-            <input type="date" id="per-libreta-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <input type="date" id="per-libreta-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Foto de Libreta Sanitaria</label>
+            <input type="file" id="per-libreta-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
@@ -408,7 +504,9 @@
           </label>
           <div id="per-curso-container" style="display:none;padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento curso</label>
-            <input type="date" id="per-curso-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <input type="date" id="per-curso-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Foto de Curso de Manipulación</label>
+            <input type="file" id="per-curso-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
       </div>
@@ -454,36 +552,86 @@
           mostrarModalError('Nombre, Apellido, DNI y Cargo son obligatorios');
           return;
         }
+
+        const btnSave = document.getElementById('per-save');
+        const originalText = btnSave.innerHTML;
+        btnSave.disabled = true;
+        btnSave.innerHTML = '⏳ Guardando...';
         
-        const libretaDate = tieneLibreta && libretaVenc ? new Date(libretaVenc + 'T00:00:00') : null;
-        const cursoDate = tieneCurso && cursoVenc ? new Date(cursoVenc + 'T00:00:00') : null;
-        const libreta = getStatusFromDate(libretaDate, 'NO_POSEE');
-        const curso = getStatusFromDate(cursoDate, 'NO_POSEE');
-        const ingresoDate = ingreso ? new Date(ingreso + 'T00:00:00') : null;
-        
-        const id = `per_${Date.now()}`;
-        await db.collection('locales').doc(localId).collection('personal').doc(id).set({
-          id, localId, nombre, apellido, dni, cargo, telefono, email,
-          fechaIngreso: ingresoDate, estado: 'ACTIVO',
-          libretaSanitaria: libretaDate ? {
-            numeroLibreta: '', fechaEmision: null, fechaVencimiento: libretaDate,
-            categoria: '', estado: libreta.estado, diasParaVencer: libreta.diasParaVencer, archivoUrl: ''
-          } : null,
-          cursoManipulacion: cursoDate ? {
-            institucion: '', tipoCurso: '', fechaEmision: null, fechaVencimiento: cursoDate,
-            numeroCertificado: '', estado: curso.estado, diasParaVencer: curso.diasParaVencer, archivoUrl: ''
-          } : null,
-          creadoEn: new Date(), actualizadoEn: new Date()
-        });
-        
-        overlay.remove();
-        resolve(true);
+        try {
+          const libretaDate = tieneLibreta && libretaVenc ? new Date(libretaVenc + 'T00:00:00') : null;
+          const cursoDate = tieneCurso && cursoVenc ? new Date(cursoVenc + 'T00:00:00') : null;
+          const libreta = getStatusFromDate(libretaDate, 'NO_POSEE');
+          const curso = getStatusFromDate(cursoDate, 'NO_POSEE');
+          const ingresoDate = ingreso ? new Date(ingreso + 'T00:00:00') : null;
+          
+          const id = `per_${Date.now()}`;
+          let libretaBase64 = '';
+          let cursoBase64 = '';
+
+          // Convert files to Base64
+          const libretaFileEl = document.getElementById('per-libreta-file');
+          if (tieneLibreta && libretaFileEl && libretaFileEl.files.length > 0) {
+            btnSave.innerHTML = '⏳ Procesando Libreta...';
+            const file = libretaFileEl.files[0];
+            console.log('Archivo libreta:', file.name, file.size);
+            libretaBase64 = await fileToBase64(file);
+            console.log('Libreta Base64 length:', libretaBase64?.length);
+          }
+
+          const cursoFileEl = document.getElementById('per-curso-file');
+          if (tieneCurso && cursoFileEl && cursoFileEl.files.length > 0) {
+            btnSave.innerHTML = '⏳ Procesando Curso...';
+            const file = cursoFileEl.files[0];
+            console.log('Archivo curso:', file.name, file.size);
+            cursoBase64 = await fileToBase64(file);
+            console.log('Curso Base64 length:', cursoBase64?.length);
+          }
+
+          console.log('Datos a guardar - libretaBase64:', libretaBase64 ? 'SI' : 'NO', 'cursoBase64:', cursoBase64 ? 'SI' : 'NO');
+          btnSave.innerHTML = '⏳ Guardando datos...';
+
+          const newData = {
+            id, localId, nombre, apellido, dni, cargo, telefono, email,
+            fechaIngreso: ingresoDate, estado: 'ACTIVO',
+            libretaSanitaria: libretaDate ? {
+              numeroLibreta: '', fechaEmision: null, fechaVencimiento: libretaDate,
+              categoria: '', estado: libreta.estado, diasParaVencer: libreta.diasParaVencer
+            } : null,
+            cursoManipulacion: cursoDate ? {
+              institucion: '', tipoCurso: '', fechaEmision: null, fechaVencimiento: cursoDate,
+              numeroCertificado: '', estado: curso.estado, diasParaVencer: curso.diasParaVencer
+            } : null,
+            creadoEn: new Date(), actualizadoEn: new Date()
+          };
+
+          // Solo agregar campos Base64 si tienen valor
+          if (libretaBase64) {
+            newData.libretaSanitariaBase64 = libretaBase64;
+          }
+          if (cursoBase64) {
+            newData.cursoManipulacionBase64 = cursoBase64;
+          }
+
+          console.log('Guardando en Firestore:', newData);
+          await db.collection('locales').doc(localId).collection('personal').doc(id).set(newData);
+          console.log('Guardado exitoso');
+
+          overlay.remove();
+          resolve(true);
+        } catch (err) {
+          console.error(err);
+          mostrarModalError('Error al guardar personal: ' + err.message);
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+        }
       };
     });
   }
 
   // Función para editar personal
-  async function promptAndEditPersonal(db, localId, personal) {
+  async function promptAndEditPersonal(db, usuario, personal) {
+    const localId = usuario.localId;
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
     
@@ -497,6 +645,9 @@
       new Date(personal.cursoManipulacion.fechaVencimiento).toISOString().split('T')[0] : '';
     const tieneLibreta = !!personal.libretaSanitaria;
     const tieneCurso = !!personal.cursoManipulacion;
+    
+    const tieneLibretaUrl = personal.libretaSanitariaBase64;
+    const tieneCursoUrl = personal.cursoManipulacionBase64;
     
     modal.innerHTML = `
       <div style="padding:24px;border-bottom:1px solid rgba(197,155,52,0.3);background:rgba(15,23,42,0.6)">
@@ -542,7 +693,17 @@
           </label>
           <div id="per-libreta-container" style="${tieneLibreta ? '' : 'display:none'};padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento libreta</label>
-            <input type="date" id="per-libreta-venc" value="${fechaLibreta}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <input type="date" id="per-libreta-venc" value="${fechaLibreta}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
+            
+            ${tieneLibretaUrl ? `
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px;background:rgba(197,155,52,0.1);border:1px solid rgba(197,155,52,0.2);border-radius:8px">
+                <span style="font-size:13px;color:#E6C874;font-weight:600">✓ Foto cargada</span>
+                <button type="button" id="per-libreta-ver" style="padding:4px 8px;font-size:12px;background:rgba(197,155,52,0.2);color:#E6C874;border:1px solid rgba(197,155,52,0.4);border-radius:6px;cursor:pointer">👁️ Ver / Descargar</button>
+              </div>
+            ` : ''}
+            
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneLibretaUrl ? 'Reemplazar foto de Libreta' : 'Subir foto de Libreta'}</label>
+            <input type="file" id="per-libreta-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
         <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
@@ -552,7 +713,17 @@
           </label>
           <div id="per-curso-container" style="${tieneCurso ? '' : 'display:none'};padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento curso</label>
-            <input type="date" id="per-curso-venc" value="${fechaCurso}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <input type="date" id="per-curso-venc" value="${fechaCurso}" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
+            
+            ${tieneCursoUrl ? `
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px;background:rgba(197,155,52,0.1);border:1px solid rgba(197,155,52,0.2);border-radius:8px">
+                <span style="font-size:13px;color:#E6C874;font-weight:600">✓ Foto cargada</span>
+                <button type="button" id="per-curso-ver" style="padding:4px 8px;font-size:12px;background:rgba(197,155,52,0.2);color:#E6C874;border:1px solid rgba(197,155,52,0.4);border-radius:6px;cursor:pointer">👁️ Ver / Descargar</button>
+              </div>
+            ` : ''}
+            
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneCursoUrl ? 'Reemplazar foto de Curso' : 'Subir foto de Curso'}</label>
+            <input type="file" id="per-curso-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
           </div>
         </div>
       </div>
@@ -567,6 +738,18 @@
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+
+    if (tieneLibretaUrl) {
+      document.getElementById('per-libreta-ver').onclick = () => {
+        mostrarModalDocumento(`Libreta Sanitaria - ${personal.nombre} ${personal.apellido}`, personal.libretaSanitariaBase64, true);
+      };
+    }
+
+    if (tieneCursoUrl) {
+      document.getElementById('per-curso-ver').onclick = () => {
+        mostrarModalDocumento(`Curso de Manipulación - ${personal.nombre} ${personal.apellido}`, personal.cursoManipulacionBase64, true);
+      };
+    }
     
     document.getElementById('per-tiene-libreta').onchange = (e) => {
       document.getElementById('per-libreta-container').style.display = e.target.checked ? 'block' : 'none';
@@ -606,38 +789,95 @@
           mostrarModalError('Nombre, Apellido, DNI y Cargo son obligatorios');
           return;
         }
+
+        const btnSave = document.getElementById('per-save');
+        const originalText = btnSave.innerHTML;
+        btnSave.disabled = true;
+        btnSave.innerHTML = '⏳ Guardando...';
         
-        const libretaDate = tieneLibreta && libretaVenc ? new Date(libretaVenc + 'T00:00:00') : null;
-        const cursoDate = tieneCurso && cursoVenc ? new Date(cursoVenc + 'T00:00:00') : null;
-        const libreta = getStatusFromDate(libretaDate, 'NO_POSEE');
-        const curso = getStatusFromDate(cursoDate, 'NO_POSEE');
-        const ingresoDate = ingreso ? new Date(ingreso + 'T00:00:00') : null;
-        
-        await db.collection('locales').doc(localId).collection('personal').doc(personal.id).update({
-          nombre, apellido, dni, cargo, telefono, email,
-          fechaIngreso: ingresoDate,
-          libretaSanitaria: libretaDate ? {
-            numeroLibreta: personal.libretaSanitaria?.numeroLibreta || '',
-            fechaEmision: personal.libretaSanitaria?.fechaEmision || null,
-            fechaVencimiento: libretaDate,
-            categoria: personal.libretaSanitaria?.categoria || '',
-            estado: libreta.estado, diasParaVencer: libreta.diasParaVencer,
-            archivoUrl: personal.libretaSanitaria?.archivoUrl || ''
-          } : null,
-          cursoManipulacion: cursoDate ? {
-            institucion: personal.cursoManipulacion?.institucion || '',
-            tipoCurso: personal.cursoManipulacion?.tipoCurso || '',
-            fechaEmision: personal.cursoManipulacion?.fechaEmision || null,
-            fechaVencimiento: cursoDate,
-            numeroCertificado: personal.cursoManipulacion?.numeroCertificado || '',
-            estado: curso.estado, diasParaVencer: curso.diasParaVencer,
-            archivoUrl: personal.cursoManipulacion?.archivoUrl || ''
-          } : null,
-          actualizadoEn: new Date()
-        });
-        
-        overlay.remove();
-        resolve(true);
+        try {
+          const libretaDate = tieneLibreta && libretaVenc ? new Date(libretaVenc + 'T00:00:00') : null;
+          const cursoDate = tieneCurso && cursoVenc ? new Date(cursoVenc + 'T00:00:00') : null;
+          const libreta = getStatusFromDate(libretaDate, 'NO_POSEE');
+          const curso = getStatusFromDate(cursoDate, 'NO_POSEE');
+          const ingresoDate = ingreso ? new Date(ingreso + 'T00:00:00') : null;
+          
+          let libretaBase64 = personal.libretaSanitariaBase64 || '';
+          let cursoBase64 = personal.cursoManipulacionBase64 || '';
+
+          // Convert files to Base64
+          const libretaFileEl = document.getElementById('per-libreta-file');
+          if (tieneLibreta && libretaFileEl && libretaFileEl.files.length > 0) {
+            btnSave.innerHTML = '⏳ Procesando Libreta...';
+            const file = libretaFileEl.files[0];
+            console.log('Archivo libreta (edit):', file.name, file.size);
+            libretaBase64 = await fileToBase64(file);
+            console.log('Libreta Base64 length (edit):', libretaBase64?.length);
+          }
+
+          const cursoFileEl = document.getElementById('per-curso-file');
+          if (tieneCurso && cursoFileEl && cursoFileEl.files.length > 0) {
+            btnSave.innerHTML = '⏳ Procesando Curso...';
+            const file = cursoFileEl.files[0];
+            console.log('Archivo curso (edit):', file.name, file.size);
+            cursoBase64 = await fileToBase64(file);
+            console.log('Curso Base64 length (edit):', cursoBase64?.length);
+          }
+
+          console.log('Datos a guardar (edit) - libretaBase64:', libretaBase64 ? 'SI' : 'NO', 'cursoBase64:', cursoBase64 ? 'SI' : 'NO');
+          console.log('libretaBase64 length:', libretaBase64?.length);
+          console.log('cursoBase64 length:', cursoBase64?.length);
+          btnSave.innerHTML = '⏳ Guardando datos...';
+
+          const updateData = {
+            id: personal.id,
+            localId: personal.localId,
+            nombre, apellido, dni, cargo, telefono, email,
+            fechaIngreso: ingresoDate,
+            estado: personal.estado || 'ACTIVO',
+            libretaSanitaria: libretaDate ? {
+              numeroLibreta: personal.libretaSanitaria?.numeroLibreta || '',
+              fechaEmision: personal.libretaSanitaria?.fechaEmision || null,
+              fechaVencimiento: libretaDate,
+              categoria: personal.libretaSanitaria?.categoria || '',
+              estado: libreta.estado, diasParaVencer: libreta.diasParaVencer
+            } : null,
+            cursoManipulacion: cursoDate ? {
+              institucion: personal.cursoManipulacion?.institucion || '',
+              tipoCurso: personal.cursoManipulacion?.tipoCurso || '',
+              fechaEmision: personal.cursoManipulacion?.fechaEmision || null,
+              fechaVencimiento: cursoDate,
+              numeroCertificado: personal.cursoManipulacion?.numeroCertificado || '',
+              estado: curso.estado, diasParaVencer: curso.diasParaVencer
+            } : null,
+            creadoEn: personal.creadoEn || new Date(),
+            actualizadoEn: new Date()
+          };
+
+          // Solo agregar campos Base64 si tienen valor
+          if (libretaBase64) {
+            updateData.libretaSanitariaBase64 = libretaBase64;
+            console.log('Agregando libretaSanitariaBase64 a updateData');
+          }
+          if (cursoBase64) {
+            updateData.cursoManipulacionBase64 = cursoBase64;
+            console.log('Agregando cursoManipulacionBase64 a updateData');
+          }
+
+          console.log('Actualizando en Firestore (edit):', updateData);
+          console.log('updateData tiene libretaSanitariaBase64:', 'libretaSanitariaBase64' in updateData);
+          console.log('updateData tiene cursoManipulacionBase64:', 'cursoManipulacionBase64' in updateData);
+          await db.collection('locales').doc(localId).collection('personal').doc(personal.id).set(updateData, { merge: true });
+          console.log('Actualización exitosa');
+
+          overlay.remove();
+          resolve(true);
+        } catch (err) {
+          console.error(err);
+          mostrarModalError('Error al guardar personal: ' + err.message);
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+        }
       };
     });
   }
@@ -692,7 +932,15 @@
         const cursoDate = parseDate(data.cursoManipulacion?.fechaVencimiento);
         const libreta = data.libretaSanitaria ? { ...data.libretaSanitaria, fechaVencimiento: libretaDate, ...getStatusFromDate(libretaDate, 'NO_POSEE') } : null;
         const curso = data.cursoManipulacion ? { ...data.cursoManipulacion, fechaVencimiento: cursoDate, ...getStatusFromDate(cursoDate, 'NO_POSEE') } : null;
-        return { ...data, id: doc.id, nombreCompleto: `${data.nombre || ''} ${data.apellido || ''}`.trim(), libretaSanitaria: libreta, cursoManipulacion: curso };
+        return {
+          ...data,
+          id: doc.id,
+          nombreCompleto: `${data.nombre || ''} ${data.apellido || ''}`.trim(),
+          libretaSanitaria: libreta,
+          cursoManipulacion: curso,
+          libretaSanitariaBase64: data.libretaSanitariaBase64 || null,
+          cursoManipulacionBase64: data.cursoManipulacionBase64 || null
+        };
       });
 
       state.notificaciones = buildNotifications(state.documentos, state.personal);
@@ -815,6 +1063,8 @@
       const cursoEstado = persona.cursoManipulacion?.estado || 'NO_POSEE';
       const libretaColor = COLORS[libretaEstado] || '#6b7280';
       const cursoColor = COLORS[cursoEstado] || '#6b7280';
+      const tieneLibretaUrl = persona.libretaSanitariaBase64;
+      const tieneCursoUrl = persona.cursoManipulacionBase64;
 
       return `
         <div class="admin-card" data-id="${esc(persona.id)}" style="
@@ -836,7 +1086,7 @@
           </div>
 
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-            <span style="
+            <span class="per-libreta-badge" data-persona-id="${esc(persona.id)}" style="
               background:${libretaColor}25;
               color:${libretaColor};
               border:1px solid ${libretaColor}40;
@@ -845,10 +1095,12 @@
               font-size:12px;
               font-weight:700;
               display:flex;align-items:center;gap:6px;
-            ">
-              🏥 Libreta: ${formatEstado(libretaEstado)}
+              cursor:${tieneLibretaUrl ? 'pointer' : 'default'};
+              ${tieneLibretaUrl ? 'transition:all 0.2s ease;' : ''}
+            " ${tieneLibretaUrl ? 'title="Click para ver documento"' : ''}>
+              🏥 Libreta: ${formatEstado(libretaEstado)}${tieneLibretaUrl ? ' 👁️' : ''}
             </span>
-            <span style="
+            <span class="per-curso-badge" data-persona-id="${esc(persona.id)}" style="
               background:${cursoColor}25;
               color:${cursoColor};
               border:1px solid ${cursoColor}40;
@@ -857,8 +1109,10 @@
               font-size:12px;
               font-weight:700;
               display:flex;align-items:center;gap:6px;
-            ">
-              📚 Curso: ${formatEstado(cursoEstado)}
+              cursor:${tieneCursoUrl ? 'pointer' : 'default'};
+              ${tieneCursoUrl ? 'transition:all 0.2s ease;' : ''}
+            " ${tieneCursoUrl ? 'title="Click para ver documento"' : ''}>
+              📚 Curso: ${formatEstado(cursoEstado)}${tieneCursoUrl ? ' 👁️' : ''}
             </span>
           </div>
 
@@ -1080,13 +1334,36 @@
           card.onclick = async () => {
             const perId = card.dataset.id;
             const per = state.personal.find(p => p.id === perId);
-            if (per && await promptAndEditPersonal(db, usuario.localId, per)) {
+            if (per && await promptAndEditPersonal(db, usuario, per)) {
               await loadData();
             }
           };
         });
+
+        // Event listeners para badges de documentos (libreta y curso)
+        body.querySelectorAll('.per-libreta-badge').forEach(badge => {
+          badge.onclick = (e) => {
+            e.stopPropagation();
+            const perId = badge.dataset.personaId;
+            const per = state.personal.find(p => p.id === perId);
+            if (per && per.libretaSanitariaBase64) {
+              mostrarModalDocumento(`Libreta Sanitaria - ${per.nombre} ${per.apellido}`, per.libretaSanitariaBase64, true);
+            }
+          };
+        });
+
+        body.querySelectorAll('.per-curso-badge').forEach(badge => {
+          badge.onclick = (e) => {
+            e.stopPropagation();
+            const perId = badge.dataset.personaId;
+            const per = state.personal.find(p => p.id === perId);
+            if (per && per.cursoManipulacionBase64) {
+              mostrarModalDocumento(`Curso de Manipulación - ${per.nombre} ${per.apellido}`, per.cursoManipulacionBase64, true);
+            }
+          };
+        });
       }
-      
+
       // FAB button
       const fab = document.getElementById('admin-fab-add');
       if (fab) {
@@ -1094,7 +1371,7 @@
           if (state.section === 'documentos') {
             if (await promptAndSaveDocumento(db, usuario.localId)) await loadData();
           } else if (state.section === 'personal') {
-            if (await promptAndSavePersonal(db, usuario.localId)) await loadData();
+            if (await promptAndSavePersonal(db, usuario)) await loadData();
           }
         };
       }

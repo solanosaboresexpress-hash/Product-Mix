@@ -48,6 +48,13 @@
     adminBody: 'padding:12px;overflow:auto;background:rgba(15,23,42,0.6);flex:1;-webkit-overflow-scrolling:touch'
   };
 
+  // Función helper para convertir fecha de forma segura
+  function safeToISOString(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+  }
+
   function esc(value) {
     return window.escapeHtml ? window.escapeHtml(value) : String(value ?? '');
   }
@@ -135,6 +142,10 @@
   }
 
   function mostrarModalDocumento(titulo, url, isBase64 = false) {
+    // Limpiar cualquier overlay existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
 
@@ -245,6 +256,10 @@
 
   // Función mejorada para agregar documento con formulario completo
   async function promptAndSaveDocumento(db, localId) {
+    // Limpiar cualquier overlay existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
     
@@ -337,14 +352,17 @@
 
   // Función para editar documento
   async function promptAndEditDocumento(db, localId, documento) {
+    // Limpiar cualquier overlay existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
     
     const modal = document.createElement('div');
     modal.style.cssText = THEME.modal;
     
-    const fechaVenc = documento.fechaVencimiento ? 
-      new Date(documento.fechaVencimiento).toISOString().split('T')[0] : '';
+    const fechaVenc = safeToISOString(documento.fechaVencimiento);
     
     modal.innerHTML = `
       <div style="${THEME.header}">
@@ -441,6 +459,10 @@
 
   // Función mejorada para agregar personal con formulario completo
   async function promptAndSavePersonal(db, usuario) {
+    // Limpiar cualquier overlay existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const localId = usuario.localId;
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
@@ -631,6 +653,10 @@
 
   // Función para editar personal
   async function promptAndEditPersonal(db, usuario, personal) {
+    // Limpiar cualquier overlay existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const localId = usuario.localId;
     const overlay = document.createElement('div');
     overlay.style.cssText = THEME.overlay;
@@ -638,11 +664,11 @@
     const modal = document.createElement('div');
     modal.style.cssText = THEME.modal;
     
-    const fechaIngreso = personal.fechaIngreso ? new Date(personal.fechaIngreso).toISOString().split('T')[0] : '';
+    const fechaIngreso = safeToISOString(personal.fechaIngreso);
     const fechaLibreta = personal.libretaSanitaria?.fechaVencimiento ? 
-      new Date(personal.libretaSanitaria.fechaVencimiento).toISOString().split('T')[0] : '';
+      safeToISOString(personal.libretaSanitaria.fechaVencimiento) : '';
     const fechaCurso = personal.cursoManipulacion?.fechaVencimiento ? 
-      new Date(personal.cursoManipulacion.fechaVencimiento).toISOString().split('T')[0] : '';
+      safeToISOString(personal.cursoManipulacion.fechaVencimiento) : '';
     const tieneLibreta = !!personal.libretaSanitaria;
     const tieneCurso = !!personal.cursoManipulacion;
     
@@ -883,6 +909,10 @@
   }
 
   window.openAdministracionLocalModal = async function () {
+    // Limpiar cualquier overlay de administración existente
+    const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
+    existingOverlays.forEach(overlay => overlay.remove());
+
     const rawUser = localStorage.getItem('usuario');
     if (!rawUser) {
       mostrarModalError('Inicie sesion primero.');

@@ -1731,7 +1731,7 @@
             // Función para cargar la URL de descarga desde GitHub
             const cargarDownloadUrl = async () => {
                 try {
-                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/refs/heads/main/version_info.json');
+                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/main/version_info.json?t=' + Date.now(), { cache: 'no-store' });
                     if (response.ok) {
                         const data = await response.json();
                         if (data.downloadUrl) {
@@ -6439,7 +6439,7 @@
             // Función para cargar la URL de descarga desde GitHub
             const cargarDownloadUrl = async () => {
                 try {
-                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/refs/heads/main/version_info.json');
+                    const response = await fetch('https://raw.githubusercontent.com/solanosaboresexpress-hash/inventario-app-updates/main/version_info.json?t=' + Date.now(), { cache: 'no-store' });
                     if (response.ok) {
                         const data = await response.json();
                         if (data.downloadUrl) {

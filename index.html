@@ -243,6 +243,66 @@
             padding-bottom: 96px;
         }
         
+
+        
+        /* === ENHANCED WEATHER ANIMATIONS & SVGs === */
+        @keyframes weatherSunRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes weatherSunPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        @keyframes weatherCloudFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        @keyframes weatherRainDrop {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(10px); opacity: 0; }
+        }
+        @keyframes weatherSnowDrop {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(6px) scale(1.2); opacity: 0.8; }
+            100% { transform: translateY(12px) scale(0.8); opacity: 0.2; }
+        }
+        @keyframes weatherFlash {
+            0%, 100% { opacity: 0; }
+            30%, 35% { opacity: 1; }
+            40% { opacity: 0; }
+            80%, 82% { opacity: 1; }
+        }
+
+        /* === WEATHER ANIMATIONS (v2.1.88 sync) === */
+        @keyframes weatherSunRotate {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        @keyframes weatherRainBounce {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-6px); }
+        }
+        @keyframes weatherCloudSlide {
+            0%, 100% { transform: translateX(0); }
+            50%       { transform: translateX(6px); }
+        }
+        @keyframes weatherSnowPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%       { transform: scale(1.2); opacity: 0.7; }
+        }
+        .pf-clima-icon-sunny   { display:inline-block; animation: weatherSunRotate 4s linear infinite; }
+        .pf-clima-icon-rainy   { display:inline-block; animation: weatherRainBounce 1s ease-in-out infinite; }
+        .pf-clima-icon-cloudy  { display:inline-block; animation: weatherCloudSlide 2.5s ease-in-out infinite; }
+        .pf-clima-icon-snowy   { display:inline-block; animation: weatherSnowPulse 1.8s ease-in-out infinite; }
+
+        .pf-card-sunny  { background: linear-gradient(135deg,rgba(251,191,36,0.18),rgba(245,158,11,0.10)) !important; border-color: rgba(251,191,36,0.5) !important; }
+        .pf-card-rainy  { background: linear-gradient(135deg,rgba(59,130,246,0.18),rgba(37,99,235,0.10)) !important; border-color: rgba(59,130,246,0.5) !important; }
+        .pf-card-cloudy { background: linear-gradient(135deg,rgba(148,163,184,0.18),rgba(100,116,139,0.10)) !important; border-color: rgba(148,163,184,0.5) !important; }
+        .pf-card-snowy  { background: linear-gradient(135deg,rgba(186,230,253,0.25),rgba(125,211,252,0.12)) !important; border-color: rgba(125,211,252,0.6) !important; }
+        .pf-card-stormy { background: linear-gradient(135deg,rgba(109,40,217,0.18),rgba(76,29,149,0.10)) !important; border-color: rgba(109,40,217,0.5) !important; }
+        /* === END WEATHER ANIMATIONS === */
+
         @keyframes logoPulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.45; }
             50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.75; }
@@ -12398,8 +12458,8 @@
     cardDemandaManiana.style.cssText = 'background:rgba(245,158,11,0.1);padding:12px 16px;border-bottom:1px solid rgba(245,158,11,0.3);display:none;margin:0;border:1px solid rgba(251,191,36,0.2)';
     cardDemandaManiana.innerHTML = '<div id="pf-demanda-titulo" style="font-weight:700;font-size:14px;color:#fbbf24;margin-bottom:8px">📣 Mañana</div>' +
       '<div id="pf-demanda-cuerpo" style="font-size:13px;color:#1e293b;line-height:1.5;font-weight:600">Cargando información...</div>';
-    modal.appendChild(cardDemandaManiana);
-
+    // Card demanda dentro del body (scrollable) para que se desplace con el contenido
+    // NOTE: card is re-inserted at top of body in mostrarContenidoPedido()
     // Contenido principal premium
     const body = document.createElement('div');
     body.style.cssText = 'flex:1;overflow-y:auto;padding:16px';
@@ -12441,6 +12501,100 @@
     const DEFAULT_LON = -58.3816;
 
     // Emojis para códigos WMO de clima
+    
+    // Vector Animated SVG Weather Icons (Sophisticated IconScout / Lottie style)
+    function obtenerSVGClimaAnimado(weatherCode) {
+      const size = "48px";
+      if (weatherCode === 0 || weatherCode === 1) {
+        // Sol animado con rayos giratorios y brillo
+        return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:10px;filter:drop-shadow(0 0 8px rgba(251,191,36,0.6));">
+          <g transform="translate(32,32)">
+            <g style="animation: weatherSunRotate 8s linear infinite;">
+              <line x1="0" y1="-26" x2="0" y2="-20" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="18.4" y1="-18.4" x2="14.1" y2="-14.1" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="26" y1="0" x2="20" y2="0" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="18.4" y1="18.4" x2="14.1" y2="14.1" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="0" y1="26" x2="0" y2="20" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="-18.4" y1="18.4" x2="-14.1" y2="14.1" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="-26" y1="0" x2="-20" y2="0" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="-18.4" y1="-18.4" x2="-14.1" y2="-14.1" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"/>
+            </g>
+            <circle r="13" fill="url(#sunGrad)" style="animation: weatherSunPulse 2.5s ease-in-out infinite;"/>
+          </g>
+          <defs>
+            <radialGradient id="sunGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#FDE047"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </radialGradient>
+          </defs>
+        </svg>`;
+      } else if ([95, 96, 99].includes(weatherCode)) {
+        // Tormenta con Nube + Rayos + Lluvia
+        return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:10px;filter:drop-shadow(0 4px 10px rgba(124,58,237,0.4));">
+          <g style="animation: weatherCloudFloat 3s ease-in-out infinite;">
+            <path d="M46 36c3.3 0 6-2.7 6-6 0-3-2.2-5.5-5.1-5.9C45.9 19 41.6 15 36.5 15c-4.1 0-7.7 2.6-9.1 6.3C26.5 21.1 25.8 21 25 21c-3.9 0-7 3.1-7 7 0 .7.1 1.4.3 2C15.6 30.6 14 33.1 14 36c0 3.9 3.1 7 7 7h25c3.3 0 6-2.7 6-6z" fill="url(#stormCloudGrad)"/>
+          </g>
+          <polygon points="30,36 24,46 31,46 27,56 38,42 31,42" fill="#FDE047" style="animation: weatherFlash 1.2s infinite;"/>
+          <defs>
+            <linearGradient id="stormCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#475569"/>
+              <stop offset="100%" stop-color="#1E293B"/>
+            </linearGradient>
+          </defs>
+        </svg>`;
+      } else if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(weatherCode)) {
+        // Lluvia animada con gotas cayendo
+        return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:10px;filter:drop-shadow(0 4px 8px rgba(59,130,246,0.4));">
+          <g style="animation: weatherCloudFloat 3s ease-in-out infinite;">
+            <path d="M46 34c3.3 0 6-2.7 6-6 0-3-2.2-5.5-5.1-5.9C45.9 17 41.6 13 36.5 13c-4.1 0-7.7 2.6-9.1 6.3C26.5 19.1 25.8 19 25 19c-3.9 0-7 3.1-7 7 0 .7.1 1.4.3 2C15.6 28.6 14 31.1 14 34c0 3.9 3.1 7 7 7h25z" fill="url(#rainCloudGrad)"/>
+          </g>
+          <g stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round">
+            <line x1="22" y1="44" x2="19" y2="52" style="animation: weatherRainDrop 0.8s linear infinite;"/>
+            <line x1="32" y1="44" x2="29" y2="54" style="animation: weatherRainDrop 0.8s linear infinite 0.3s;"/>
+            <line x1="42" y1="44" x2="39" y2="52" style="animation: weatherRainDrop 0.8s linear infinite 0.6s;"/>
+          </g>
+          <defs>
+            <linearGradient id="rainCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#94A3B8"/>
+              <stop offset="100%" stop-color="#475569"/>
+            </linearGradient>
+          </defs>
+        </svg>`;
+      } else if ([71,73,75,77,85,86].includes(weatherCode)) {
+        // Nieve animada con copos flotantes
+        return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:10px;filter:drop-shadow(0 4px 8px rgba(186,230,253,0.5));">
+          <g style="animation: weatherCloudFloat 3s ease-in-out infinite;">
+            <path d="M46 34c3.3 0 6-2.7 6-6 0-3-2.2-5.5-5.1-5.9C45.9 17 41.6 13 36.5 13c-4.1 0-7.7 2.6-9.1 6.3C26.5 19.1 25.8 19 25 19c-3.9 0-7 3.1-7 7 0 .7.1 1.4.3 2C15.6 28.6 14 31.1 14 34c0 3.9 3.1 7 7 7h25z" fill="url(#snowCloudGrad)"/>
+          </g>
+          <g fill="#BAE6FD">
+            <circle cx="22" cy="46" r="2.5" style="animation: weatherSnowDrop 1.5s ease-in-out infinite;"/>
+            <circle cx="32" cy="48" r="2" style="animation: weatherSnowDrop 1.5s ease-in-out infinite 0.5s;"/>
+            <circle cx="42" cy="45" r="2.5" style="animation: weatherSnowDrop 1.5s ease-in-out infinite 1s;"/>
+          </g>
+          <defs>
+            <linearGradient id="snowCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#CBD5E1"/>
+              <stop offset="100%" stop-color="#64748B"/>
+            </linearGradient>
+          </defs>
+        </svg>`;
+      } else {
+        // Nublado / Sol entre nubes
+        return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:10px;filter:drop-shadow(0 4px 8px rgba(148,163,184,0.4));">
+          <circle cx="24" cy="24" r="9" fill="#F59E0B" style="animation: weatherSunPulse 3s ease-in-out infinite;"/>
+          <g style="animation: weatherCloudFloat 3.5s ease-in-out infinite;">
+            <path d="M46 36c3.3 0 6-2.7 6-6 0-3-2.2-5.5-5.1-5.9C45.9 19 41.6 15 36.5 15c-4.1 0-7.7 2.6-9.1 6.3C26.5 21.1 25.8 21 25 21c-3.9 0-7 3.1-7 7 0 .7.1 1.4.3 2C15.6 30.6 14 33.1 14 36c0 3.9 3.1 7 7 7h25z" fill="url(#partlyCloudGrad)"/>
+          </g>
+          <defs>
+            <linearGradient id="partlyCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#E2E8F0"/>
+              <stop offset="100%" stop-color="#94A3B8"/>
+            </linearGradient>
+          </defs>
+        </svg>`;
+      }
+    }
+
     function emojiClimaWMO(code) {
       const emojis = {
         0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
@@ -12602,7 +12756,8 @@
           fechaMostrar: fechaMostrar,
           lineaClima: lineaClima,
           lineasFutbol: lineasFutbol,
-          hayAlertaFuerte: hayAlertaFuerte
+          hayAlertaFuerte: hayAlertaFuerte,
+          weatherCode: clima ? clima.code : null
         };
       } catch (e) {
         console.error('Error obteniendo contexto demanda:', e);
@@ -12618,17 +12773,11 @@
       const txtTitulo = document.getElementById('pf-demanda-titulo');
       const txtCuerpo = document.getElementById('pf-demanda-cuerpo');
       if (!cardDemanda || !txtTitulo || !txtCuerpo) return;
-      // Verificar si es hoy (Argentina UTC-3)
-      const hoy = new Date();
-      const offsetArgentina = -3 * 60;
-      const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
-      const hoyStr = fechaISO(fechaArgentina);
-      if (fechaSeleccionada !== hoyStr || modoSoloLectura) {
-        cardDemanda.style.display = 'none';
-        return;
-      }
-      // Calcular mañana
-      const maniana = new Date(fechaArgentina);
+      
+      // Calcular mañana a partir de fechaSeleccionada (no solo del dia del sistema)
+      const [y, m, d] = fechaSeleccionada.split('-').map(Number);
+      const fechaBase = new Date(y, m - 1, d);
+      const maniana = new Date(fechaBase);
       maniana.setDate(maniana.getDate() + 1);
       const manianaStr = fechaISO(maniana);
       // Verificar cache
@@ -12658,13 +12807,35 @@
       const cardDemanda = document.getElementById('pf-card-demanda');
       if (!txtTitulo || !txtCuerpo || !cardDemanda) return;
       txtTitulo.textContent = `📣 Mañana (${ctx.fechaMostrar})`;
-      txtCuerpo.innerHTML = ctx.lineaClima + '<br><br>' + ctx.lineasFutbol.join('<br>');
-      // Color según alerta
-      if (ctx.hayAlertaFuerte) {
-        cardDemanda.style.backgroundColor = '#FFECB3'; // Amarillo más intenso para alertas
-      } else {
-        cardDemanda.style.backgroundColor = '#FFF8E1'; // Color normal
+
+      // Animacion del icono de clima segun codigo WMO
+      const weatherCode = ctx.weatherCode != null ? ctx.weatherCode : -1;
+      let iconClass = 'pf-clima-icon-cloudy';
+      let cardClass = 'pf-card-cloudy';
+      if (weatherCode === 0 || weatherCode === 1) {
+        iconClass = 'pf-clima-icon-sunny'; cardClass = 'pf-card-sunny';
+      } else if ([95,96,99].includes(weatherCode)) {
+        iconClass = 'pf-clima-icon-rainy'; cardClass = 'pf-card-stormy';
+      } else if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(weatherCode)) {
+        iconClass = 'pf-clima-icon-rainy'; cardClass = 'pf-card-rainy';
+      } else if ([71,73,75,77,85,86].includes(weatherCode)) {
+        iconClass = 'pf-clima-icon-snowy'; cardClass = 'pf-card-snowy';
+      } else if ([2,3,45,48].includes(weatherCode)) {
+        iconClass = 'pf-clima-icon-cloudy'; cardClass = 'pf-card-cloudy';
       }
+
+      // Aplicar clase de color a la card
+      cardDemanda.className = '';
+      cardDemanda.classList.add(cardClass);
+
+      // Usar Ilustracion SVG animada sofisticada estilo IconScout/Lottie
+      const lineaClima = ctx.lineaClima || '';
+      const emojiMatch = lineaClima.match(/^(\S+)/);
+      const resto = emojiMatch ? lineaClima.slice(emojiMatch[1].length).trim() : lineaClima;
+      const svgIcon = obtenerSVGClimaAnimado(weatherCode);
+      const climaHtml = `<div style="display:flex;align-items:center;margin-bottom:6px;">${svgIcon}<span style="font-size:14px;font-weight:700;color:#1e293b;">${resto}</span></div>`;
+
+      txtCuerpo.innerHTML = climaHtml + ctx.lineasFutbol.join('<br>');
     }
 
     /**
@@ -13611,6 +13782,19 @@
     // Función para mostrar contenido del pedido (replica exacta de la APK)
     async function mostrarContenidoPedido() {
       body.innerHTML = '';
+      // Re-insertar card de demanda/clima al inicio del body (scrollable)
+      const cardDemandaReinsert = document.getElementById('pf-card-demanda');
+      if (cardDemandaReinsert) {
+        body.insertBefore(cardDemandaReinsert, body.firstChild);
+      } else {
+        // Si no existe, la creamos e insertamos aqui (primer render)
+        const c = document.createElement('div');
+        c.id = 'pf-card-demanda';
+        c.style.cssText = 'padding:12px 16px;display:none;margin:0 0 12px 0;border-radius:8px;border:1px solid rgba(251,191,36,0.2)';
+        c.innerHTML = '<div id="pf-demanda-titulo" style="font-weight:700;font-size:14px;color:#fbbf24;margin-bottom:8px">📣 Mañana</div>' +
+          '<div id="pf-demanda-cuerpo" style="font-size:13px;color:#1e293b;line-height:1.5;font-weight:600">Cargando información...</div>';
+        body.insertBefore(c, body.firstChild);
+      }
       
       // Agregar indicador de local (como en la APK)
       const indicadorLocal = document.createElement('div');
@@ -15589,6 +15773,37 @@
       horaDiv.appendChild(editHora);
       modalConfig.appendChild(horaDiv);
       
+      // Toggle: Usar ajuste de tendencia (v2.1.88 sync con Android)
+      const tendenciaDiv = document.createElement('div');
+      tendenciaDiv.style.cssText = 'margin-bottom:20px;padding:12px 16px;background:rgba(15,23,42,0.4);border-radius:8px;border:1px solid rgba(71,85,105,0.4)';
+
+      const tendenciaRow = document.createElement('div');
+      tendenciaRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+
+      const tendenciaLabel = document.createElement('div');
+      tendenciaLabel.style.cssText = 'font-size:15px;color:#e2e8f0;font-weight:600;flex:1';
+      tendenciaLabel.textContent = '📈 Usar ajuste de tendencia';
+
+      const tendenciaInfoBtn = document.createElement('button');
+      tendenciaInfoBtn.style.cssText = 'background:none;border:1px solid rgba(251,191,36,0.4);border-radius:50%;width:24px;height:24px;color:#fbbf24;font-size:13px;cursor:pointer;margin:0 10px;flex-shrink:0';
+      tendenciaInfoBtn.textContent = '❓';
+      tendenciaInfoBtn.title = 'Información sobre ajuste de tendencia';
+      tendenciaInfoBtn.onclick = () => {
+        alert('📈 Ajuste de Tendencia\n\nCuando está activado, el sistema analiza las últimas 3 semanas de ventas del mismo día de la semana y ajusta la sugerencia de pedido según la tendencia detectada.\n\nEjemplo: Si las ventas de Medialunas los miércoles aumentaron un 15% en las últimas semanas, el pedido sugerido se incrementará un 15%.\n\nSi la tendencia es negativa (-10%), el pedido se reducirá proporcionalmente.\n\nDesactivalo si querés usar solo el promedio histórico sin ajuste.');
+      };
+
+      const tendenciaCheck = document.createElement('input');
+      tendenciaCheck.type = 'checkbox';
+      tendenciaCheck.id = 'pp-config-usar-tendencia';
+      tendenciaCheck.checked = configuracion.usarAjusteTendencia !== false;
+      tendenciaCheck.style.cssText = 'width:20px;height:20px;cursor:pointer;accent-color:#fbbf24;flex-shrink:0';
+
+      tendenciaRow.appendChild(tendenciaLabel);
+      tendenciaRow.appendChild(tendenciaInfoBtn);
+      tendenciaRow.appendChild(tendenciaCheck);
+      tendenciaDiv.appendChild(tendenciaRow);
+      modalConfig.appendChild(tendenciaDiv);
+
       // Botón para configurar días de entrega
       const btnDiasEntrega = document.createElement('button');
       btnDiasEntrega.style.cssText = 'width:100%;padding:16px;background:linear-gradient(135deg, #fbbf24 0%, #d97706 100%);color:#fff;border:none;border-radius:6px;font-weight:700;font-size:16px;margin-bottom:24px;cursor:pointer;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(251,191,36,0.3)';
@@ -15609,9 +15824,11 @@
       btnGuardar.onclick = async () => {
         const nuevoPorcentaje = parseInt(seekBar.value);
         const nuevaHora = editHora.value;
+        const usarTendencia = document.getElementById('pp-config-usar-tendencia')?.checked !== false;
 
         configuracion.porcentajeExtra = nuevoPorcentaje;
         configuracion.horaAlerta = nuevaHora;
+        configuracion.usarAjusteTendencia = usarTendencia;
 
         // Guardar en Firebase
         await guardarConfiguracionEnFirebase();

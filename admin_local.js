@@ -126,6 +126,87 @@
   }
 
   // Función para convertir archivo a Base64
+  // Función para cargar elemento de imagen
+  function cargarElementoImagen(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = (e) => reject(e);
+      img.src = url;
+    });
+  }
+
+  // Función para crear un collage vertical de 2 fotos (Frente y Dorso)
+  async function crearCollageArchivos(fileFrente, fileDorso) {
+    if (fileFrente && !fileDorso) {
+      return await fileToBase64(fileFrente);
+    }
+    if (!fileFrente && fileDorso) {
+      return await fileToBase64(fileDorso);
+    }
+    if (!fileFrente && !fileDorso) return '';
+
+    try {
+      const imgFrente = await cargarElementoImagen(fileFrente);
+      const imgDorso = await cargarElementoImagen(fileDorso);
+
+      const canvas = document.createElement('canvas');
+      const targetWidth = 1000;
+
+      const scaleFrente = targetWidth / imgFrente.width;
+      const hFrente = imgFrente.height * scaleFrente;
+
+      const scaleDorso = targetWidth / imgDorso.width;
+      const hDorso = imgDorso.height * scaleDorso;
+
+      const headerMargin = 38;
+      const totalHeight = Math.round(hFrente + hDorso + headerMargin * 2 + 15);
+
+      canvas.width = targetWidth;
+      canvas.height = totalHeight;
+
+      const ctx = canvas.getContext('2d');
+
+      // Fondo oscuro
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Etiqueta FRENTE
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('📷 FRENTE', 20, 28);
+
+      // Dibujar Frente
+      ctx.drawImage(imgFrente, 0, headerMargin, targetWidth, hFrente);
+
+      // Etiqueta DORSO
+      const dorsoTop = headerMargin + hFrente + 10;
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('📷 DORSO / REVERSO', 20, dorsoTop + 28);
+
+      // Dibujar Dorso
+      ctx.drawImage(imgDorso, 0, dorsoTop + headerMargin, targetWidth, hDorso);
+
+      // Línea divisoria dorada
+      ctx.strokeStyle = '#e6c874';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, dorsoTop - 5);
+      ctx.lineTo(targetWidth, dorsoTop - 5);
+      ctx.stroke();
+
+      return canvas.toDataURL('image/jpeg', 0.85);
+    } catch (err) {
+      console.error('Error creando collage:', err);
+      if (fileFrente) return await fileToBase64(fileFrente);
+      return '';
+    }
+  }
+
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -515,8 +596,17 @@
           <div id="per-libreta-container" style="display:none;padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento libreta</label>
             <input type="date" id="per-libreta-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Foto de Libreta Sanitaria</label>
-            <input type="file" id="per-libreta-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Fotos de Libreta Sanitaria (Frente y Dorso)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Frente</label>
+                <input type="file" id="per-libreta-frente" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Dorso / Reverso</label>
+                <input type="file" id="per-libreta-dorso" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+            </div>
           </div>
         </div>
         <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
@@ -527,8 +617,17 @@
           <div id="per-curso-container" style="display:none;padding-left:28px">
             <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Vencimiento curso</label>
             <input type="date" id="per-curso-venc" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0;margin-bottom:10px">
-            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Foto de Curso de Manipulación</label>
-            <input type="file" id="per-curso-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Fotos de Curso (Frente y Dorso)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Frente</label>
+                <input type="file" id="per-curso-frente" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Dorso / Reverso</label>
+                <input type="file" id="per-curso-dorso" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -591,22 +690,20 @@
           let libretaBase64 = '';
           let cursoBase64 = '';
 
-          // Convert files to Base64
-          const libretaFileEl = document.getElementById('per-libreta-file');
-          if (tieneLibreta && libretaFileEl && libretaFileEl.files.length > 0) {
-            btnSave.innerHTML = '⏳ Procesando Libreta...';
-            const file = libretaFileEl.files[0];
-            console.log('Archivo libreta:', file.name, file.size);
-            libretaBase64 = await fileToBase64(file);
+          // Convert files to Base64 / Collage
+          const libretaFrente = document.getElementById('per-libreta-frente')?.files[0] || document.getElementById('per-libreta-file')?.files[0];
+          const libretaDorso = document.getElementById('per-libreta-dorso')?.files[0];
+          if (tieneLibreta && (libretaFrente || libretaDorso)) {
+            btnSave.innerHTML = '⏳ Procesando Libreta (Collage)...';
+            libretaBase64 = await crearCollageArchivos(libretaFrente, libretaDorso);
             console.log('Libreta Base64 length:', libretaBase64?.length);
           }
 
-          const cursoFileEl = document.getElementById('per-curso-file');
-          if (tieneCurso && cursoFileEl && cursoFileEl.files.length > 0) {
-            btnSave.innerHTML = '⏳ Procesando Curso...';
-            const file = cursoFileEl.files[0];
-            console.log('Archivo curso:', file.name, file.size);
-            cursoBase64 = await fileToBase64(file);
+          const cursoFrente = document.getElementById('per-curso-frente')?.files[0] || document.getElementById('per-curso-file')?.files[0];
+          const cursoDorso = document.getElementById('per-curso-dorso')?.files[0];
+          if (tieneCurso && (cursoFrente || cursoDorso)) {
+            btnSave.innerHTML = '⏳ Procesando Curso (Collage)...';
+            cursoBase64 = await crearCollageArchivos(cursoFrente, cursoDorso);
             console.log('Curso Base64 length:', cursoBase64?.length);
           }
 
@@ -728,8 +825,17 @@
               </div>
             ` : ''}
             
-            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneLibretaUrl ? 'Reemplazar foto de Libreta' : 'Subir foto de Libreta'}</label>
-            <input type="file" id="per-libreta-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneLibretaUrl ? 'Reemplazar fotos de Libreta' : 'Subir fotos de Libreta (Frente y Dorso)'}</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Frente</label>
+                <input type="file" id="per-libreta-frente" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Dorso / Reverso</label>
+                <input type="file" id="per-libreta-dorso" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+            </div>
           </div>
         </div>
         <div style="border-top:1px solid rgba(197,155,52,0.2);padding-top:16px">
@@ -748,8 +854,17 @@
               </div>
             ` : ''}
             
-            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneCursoUrl ? 'Reemplazar foto de Curso' : 'Subir foto de Curso'}</label>
-            <input type="file" id="per-curso-file" accept="image/*" style="width:100%;padding:10px 12px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:14px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+            <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">${tieneCursoUrl ? 'Reemplazar fotos de Curso' : 'Subir fotos de Curso (Frente y Dorso)'}</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Frente</label>
+                <input type="file" id="per-curso-frente" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#cbd5e1">📷 Dorso / Reverso</label>
+                <input type="file" id="per-curso-dorso" accept="image/*" style="width:100%;padding:8px;border:1px solid rgba(71,85,105,0.5);border-radius:8px;font-size:12px;background:rgba(15,23,42,0.6);color:#e2e8f0">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -831,22 +946,20 @@
           let libretaBase64 = personal.libretaSanitariaBase64 || '';
           let cursoBase64 = personal.cursoManipulacionBase64 || '';
 
-          // Convert files to Base64
-          const libretaFileEl = document.getElementById('per-libreta-file');
-          if (tieneLibreta && libretaFileEl && libretaFileEl.files.length > 0) {
-            btnSave.innerHTML = '⏳ Procesando Libreta...';
-            const file = libretaFileEl.files[0];
-            console.log('Archivo libreta (edit):', file.name, file.size);
-            libretaBase64 = await fileToBase64(file);
+          // Convert files to Base64 / Collage (Edit)
+          const libretaFrenteEdit = document.getElementById('per-libreta-frente')?.files[0] || document.getElementById('per-libreta-file')?.files[0];
+          const libretaDorsoEdit = document.getElementById('per-libreta-dorso')?.files[0];
+          if (tieneLibreta && (libretaFrenteEdit || libretaDorsoEdit)) {
+            btnSave.innerHTML = '⏳ Procesando Libreta (Collage)...';
+            libretaBase64 = await crearCollageArchivos(libretaFrenteEdit, libretaDorsoEdit);
             console.log('Libreta Base64 length (edit):', libretaBase64?.length);
           }
 
-          const cursoFileEl = document.getElementById('per-curso-file');
-          if (tieneCurso && cursoFileEl && cursoFileEl.files.length > 0) {
-            btnSave.innerHTML = '⏳ Procesando Curso...';
-            const file = cursoFileEl.files[0];
-            console.log('Archivo curso (edit):', file.name, file.size);
-            cursoBase64 = await fileToBase64(file);
+          const cursoFrenteEdit = document.getElementById('per-curso-frente')?.files[0] || document.getElementById('per-curso-file')?.files[0];
+          const cursoDorsoEdit = document.getElementById('per-curso-dorso')?.files[0];
+          if (tieneCurso && (cursoFrenteEdit || cursoDorsoEdit)) {
+            btnSave.innerHTML = '⏳ Procesando Curso (Collage)...';
+            cursoBase64 = await crearCollageArchivos(cursoFrenteEdit, cursoDorsoEdit);
             console.log('Curso Base64 length (edit):', cursoBase64?.length);
           }
 

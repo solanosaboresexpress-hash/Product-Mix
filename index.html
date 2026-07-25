@@ -5481,7 +5481,7 @@ window.crearModalCambioContrasena();
                     }
                     
                     const db = FirebaseRegionManager.getFirestore();
-                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
                     
                     console.log('🔍 Obteniendo resumen vencimientos para local:', localId, 'fecha hoy:', fechaHoy);
                     
@@ -5612,7 +5612,7 @@ window.crearModalCambioContrasena();
                     }
                     
                     const db = FirebaseRegionManager.getFirestore();
-                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
                     
                     // Obtener todos los registros históricos
                     const registrosSnapshot = await db.collection('locales')
@@ -5715,7 +5715,7 @@ window.crearModalCambioContrasena();
                     }
                     
                     const db = FirebaseRegionManager.getFirestore();
-                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
                     
                     // Usar la colección 'vencimientos_activos' (igual que en la pantalla de stock)
                     const lotesSnapshot = await db.collection('locales')
@@ -8532,7 +8532,7 @@ window.crearModalCambioContrasena();
                 
                 try {
                     const problemas = [];
-                    const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                    const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
                     
                     console.log('🔍 Verificando registros para fecha:', fechaHoy);
                     
@@ -9240,16 +9240,9 @@ window.crearModalCambioContrasena();
                 }
             }
 
-            // Función para verificar si debe procesar descuentos - EXACTO como Android CargaActivity.kt líneas 1143-1191
+            // Función para verificar si debe procesar descuentos - Usa la fecha seleccionada en el calendario
             const verificarSiDebeProcesarDescuentos = async (fecha, nuevosProductos, db) => {
                 try {
-                    // 🔥 FIX: Solo procesar descuentos si la fecha es HOY o AYER
-                    const fechaHoy = formatearFechaCorta(window.getFechaArgentina ? window.getFechaArgentina() : new Date());
-                    const fechaAyer = obtenerFechaAnterior(fechaHoy);
-                    if (fecha !== fechaHoy && fecha !== fechaAyer) {
-                        console.log(`⏭️ Stock Final para ${fecha}: FECHA ANTERIOR (no es HOY ni AYER) - NO procesará descuentos`);
-                        return { debeProcesar: false, esPrimeraVez: false };
-                    }
                     
                     // Buscar Stock Final existente
                     const snapshot = await db.collection('locales')
@@ -9924,16 +9917,22 @@ window.crearModalCambioContrasena();
                         
                         console.log('✅ Datos guardados exitosamente');
                         
-                        // Paso 3: Actualizar promedios generales (solo Stock Final) - EXACTO como APK línea 1303
+                        // Paso 3: Actualizar promedios generales y tendencias (solo Stock Final) - EXACTO como APK línea 1303
                         if (tipo === 'Stock Final') {
-                            actualizarProgreso(++pasoActual, pasosTotales, 'Actualizando promedios generales...');
+                            actualizarProgreso(++pasoActual, pasosTotales, 'Actualizando promedios generales y tendencias...');
                             // 🔥 ESPERAR a que termine el cálculo (no en background) igual que APK
                             try {
                                 await actualizarPromedioGeneral(usuario.localId, fechaString, productos, db);
                                 console.log('✅ Promedios generales actualizados correctamente');
                             } catch (error) {
                                 console.warn('⚠️ Error actualizando promedios generales (no crítico):', error);
-                                // No lanzar error para no interrumpir el flujo
+                            }
+                            
+                            try {
+                                await calcularYGuardarTendenciasWeb(usuario.localId, fechaString, db);
+                                console.log('✅ Tendencias de ventas actualizadas correctamente');
+                            } catch (error) {
+                                console.warn('⚠️ Error actualizando tendencias en web (no crítico):', error);
                             }
                         }
                         
@@ -10069,7 +10068,7 @@ window.crearModalCambioContrasena();
                             console.log('🔄 Re-verificando alertas después de guardar registro (no estamos en pantalla de carga)...');
                             try {
                                 const problemas = [];
-                                const fechaHoy = window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0];
+                                const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
                                 
                                 // Verificar datos en 0
                                 await verificarDatosEnCeroHoyWeb(usuario.localId, fechaHoy, problemas);
@@ -10383,11 +10382,15 @@ window.crearModalCambioContrasena();
                 try {
                     // Convertir estructura a formato Firebase
                     const promediosFirebase = {};
+                    let tienePromediosValidos = false;
                     Object.keys(promedios).forEach(dia => {
                         promediosFirebase[dia] = {};
                         const productos = promedios[dia];
                         Object.keys(productos).forEach(producto => {
                             const data = productos[producto];
+                            if (data.promedio > 0) {
+                                tienePromediosValidos = true;
+                            }
                             promediosFirebase[dia][producto] = {
                                 suma: data.suma,
                                 cantidad: data.cantidad,
@@ -10395,6 +10398,11 @@ window.crearModalCambioContrasena();
                             };
                         });
                     });
+                    
+                    if (!tienePromediosValidos) {
+                        console.warn('⚠️ Los promedios calculados están todos en 0. NO se sobrescribirá Firebase con datos en cero.');
+                        return;
+                    }
                     
                     const promedioGeneralData = {
                         promedios: promediosFirebase,
@@ -10412,6 +10420,136 @@ window.crearModalCambioContrasena();
                     console.log('✅ Promedios generales guardados en Firebase');
                 } catch (error) {
                     console.warn('⚠️ Error guardando promedios en Firebase:', error);
+                }
+            };
+
+            // Función para calcular y guardar tendencias en Firebase según la fecha seleccionada
+            const calcularYGuardarTendenciasWeb = async (localId, fechaRef, db) => {
+                try {
+                    console.log('📈 Calculando tendencias de ventas en Web para fecha:', fechaRef);
+                    
+                    const baseStr = fechaRef || (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
+                    
+                    const fechaBaseObj = new Date(baseStr + 'T12:00:00');
+                    const fechaLimiteObj = new Date(fechaBaseObj);
+                    fechaLimiteObj.setDate(fechaLimiteObj.getDate() - 60);
+                    const fechaLimiteStr = fechaLimiteObj.toISOString().split('T')[0];
+                    
+                    const snapshot = await db.collection('locales')
+                        .doc(localId)
+                        .collection('registros')
+                        .where('fecha', '>=', fechaLimiteStr)
+                        .get();
+                    
+                    const registros = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        registros.push({
+                            fecha: data.fecha,
+                            tipo: data.tipo,
+                            productos: data.productos || []
+                        });
+                    });
+                    
+                    if (registros.length === 0) {
+                        console.warn('⚠️ No hay registros históricos suficientes para tendencias');
+                        return;
+                    }
+                    
+                    const promediosPorDia = calcularPromediosPorDiaCompleto(registros);
+                    
+                    const productosCodigos = [
+                        "JQ", "PB", "CS", "PO", "CP", "HU", "ES", "CQ", "RJ", "QC", "CB", "CH",
+                        "MUZZARE", "JAMON", "PEPPERO",
+                        "BATATA", "MEMBRIL",
+                        "MEDIALUNA_MANTECA", "MEDIALUNA_GRASA", "CHIPA", "CRIOLLITO"
+                    ];
+                    
+                    const fechas7Dias = [];
+                    for (let i = 1; i <= 7; i++) {
+                        const d = new Date(baseStr + 'T12:00:00');
+                        d.setDate(d.getDate() - i);
+                        fechas7Dias.push(d.toISOString().split('T')[0]);
+                    }
+                    
+                    const tendencias = {};
+                    
+                    productosCodigos.forEach(codigo => {
+                        const diferencias = [];
+                        
+                        fechas7Dias.forEach(fecha => {
+                            const diaSemana = obtenerDiaSemana(fecha);
+                            const promediosDelDia = promediosPorDia[diaSemana] || {};
+                            
+                            let promedioHistorico = 0;
+                            for (const [prodNombre, promVal] of Object.entries(promediosDelDia)) {
+                                const c = prodNombre.split(' - ')[0] || prodNombre;
+                                if (c === codigo || prodNombre.startsWith(codigo + ' ') || prodNombre.startsWith(codigo + '-')) {
+                                    promedioHistorico = promVal;
+                                    break;
+                                }
+                            }
+                            
+                            if (promedioHistorico <= 0) return;
+                            
+                            const fechaAnterior = obtenerFechaAnterior(fecha);
+                            const regFecha = registros.filter(r => r.fecha === fecha);
+                            const regAnterior = registros.filter(r => r.fecha === fechaAnterior);
+                            
+                            const stockFinObj = regFecha.find(r => r.tipo === 'Stock Final')?.productos || [];
+                            const ingObj = regFecha.find(r => r.tipo === 'Ingreso de Mercadería')?.productos || [];
+                            const stockAntObj = regAnterior.find(r => r.tipo === 'Stock Final')?.productos || [];
+                            
+                            const getCant = (lista) => {
+                                const found = lista.find(p => {
+                                    const c = p.nombre.split(' - ')[0] || p.nombre;
+                                    return c === codigo || p.nombre.startsWith(codigo + ' ') || p.nombre.startsWith(codigo + '-');
+                                });
+                                return found ? (found.cantidad || 0) : 0;
+                            };
+                            
+                            if (stockFinObj.length === 0) return;
+                            
+                            const stockFin = getCant(stockFinObj);
+                            const ing = getCant(ingObj);
+                            const stockAnt = getCant(stockAntObj);
+                            
+                            const ventaReal = stockAnt + ing - stockFin;
+                            if (ventaReal <= 0) return;
+                            
+                            const difPorcentual = ((ventaReal - promedioHistorico) / promedioHistorico) * 100;
+                            diferencias.push(difPorcentual);
+                        });
+                        
+                        if (diferencias.length > 0) {
+                            const sumaDif = diferencias.reduce((a, b) => a + b, 0);
+                            const tendenciaPromedio = sumaDif / diferencias.length;
+                            if (Math.abs(tendenciaPromedio) >= 5.0) {
+                                tendencias[codigo] = Math.round(tendenciaPromedio * 10) / 10;
+                            } else {
+                                tendencias[codigo] = 0;
+                            }
+                        } else {
+                            tendencias[codigo] = 0;
+                        }
+                    });
+                    
+                    const datosTendencias = { ...tendencias };
+                    datosTendencias.fechaActualizacion = new Date().toISOString();
+                    
+                    await db.collection('locales')
+                        .doc(localId)
+                        .collection('cache_tendencias')
+                        .doc('tendencias')
+                        .set(datosTendencias);
+                    
+                    console.log('✅ Tendencias de ventas guardadas en Firebase:', tendencias);
+                    
+                    if (typeof cacheTendencias !== 'undefined') {
+                        cacheTendencias = tendencias;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Error calculando tendencias en Web:', error);
                 }
             };
             
@@ -12125,10 +12263,8 @@ window.crearModalCambioContrasena();
     };
 
     async function calcularStockActual() {
-      const hoy = getFechaActualArgentina();
-      const fechaAyer = getFechaArgentina();
-      fechaAyer.setDate(fechaAyer.getDate() - 1);
-      const ayer = fechaISO(fechaAyer);
+      const hoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : getFechaActualArgentina();
+      const ayer = obtenerFechaAnterior(hoy);
       const stockMap = {};
       try {
         const db = FirebaseRegionManager.getFirestore();
@@ -12736,10 +12872,8 @@ window.crearModalCambioContrasena();
     }
 
     async function calcularStockActual() {
-      const hoy = getFechaActualArgentina();
-      const fechaAyer = getFechaArgentina();
-      fechaAyer.setDate(fechaAyer.getDate() - 1);
-      const ayer = fechaISO(fechaAyer);
+      const hoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : getFechaActualArgentina();
+      const ayer = obtenerFechaAnterior(hoy);
       const stockMap = {};
       try {
         const db = FirebaseRegionManager.getFirestore();
@@ -15003,16 +15137,9 @@ window.crearModalCambioContrasena();
           console.warn('Firebase no inicializado en cargarStockActualDesdeRegistros');
           return stockMap;
         }
-        // Obtener fecha de HOY (no fechaSeleccionada, sino la fecha actual)
-        const hoy = new Date();
-        const offsetArgentina = -3 * 60;
-        const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
-        const fechaHoy = fechaISO(fechaArgentina);
-        
-        // Obtener fecha anterior (restar 1 día a la fecha actual)
-        const fechaAnterior = new Date(fechaArgentina);
-        fechaAnterior.setDate(fechaAnterior.getDate() - 1);
-        const fechaAnteriorStr = fechaISO(fechaAnterior);
+        // Usar fechaSeleccionada del calendario para calcular stock
+        const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
+        const fechaAnteriorStr = obtenerFechaAnterior(fechaHoy);
         
         console.log('📅 Fechas usadas para cálculo de stock:');
         console.log(`  - Fecha hoy: ${fechaHoy}`);
@@ -15098,17 +15225,9 @@ window.crearModalCambioContrasena();
       try {
         const db = obtenerFirestore();
         const nombreProducto = productosFabrica[codigo]?.nombre || codigo;
-        // Usar fecha de HOY, no fechaSeleccionada
-        const hoy = new Date();
-        const offsetArgentina = -3 * 60;
-        const fechaArgentina = new Date(hoy.getTime() + (offsetArgentina - hoy.getTimezoneOffset()) * 60000);
-        const fechaHoy = fechaISO(fechaArgentina);
-        
-        // Calcular fecha anterior
-        const [y, m, d] = fechaHoy.split('-').map(Number);
-        const fechaAnterior = new Date(y, m - 1, d);
-        fechaAnterior.setDate(fechaAnterior.getDate() - 1);
-        const fechaAnteriorStr = fechaISO(fechaAnterior);
+        // Usar fechaSeleccionada del calendario
+        const fechaHoy = (typeof fechaSeleccionada !== 'undefined' && fechaSeleccionada) ? fechaSeleccionada : (window.getFechaActualArgentina ? window.getFechaActualArgentina() : new Date().toISOString().split('T')[0]);
+        const fechaAnteriorStr = obtenerFechaAnterior(fechaHoy);
         
         // Obtener registros
         const registrosSnap = await db.collection('locales').doc(localId).collection('registros').get();
@@ -17223,8 +17342,7 @@ window.crearModalCambioContrasena();
       fechaSeleccionada = fechaISO(fecha);
       document.getElementById('pp-fecha-actual').textContent = fechaSeleccionada;
       
-      const fechaHoy = getFechaActualArgentina();
-      modoSoloLectura = (fechaSeleccionada !== fechaHoy) && !modoAdmin;
+      modoSoloLectura = false;
       
       actualizarUI();
       cargarDatos();

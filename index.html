@@ -16624,8 +16624,15 @@ window.crearModalCambioContrasena();
 
           console.log(`🔍 ${codigo}: total=${stockTotal}, venceHoy=${venceHoy}, venceManana=${venceManana}, sugerido=${prod.pedidoSugerido}, final=${prod.pedidoFinal}`);
 
-          if (venceProximo >= stockTotal && stockTotal > 0 && prod.pedidoSugerido === 0 && prod.pedidoFinal === 0) {
+          if (venceProximo >= stockTotal && stockTotal > 0 && prod.pedidoSugerido === 0) {
             const sugerencia = calcularSugerenciaAlertaReemplazo(codigo, venceProximo);
+
+            // Si el pedido final ya cubre la sugerencia, no alertar
+            if ((prod.pedidoFinal || 0) >= sugerencia) {
+              console.log(`✅ ${codigo}: pedido final ${prod.pedidoFinal} cubre sugerencia ${sugerencia}, no alertar`);
+              continue;
+            }
+
             alertas.push({
               productoCodigo: codigo,
               productoNombre: prod.nombre,
@@ -16729,6 +16736,11 @@ window.crearModalCambioContrasena();
         }
 
         console.log('✅ Sugerencias de reemplazo agregadas al pedido:', alertas.map(a => a.productoCodigo + '=' + a.sugerenciaPedido).join(', '));
+
+        // Refrescar alertas para que desaparezcan las que ya fueron cubiertas
+        setTimeout(() => {
+          mostrarAlertasReemplazoStock();
+        }, 100);
       } catch (e) {
         console.error('❌ Error agregando sugerencias de reemplazo:', e);
       }

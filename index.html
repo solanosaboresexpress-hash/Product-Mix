@@ -16588,8 +16588,7 @@ window.crearModalCambioContrasena();
 
         const snapshotLotes = await db.collection('locales')
           .doc(usuario.localId)
-          .collection('vencimientos')
-          .where('activo', '==', true)
+          .collection('vencimientos_activos')
           .get();
 
         const stockVenceHoy = {};

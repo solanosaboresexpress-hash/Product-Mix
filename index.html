@@ -15612,9 +15612,13 @@ window.crearModalCambioContrasena();
       solicitarContextoDemandaManiana();
 
       // 🚨 Verificar alertas de reemplazo de stock vencido después de calcular sugerencias
-      setTimeout(() => {
+      // Primero recalcular sugerencias y luego mostrar alertas
+      recalcularTodasLasSugerencias().then(() => {
+        console.log('✅ Sugerencias listas, verificando alertas de reemplazo...');
         mostrarAlertasReemplazoStock();
-      }, 1500);
+      }).catch(e => {
+        console.error('❌ Error recalculando sugerencias para alertas:', e);
+      });
 
       // Botón de WhatsApp
       const btnWhatsApp = document.createElement('button');
@@ -16492,19 +16496,22 @@ window.crearModalCambioContrasena();
 
     // Función para recalcular todas las sugerencias (replica de recalcularTodasLasSugerencias de la APK)
     async function recalcularTodasLasSugerencias() {
+      const promesas = [];
       ordenProductos.forEach(codigo => {
         const stockInput = document.getElementById('pf-stock-' + codigo);
         const sugerenciaSpan = document.getElementById('pf-sugerencia-' + codigo);
         
         if (stockInput && sugerenciaSpan) {
           const stock = parseInt(stockInput.value) || 0;
-          calcularSugerencia(codigo, stock).then(sug => {
+          promesas.push(calcularSugerencia(codigo, stock).then(sug => {
             sugerenciaSpan.textContent = sug;
             const prod = productos.find(p => p.codigo === codigo);
             if (prod) prod.pedidoSugerido = sug;
-          });
+          }));
         }
       });
+      await Promise.all(promesas);
+      console.log('✅ Sugerencias recalculadas:', promesas.length, 'productos');
     }
 
     // =====================================================
@@ -16643,6 +16650,12 @@ window.crearModalCambioContrasena();
       try {
         console.log('🔍 Iniciando detección de alertas de reemplazo en web');
 
+        // Verificar que el contenedor body del modal exista
+        if (!body) {
+          console.warn('⚠️ No se encontró body del modal para mostrar alertas');
+          return;
+        }
+
         const alertas = await detectarProductosVencenTotalManana();
 
         // Remover alerta anterior si existe
@@ -16691,7 +16704,7 @@ window.crearModalCambioContrasena();
         alertasCard.appendChild(btnAgregar);
 
         // Insertar al inicio del body del modal
-        body.insertBefore(alertasCard, body.firstChild);
+        body.prepend(alertasCard);
       } catch (e) {
         console.error('❌ Error mostrando alertas de reemplazo:', e);
       }

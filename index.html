@@ -168,6 +168,91 @@
     });
   }
 
+  // Comprime una imagen base64 (dataURL) usando canvas hasta que quede por debajo de maxLen
+  function comprimirImagenBase64(dataUrl, maxLen = 700000) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let ancho = img.width;
+          let alto = img.height;
+          let calidad = 0.8;
+          let resultado = dataUrl;
+
+          // Intentar hasta 8 veces reduciendo calidad y dimensiones
+          for (let i = 0; i < 8; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = ancho;
+            canvas.height = alto;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, ancho, alto);
+            resultado = canvas.toDataURL('image/jpeg', calidad);
+            console.log(`Compresión intento ${i + 1}: ${ancho}x${alto} q=${calidad.toFixed(2)} -> ${resultado.length} chars`);
+            if (resultado.length <= maxLen) break;
+            // Reducir calidad primero, luego dimensiones
+            if (calidad > 0.4) {
+              calidad -= 0.15;
+            } else {
+              ancho = Math.round(ancho * 0.75);
+              alto = Math.round(alto * 0.75);
+            }
+          }
+
+          if (resultado.length <= maxLen) {
+            resolve(resultado);
+          } else {
+            reject(new Error('No se pudo reducir la imagen lo suficiente'));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen para comprimir'));
+      img.src = dataUrl;
+    });
+  }
+
+  // Pregunta al usuario si quiere reducir la calidad de la imagen para poder subirla
+  function preguntarReducirCalidad(nombreArchivo) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10005;display:flex;align-items:center;justify-content:center;padding:16px';
+      overlay.innerHTML = `
+        <div style="background:#1e293b;border:1px solid rgba(197,155,52,0.4);border-radius:12px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+          <h3 style="margin:0 0 12px;font-size:18px;font-weight:700;color:#E6C874">⚠️ Imagen muy grande</h3>
+          <p style="margin:0 0 20px;font-size:14px;color:#e2e8f0;line-height:1.5">La imagen${nombreArchivo ? ' <b>' + nombreArchivo + '</b>' : ''} es muy grande para guardarla. ¿Querés que reduzcamos la calidad automáticamente para poder subirla?</p>
+          <div style="display:flex;justify-content:flex-end;gap:12px">
+            <button id="red-cancel" style="padding:10px 18px;background:rgba(71,85,105,0.8);color:#e2e8f0;border:none;border-radius:8px;font-weight:600;cursor:pointer">Cancelar</button>
+            <button id="red-ok" style="padding:10px 18px;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">✅ Sí, reducir calidad</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#red-ok').onclick = () => { overlay.remove(); resolve(true); };
+      overlay.querySelector('#red-cancel').onclick = () => { overlay.remove(); resolve(false); };
+    });
+  }
+
+  // Convierte archivo a base64 y, si es muy grande, pregunta si reducir calidad
+  // Devuelve el base64 final o null si el usuario canceló
+  async function procesarImagenConLimite(file, maxLen = 700000) {
+    let base64 = await fileToBase64(file);
+    if (base64.length <= maxLen) return base64;
+
+    const acepta = await preguntarReducirCalidad(file.name);
+    if (!acepta) return null;
+
+    try {
+      base64 = await comprimirImagenBase64(base64, maxLen);
+      console.log('Imagen comprimida OK, tamaño final:', base64.length);
+      return base64;
+    } catch (e) {
+      console.error('Error comprimiendo imagen:', e);
+      mostrarModalError('No se pudo reducir la imagen lo suficiente. Probá con otra foto de menor tamaño.');
+      return null;
+    }
+  }
+
   function mostrarModalDocumento(titulo, url, isBase64 = false) {
     // Limpiar cualquier overlay existente
     const existingOverlays = document.querySelectorAll('div[style*="z-index:10002"]');
@@ -624,7 +709,13 @@
             btnSave.innerHTML = '⏳ Procesando Libreta...';
             const file = libretaFileEl.files[0];
             console.log('Archivo libreta:', file.name, file.size);
-            libretaBase64 = await fileToBase64(file);
+            const resultado = await procesarImagenConLimite(file);
+            if (resultado === null) {
+              btnSave.disabled = false;
+              btnSave.innerHTML = originalText;
+              return;
+            }
+            libretaBase64 = resultado;
             console.log('Libreta Base64 length:', libretaBase64?.length);
           }
 
@@ -633,7 +724,13 @@
             btnSave.innerHTML = '⏳ Procesando Curso...';
             const file = cursoFileEl.files[0];
             console.log('Archivo curso:', file.name, file.size);
-            cursoBase64 = await fileToBase64(file);
+            const resultado = await procesarImagenConLimite(file);
+            if (resultado === null) {
+              btnSave.disabled = false;
+              btnSave.innerHTML = originalText;
+              return;
+            }
+            cursoBase64 = resultado;
             console.log('Curso Base64 length:', cursoBase64?.length);
           }
 
@@ -662,6 +759,15 @@
             newData.cursoManipulacionBase64 = cursoBase64;
           }
 
+          // Validar que las imágenes adjuntas no excedan el límite de Firestore (~1 MB)
+          const totalBase64Len = (libretaBase64?.length || 0) + (cursoBase64?.length || 0);
+          if (totalBase64Len > 900000) {
+            mostrarModalError('La imagen o imágenes adjuntas son muy grandes. Reducí la calidad o el tamaño de la foto e intentá de nuevo.');
+            btnSave.disabled = false;
+            btnSave.innerHTML = originalText;
+            return;
+          }
+
           console.log('Guardando en Firestore:', newData);
           await db.collection('locales').doc(localId).collection('personal').doc(id).set(newData);
           console.log('Guardado exitoso');
@@ -670,7 +776,12 @@
           resolve(true);
         } catch (err) {
           console.error(err);
-          mostrarModalError('Error al guardar personal: ' + err.message);
+          const msg = err?.message || '';
+          let mensaje = 'Error al guardar personal: ' + msg;
+          if (msg.includes('cannot be written because its size') || msg.includes('exceeds the maximum allowed size') || msg.includes('larger than') || msg.includes('too large')) {
+            mensaje = 'La imagen o imágenes adjuntas son muy grandes. Reducí la calidad o el tamaño de la foto e intentá de nuevo.';
+          }
+          mostrarModalError(mensaje);
           btnSave.disabled = false;
           btnSave.innerHTML = originalText;
         }
@@ -864,7 +975,13 @@
             btnSave.innerHTML = '⏳ Procesando Libreta...';
             const file = libretaFileEl.files[0];
             console.log('Archivo libreta (edit):', file.name, file.size);
-            libretaBase64 = await fileToBase64(file);
+            const resultado = await procesarImagenConLimite(file);
+            if (resultado === null) {
+              btnSave.disabled = false;
+              btnSave.innerHTML = originalText;
+              return;
+            }
+            libretaBase64 = resultado;
             console.log('Libreta Base64 length (edit):', libretaBase64?.length);
           }
 
@@ -873,7 +990,13 @@
             btnSave.innerHTML = '⏳ Procesando Curso...';
             const file = cursoFileEl.files[0];
             console.log('Archivo curso (edit):', file.name, file.size);
-            cursoBase64 = await fileToBase64(file);
+            const resultado = await procesarImagenConLimite(file);
+            if (resultado === null) {
+              btnSave.disabled = false;
+              btnSave.innerHTML = originalText;
+              return;
+            }
+            cursoBase64 = resultado;
             console.log('Curso Base64 length (edit):', cursoBase64?.length);
           }
 
@@ -917,6 +1040,15 @@
             console.log('Agregando cursoManipulacionBase64 a updateData');
           }
 
+          // Validar que las imágenes adjuntas no excedan el límite de Firestore (~1 MB)
+          const totalBase64Len = (libretaBase64?.length || 0) + (cursoBase64?.length || 0);
+          if (totalBase64Len > 900000) {
+            mostrarModalError('La imagen o imágenes adjuntas son muy grandes. Reducí la calidad o el tamaño de la foto e intentá de nuevo.');
+            btnSave.disabled = false;
+            btnSave.innerHTML = originalText;
+            return;
+          }
+
           console.log('Actualizando en Firestore (edit):', updateData);
           console.log('updateData tiene libretaSanitariaBase64:', 'libretaSanitariaBase64' in updateData);
           console.log('updateData tiene cursoManipulacionBase64:', 'cursoManipulacionBase64' in updateData);
@@ -927,7 +1059,12 @@
           resolve(true);
         } catch (err) {
           console.error(err);
-          mostrarModalError('Error al guardar personal: ' + err.message);
+          const msg = err?.message || '';
+          let mensaje = 'Error al guardar personal: ' + msg;
+          if (msg.includes('cannot be written because its size') || msg.includes('exceeds the maximum allowed size') || msg.includes('larger than') || msg.includes('too large')) {
+            mensaje = 'La imagen o imágenes adjuntas son muy grandes. Reducí la calidad o el tamaño de la foto e intentá de nuevo.';
+          }
+          mostrarModalError(mensaje);
           btnSave.disabled = false;
           btnSave.innerHTML = originalText;
         }

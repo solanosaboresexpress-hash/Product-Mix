@@ -12037,9 +12037,6 @@ window.crearModalCambioContrasena();
             }, []); // Sin dependencias - solo escuchar cambios de hash del navegador
 
             const handleLoginSuccess = (usuarioData) => {
-                // REDIRECT a la nueva web de inventario
-                window.location.href = 'https://inventario-app-multi-local.web.app';
-                return;
                 console.log('ðŸš€ handleLoginSuccess llamado con:', usuarioData);
 
                 if (!usuarioData) {
